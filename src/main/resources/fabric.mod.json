@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "id": "example-mod",
+  "version": "${version}",
+  "name": "Example Mod",
+  "description": "A basic Fabric mod for 1.21.11",
+  "authors": [
+    "Antigravity"
+  ],
+  "contact": {
+    "homepage": "https://fabricmc.net/",
+    "sources": "https://github.com/fabricmc/fabric-example-mod"
+  },
+  "license": "MIT",
+  "icon": "assets/example-mod/icon.png",
+  "environment": "*",
+  "mixins": [
+    "examplemod.mixins.json"
+  ],
+  "entrypoints": {
+    "main": [
+      "com.example.mod.ExampleMod"
+    ],
+    "client": [
+      "com.example.mod.ExampleModClient"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "minecraft": "~${minecraft_version}",
+    "java": ">=21",
+    "fabric-api": "*"
+  },
+  "suggests": {
+    "another-mod": "*"
+  }
+}

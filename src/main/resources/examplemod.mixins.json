@@ -1,0 +1,12 @@
+{
+    "required": true,
+    "package": "com.example.mod.mixin",
+    "compatibilityLevel": "JAVA_21",
+    "mixins": [],
+    "client": [
+        "PlayerTabOverlayAccessor"
+    ],
+    "injectors": {
+        "defaultRequire": 1
+    }
+}
