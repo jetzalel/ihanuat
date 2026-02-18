@@ -1,0 +1,15 @@
+{
+    "required": true,
+    "package": "com.ihanuat.mod.mixin",
+    "compatibilityLevel": "JAVA_21",
+    "mixins": [
+        "AccessorInventory"
+    ],
+    "client": [
+        "PlayerTabOverlayAccessor",
+        "MixinGameRenderer"
+    ],
+    "injectors": {
+        "defaultRequire": 1
+    }
+}

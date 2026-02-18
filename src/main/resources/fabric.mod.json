@@ -1,28 +1,28 @@
 {
   "schemaVersion": 1,
-  "id": "example-mod",
+  "id": "ihanuat",
   "version": "${version}",
-  "name": "Example Mod",
-  "description": "A basic Fabric mod for 1.21.11",
+  "name": "Ihanuat",
+  "description": "Advanced Garden Macro v1",
   "authors": [
-    "Antigravity"
+    "jetzalel"
   ],
   "contact": {
     "homepage": "https://fabricmc.net/",
     "sources": "https://github.com/fabricmc/fabric-example-mod"
   },
   "license": "MIT",
-  "icon": "assets/example-mod/icon.png",
+  "icon": "assets/ihanuat/icon.png",
   "environment": "*",
   "mixins": [
-    "examplemod.mixins.json"
+    "ihanuat.mixins.json"
   ],
   "entrypoints": {
     "main": [
-      "com.example.mod.ExampleMod"
+      "com.ihanuat.mod.Ihanuat"
     ],
     "client": [
-      "com.example.mod.ExampleModClient"
+      "com.ihanuat.mod.IhanuatClient"
     ]
   },
   "depends": {

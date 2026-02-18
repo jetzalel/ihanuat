@@ -1,4 +1,4 @@
-package com.example.mod;
+package com.ihanuat.mod;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -17,6 +17,7 @@ public class MacroConfig {
     public static String endPlot = "None";
 
     public static int pestThreshold = 1;
+    public static int visitorThreshold = 5;
 
     private static final File CONFIG_FILE = FabricLoader.getInstance().getConfigDir().resolve("pest_macro_config.json")
             .toFile();
@@ -29,6 +30,7 @@ public class MacroConfig {
         data.endPos = endPos;
         data.endPlot = endPlot;
         data.pestThreshold = pestThreshold;
+        data.visitorThreshold = visitorThreshold;
 
         try (FileWriter writer = new FileWriter(CONFIG_FILE)) {
             GSON.toJson(data, writer);
@@ -60,6 +62,7 @@ public class MacroConfig {
                 // No, user might want 0 (always clean? unlikely but possible).
                 // Let's just load it.
                 pestThreshold = data.pestThreshold;
+                visitorThreshold = data.visitorThreshold;
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -72,5 +75,6 @@ public class MacroConfig {
         BlockPos endPos = BlockPos.ZERO;
         String endPlot = "None";
         int pestThreshold = 1;
+        int visitorThreshold = 5;
     }
 }

@@ -1,4 +1,4 @@
-package com.example.mod.mixin;
+package com.ihanuat.mod.mixin;
 
 import net.minecraft.client.gui.components.PlayerTabOverlay;
 import net.minecraft.network.chat.Component;

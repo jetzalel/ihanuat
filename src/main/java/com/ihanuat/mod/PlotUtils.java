@@ -1,4 +1,4 @@
-package com.example.mod;
+package com.ihanuat.mod;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.scores.Objective;
@@ -40,7 +40,7 @@ public class PlotUtils {
 
         // 2. Fallback to Tablist Header
         if (client.gui.getTabList() != null) {
-            Component header = ((com.example.mod.mixin.PlayerTabOverlayAccessor) client.gui.getTabList()).getHeader();
+            Component header = ((com.ihanuat.mod.mixin.PlayerTabOverlayAccessor) client.gui.getTabList()).getHeader();
             if (header != null) {
                 String plot = extractPlot(header.getString());
                 if (plot != null)
@@ -58,23 +58,22 @@ public class PlotUtils {
         // Strip color codes
         String clean = text.replaceAll("§[0-9a-fk-or]", "").trim();
 
-        // Hypixel format is often "Plot - [Name]" or "Plot: [Name]"
-        if (clean.toLowerCase().contains("plot")) {
-            // Split by common delimiters
-            String[] parts = clean.split("[:\\-\\ ]");
-            for (int i = 0; i < parts.length - 1; i++) {
-                if (parts[i].equalsIgnoreCase("plot")) {
-                    String val = parts[i + 1].trim();
-                    if (!val.isEmpty())
-                        return val;
-                }
-            }
-
-            // Regex fallback
-            String fallback = clean.replaceAll("(?i).*Plot[\\s:\\-]*", "").trim().split(" ")[0];
-            if (!fallback.isEmpty())
-                return fallback;
+        // 1. Precise regex for "Plot - [ID]" or "Plot: [ID]" or "Plot [ID]"
+        // We match "Plot" followed by any non-alphanumeric junk, then capture the
+        // actual ID
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("(?i)Plot[\\s:\\-]*([\\w\\d]+)").matcher(clean);
+        if (m.find()) {
+            return m.group(1).trim();
         }
+
+        // 2. Fallback for strings that just contain "Plot" and some digits
+        if (clean.toLowerCase().contains("plot")) {
+            String digits = clean.replaceAll("(?i).*?(\\d+).*", "$1");
+            if (digits.length() < 3 && !digits.equals(clean)) { // Sanity check for plot IDs
+                return digits;
+            }
+        }
+
         return null;
     }
 }
