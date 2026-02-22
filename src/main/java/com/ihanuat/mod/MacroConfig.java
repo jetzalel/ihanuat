@@ -18,6 +18,10 @@ public class MacroConfig {
 
     public static int pestThreshold = 1;
     public static int visitorThreshold = 5;
+    public static boolean autoWardrobe = false;
+    public static boolean autoVisitor = true;
+    public static boolean autoEquipment = true;
+    public static int rotationSpeed = 200;
 
     private static final File CONFIG_FILE = FabricLoader.getInstance().getConfigDir().resolve("pest_macro_config.json")
             .toFile();
@@ -31,6 +35,10 @@ public class MacroConfig {
         data.endPlot = endPlot;
         data.pestThreshold = pestThreshold;
         data.visitorThreshold = visitorThreshold;
+        data.autoWardrobe = autoWardrobe;
+        data.autoVisitor = autoVisitor;
+        data.autoEquipment = autoEquipment;
+        data.rotationSpeed = rotationSpeed;
 
         try (FileWriter writer = new FileWriter(CONFIG_FILE)) {
             GSON.toJson(data, writer);
@@ -63,6 +71,9 @@ public class MacroConfig {
                 // Let's just load it.
                 pestThreshold = data.pestThreshold;
                 visitorThreshold = data.visitorThreshold;
+                autoWardrobe = data.autoWardrobe;
+                autoEquipment = data.autoEquipment;
+                rotationSpeed = data.rotationSpeed;
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -76,5 +87,9 @@ public class MacroConfig {
         String endPlot = "None";
         int pestThreshold = 1;
         int visitorThreshold = 5;
+        boolean autoWardrobe = false;
+        boolean autoVisitor = true;
+        boolean autoEquipment = true;
+        int rotationSpeed = 200;
     }
 }

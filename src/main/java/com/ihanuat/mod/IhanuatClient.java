@@ -17,6 +17,9 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.world.phys.Vec3;
 import org.lwjgl.glfw.GLFW;
 import java.util.List;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.inventory.ClickType;
 
 public class IhanuatClient implements ClientModInitializer {
 
@@ -73,9 +76,9 @@ public class IhanuatClient implements ClientModInitializer {
     private static boolean isRotating = false;
     private static RotationUtils.Rotation startRot;
     private static RotationUtils.Rotation targetRot;
-    private static RotationUtils.Rotation controlRot;
     private static long rotationStartTime;
     private static long rotationDuration;
+    private static long lastRotationUpdateTime = 0;
 
     // Regex for Pest Control
     private static int tickCounter = 0;
@@ -84,6 +87,31 @@ public class IhanuatClient implements ClientModInitializer {
     private static final java.util.regex.Pattern PLOTS_PATTERN = java.util.regex.Pattern.compile("Plots:\\s*(\\d+)");
     private static final java.util.regex.Pattern VISITORS_PATTERN = java.util.regex.Pattern
             .compile("Visitors:\\s*\\(?(\\d+)\\)?");
+    private static final java.util.regex.Pattern COOLDOWN_PATTERN = java.util.regex.Pattern
+            .compile("Cooldown:\\s*(READY|(\\d+)m\\s*(\\d+)s|(\\d+)s)");
+
+    // Stability & Gating
+    private static long lastCommandTime = 0;
+    private static final long COMMAND_COOLDOWN_MS = 250;
+    private static String currentInfestedPlot = null;
+    private static boolean isCleaningInProgress = false;
+    private static boolean isHandlingMessage = false;
+    private static int targetWardrobeSlot = -1;
+    private static boolean prepSwappedForCurrentPestCycle = false;
+    private static boolean isSwappingWardrobe = false;
+    private static long wardrobeInteractionTime = 0;
+    private static int wardrobeInteractionStage = 0;
+    private static boolean shouldRestartFarmingAfterSwap = false;
+    private static long wardrobeOpenPendingTime = 0;
+    private static int wardrobeCleanupTicks = 0;
+    private static boolean isStartingFlight = false;
+
+    // Equipment Swap Logic
+    private static boolean isSwappingEquipment = false;
+    private static int equipmentInteractionStage = 0;
+    private static long equipmentInteractionTime = 0;
+    private static boolean swappingToPestGear = false;
+    private static int equipmentTargetIndex = 0; // 0-3 for the 4 pieces
 
     @Override
     public void onInitializeClient() {
@@ -107,166 +135,37 @@ public class IhanuatClient implements ClientModInitializer {
                 GLFW.GLFW_KEY_K,
                 category));
 
-        // Chat Listener for "Cleaning Finished"
+        // Centralized Chat Listener
         net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents.GAME.register((message, overlay) -> {
-            String text = message.getString();
-            if (text.contains("Pest Cleaner") && text.contains("Finished")) {
-                // Relaxed detection: Check for "Pest Cleaner" and "Finished" independently
-                if (currentState == MacroState.CLEANING) {
-                    Minecraft.getInstance().player
-                            .displayClientMessage(Component.literal("§aPest cleaning finished detected."), true);
+            if (isHandlingMessage)
+                return;
+            try {
+                isHandlingMessage = true;
+                String text = message.getString();
+                String lowerText = text.toLowerCase();
 
-                    // Check for Visitors before warping
-                    int visitors = getVisitorCount(Minecraft.getInstance());
-                    if (visitors >= MacroConfig.visitorThreshold) {
-                        Minecraft.getInstance().player
-                                .displayClientMessage(
-                                        Component.literal("§dVisitor Threshold Met (" + visitors + " >= "
-                                                + MacroConfig.visitorThreshold + "). Starting Visitor Script..."),
-                                        true);
+                // 1. Bonus/Barn Sync
 
-                        // Start Visitor Sequence via Thread
-                        if (currentState == MacroState.CLEANING) {
-                            new Thread(() -> {
-                                try {
-                                    // 1. Stop Flight (Double Jump)
-                                    isStoppingFlight = true;
-                                    sleepRandom(1000, 1200); // Wait for flight stop
-                                    while (isStoppingFlight) {
-                                        if (currentState == MacroState.OFF)
-                                            return;
-                                        Thread.sleep(50);
-                                    }
-
-                                    // 1.5. Wait 1500ms buffer as requested
-                                    Thread.sleep(1500);
-                                    if (currentState == MacroState.OFF)
-                                        return;
-
-                                    // 2. Ensure Farming Tool
-                                    if (Minecraft.getInstance().player != null) {
-                                        swapToFarmingTool(Minecraft.getInstance());
-                                    }
-                                    sleepRandom(1000, 1500);
-                                    if (currentState == MacroState.OFF)
-                                        return;
-
-                                    // 2. Start Script
-                                    if (Minecraft.getInstance().player != null
-                                            && Minecraft.getInstance().getConnection() != null) {
-                                        Minecraft.getInstance().getConnection()
-                                                .sendChat(".ez-startscript misc:visitor");
-                                    }
-
-                                    // 3. Wait for "Visitor Script Finished" (Handled in chat listener)
-                                    // For now, we just let the chat listener handle the transition to /warp garden
-                                } catch (InterruptedException e) {
-                                    e.printStackTrace();
-                                }
-                            }).start();
-                            return; // Do NOT warp garden yet
-                        }
-                    } else {
-                        Minecraft.getInstance().player.displayClientMessage(
-                                Component.literal("§eVisitor count (" + visitors + ") below threshold. Skipping."),
-                                true);
-
-                        // Original Logic (Moved inside else)
-                        if (currentState == MacroState.CLEANING) {
-                            new Thread(() -> {
-                                try {
-                                    // Restore flight stop logic (User requested to keep it)
-                                    isStoppingFlight = true;
-                                    sleepRandom(1000, 1200); // Wait for flight stop
-                                    while (isStoppingFlight) {
-                                        if (currentState == MacroState.OFF)
-                                            return;
-                                        Thread.sleep(50); // Wait for flight stop to complete
-                                    }
-
-                                    if (Minecraft.getInstance().player != null
-                                            && Minecraft.getInstance().getConnection() != null) {
-                                        Minecraft.getInstance().getConnection().sendChat("/warp garden");
-                                    }
-                                    sleepRandom(1000, 1500);
-                                    if (currentState == MacroState.OFF)
-                                        return;
-
-                                    if (Minecraft.getInstance().player != null
-                                            && Minecraft.getInstance().getConnection() != null) {
-                                        if (isInEndRow(Minecraft.getInstance())) {
-                                            Minecraft.getInstance().player.displayClientMessage(
-                                                    Component.literal(
-                                                            "§cDetected same row as End Position! Triggering early return..."),
-                                                    true);
-                                            returnState = ReturnState.TP_START;
-                                            returnTickCounter = 0;
-                                        } else {
-                                            swapToFarmingTool(Minecraft.getInstance());
-                                            Minecraft.getInstance().getConnection()
-                                                    .sendChat(".ez-startscript netherwart:1");
-                                            currentState = MacroState.FARMING;
-                                        }
-                                    }
-                                } catch (InterruptedException e) {
-                                    e.printStackTrace();
-                                }
-                            }).start();
-                        }
+                // 3. Pest Cleaning Finished
+                if (text.contains("Pest Cleaner") && text.contains("Finished")) {
+                    if (currentState == MacroState.CLEANING) {
+                        handlePestCleaningFinished(Minecraft.getInstance());
                     }
                 }
-            }
 
-            // Hook for Visitor Script Finished
-            // Prevent recursion: Check for "visitor" and "finished", but ignore our own
-            // confirmation message
-            // Also ensure we are in the correct state
-            if (currentState == MacroState.CLEANING && text.toLowerCase().contains("visitor")
-                    && text.toLowerCase().contains("finished")
-                    && !text.contains("sequence complete")) {
-                Minecraft.getInstance().player.displayClientMessage(
-                        Component.literal("§aVisitor sequence complete. Returning to farm..."), true);
-                // We rely on currentState still being CLEANING or similar tracking
-                // But visitor script runs during CLEANING state in our logic above
-                // Let's just blindly trigger the return-to-garden logic
-
-                new Thread(() -> {
-                    try {
-                        // User requested to remove double jump (stop flight) from here
-                        // Proceed directly to warp garden
-
-                        if (Minecraft.getInstance().player != null && Minecraft.getInstance().getConnection() != null) {
-                            Minecraft.getInstance().getConnection().sendChat("/warp garden");
-                        }
-                        sleepRandom(1000, 1500);
-                        if (currentState == MacroState.OFF)
-                            return;
-
-                        if (Minecraft.getInstance().player != null && Minecraft.getInstance().getConnection() != null) {
-                            if (isInEndRow(Minecraft.getInstance())) {
-                                Minecraft.getInstance().player.displayClientMessage(
-                                        Component.literal(
-                                                "§cDetected same row as End Position! Triggering early return..."),
-                                        true);
-                                returnState = ReturnState.TP_START;
-                                returnTickCounter = 0;
-                            } else {
-                                swapToFarmingTool(Minecraft.getInstance());
-                                Minecraft.getInstance().getConnection().sendChat(".ez-startscript netherwart:1");
-                                currentState = MacroState.FARMING;
-                            }
-                        }
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }).start();
+                // 4. Visitor Script Finished
+                if (currentState == MacroState.CLEANING && lowerText.contains("visitor")
+                        && lowerText.contains("finished")
+                        && !text.contains("sequence complete")) {
+                    handleVisitorScriptFinished(Minecraft.getInstance());
+                }
+            } finally {
+                isHandlingMessage = false;
             }
         });
 
         // Config & Script Toggle Keys (Start Tick)
-        ClientTickEvents.START_CLIENT_TICK.register(client ->
-
-        {
+        ClientTickEvents.START_CLIENT_TICK.register(client -> {
             if (client.player == null)
                 return;
 
@@ -279,9 +178,9 @@ public class IhanuatClient implements ClientModInitializer {
                     currentState = MacroState.FARMING;
                     if (client.getConnection() != null) {
                         swapToFarmingTool(client);
-                        client.getConnection().sendChat(".ez-startscript netherwart:1");
+                        sendCommand(client, ".ez-startscript netherwart:1");
                     }
-                    client.player.displayClientMessage(Component.literal("§aMacro Started: Farming Mode"), true);
+                    client.player.displayClientMessage(Component.literal("Â§aMacro Started: Farming Mode"), true);
                 } else {
                     stopMacro(client);
                 }
@@ -298,22 +197,81 @@ public class IhanuatClient implements ClientModInitializer {
                 }
             }
 
+            if (client.screen instanceof AbstractContainerScreen) {
+                handleWardrobeMenu(client, (AbstractContainerScreen<?>) client.screen);
+                handleEquipmentMenu(client, (AbstractContainerScreen<?>) client.screen);
+            }
+
             // Automated Return to Start (Distance-based)
             if (currentState == MacroState.FARMING && returnState == ReturnState.OFF && MacroConfig.endPos != null) {
                 Vec3 endVec = new Vec3(MacroConfig.endPos.getX() + 0.5, MacroConfig.endPos.getY(),
                         MacroConfig.endPos.getZ() + 0.5);
                 if (client.player.position().distanceTo(endVec) <= 1.0) {
-                    client.player.displayClientMessage(Component.literal("§6End Position reached. Stopping script..."),
+                    client.player.displayClientMessage(Component.literal("Â§6End Position reached. Stopping script..."),
                             true);
 
                     // Immediately stop script
-                    if (client.getConnection() != null) {
-                        client.getConnection().sendChat(".ez-stopscript");
-                    }
+                    sendCommand(client, ".ez-stopscript");
 
                     // 250ms pre-sequence wait
                     returnState = ReturnState.TP_PRE_WAIT;
                     stateStartTime = System.currentTimeMillis();
+                }
+            }
+
+            // Delayed Wardrobe Open after StopScript
+            if (wardrobeOpenPendingTime != 0 && System.currentTimeMillis() - wardrobeOpenPendingTime >= 200) {
+                if (client.player != null) {
+                    client.player.connection.sendChat("/wardrobe");
+                }
+                wardrobeOpenPendingTime = 0;
+            }
+
+            // Delayed StartScript after Wardrobe Swap
+            if (shouldRestartFarmingAfterSwap && !isSwappingWardrobe && client.screen == null) {
+                if (wardrobeInteractionTime != 0 && System.currentTimeMillis() - wardrobeInteractionTime >= 500) {
+                    swapToFarmingTool(client);
+                    if (isInEndRow(client)) {
+                        client.player.displayClientMessage(
+                                Component.literal(
+                                        "Â§cDetected same row as End Position after swap! Triggering early return..."),
+                                true);
+                        isCleaningInProgress = false;
+                        returnState = ReturnState.TP_START;
+                        returnTickCounter = 0;
+                        currentState = MacroState.OFF; // Ensure farming doesn't restart
+                    } else {
+                        sendCommand(client, ".ez-startscript netherwart:1");
+                        currentState = MacroState.FARMING;
+                        isCleaningInProgress = false; // Reset flag after swap logic finish
+                    }
+                    shouldRestartFarmingAfterSwap = false;
+                    wardrobeInteractionTime = 0;
+                    wardrobeCleanupTicks = 10; // Run cleanup for 10 ticks (0.5s)
+                }
+            }
+
+            // Post-interaction Cleanup (Fixes inventory locks/phantom items)
+            if (wardrobeCleanupTicks > 0) {
+                wardrobeCleanupTicks--;
+                if (client.player != null) {
+                    try {
+                        if (client.player.containerMenu != null) {
+                            client.player.containerMenu.setCarried(net.minecraft.world.item.ItemStack.EMPTY);
+                            client.player.containerMenu.broadcastChanges();
+                        }
+                        if (client.player.inventoryMenu != null) {
+                            client.player.inventoryMenu.setCarried(net.minecraft.world.item.ItemStack.EMPTY);
+                            client.player.inventoryMenu.broadcastChanges();
+                        }
+                        // Explicitly send a Close Container packet to ensure the server is in sync
+                        client.player.connection
+                                .send(new net.minecraft.network.protocol.game.ServerboundContainerClosePacket(0));
+                    } catch (Exception ignored) {
+                    }
+                }
+                if (client.mouseHandler != null) {
+                    client.mouseHandler.releaseMouse();
                 }
             }
 
@@ -331,21 +289,12 @@ public class IhanuatClient implements ClientModInitializer {
                 }
             }
 
-            // Handle 'I' key press to start simulation
-            while (moveForwardKey.consumeClick()) {
-                if (!isSimulatingMove) {
-                    isSimulatingMove = true;
-                    startMovePos = client.player.position();
-                    client.player.displayClientMessage(Component.literal("§aStarting 5-block movement..."), true);
-                }
-            }
-
             // Flight Stop Logic (Tick-based)
             if (isStoppingFlight) {
                 flightStopTicks++;
                 Minecraft mc = client;
                 if (mc.options.keyJump != null) {
-                    // Stage 0: Press Space (Hold for ~2 ticks / ~100ms)
+                    // Stage 0: Press Space
                     if (flightStopStage == 0) {
                         KeyMapping.set(mc.options.keyJump.getDefaultKey(), true);
                         if (flightStopTicks >= 2) {
@@ -353,7 +302,7 @@ public class IhanuatClient implements ClientModInitializer {
                             flightStopTicks = 0;
                         }
                     }
-                    // Stage 1: Release Space (Gap for ~3 ticks / ~150ms)
+                    // Stage 1: Release Space
                     else if (flightStopStage == 1) {
                         KeyMapping.set(mc.options.keyJump.getDefaultKey(), false);
                         if (flightStopTicks >= 3) {
@@ -361,7 +310,7 @@ public class IhanuatClient implements ClientModInitializer {
                             flightStopTicks = 0;
                         }
                     }
-                    // Stage 2: Press Space (Hold for ~2 ticks / ~100ms)
+                    // Stage 2: Press Space
                     else if (flightStopStage == 2) {
                         KeyMapping.set(mc.options.keyJump.getDefaultKey(), true);
                         if (flightStopTicks >= 2) {
@@ -375,44 +324,18 @@ public class IhanuatClient implements ClientModInitializer {
                         isStoppingFlight = false;
                         flightStopStage = 0;
                         flightStopTicks = 0;
-                        client.player.displayClientMessage(Component.literal("§bFlight stop sequence finished."), true);
+                        client.player.displayClientMessage(Component.literal("Â§bFlight stop sequence finished."),
+                                true);
                     }
                 }
             }
 
-            // Movement simulation logic
-            if (isSimulatingMove) {
-                double distanceTravelled = client.player.position().distanceTo(startMovePos);
-
-                if (distanceTravelled >= MOVE_TARGET_DISTANCE) {
-                    isSimulatingMove = false;
-                    // Stop simulating 'W' and release all suppressed keys
-                    KeyMapping.set(client.options.keyUp.getDefaultKey(), false);
-                    client.player.displayClientMessage(Component.literal("§6Movement finished."), true);
-                } else {
-                    // Simulate pressing 'W'
-                    KeyMapping.set(client.options.keyUp.getDefaultKey(), true);
-
-                    // Suppress manual input: A, S, D, Left Click, Right Click
-                    KeyMapping.set(client.options.keyLeft.getDefaultKey(), false);
-                    while (client.options.keyLeft.consumeClick())
-                        ;
-
-                    KeyMapping.set(client.options.keyDown.getDefaultKey(), false);
-                    while (client.options.keyDown.consumeClick())
-                        ;
-
-                    KeyMapping.set(client.options.keyRight.getDefaultKey(), false);
-                    while (client.options.keyRight.consumeClick())
-                        ;
-
-                    KeyMapping.set(client.options.keyAttack.getDefaultKey(), false);
-                    while (client.options.keyAttack.consumeClick())
-                        ;
-
-                    KeyMapping.set(client.options.keyUse.getDefaultKey(), false);
-                    while (client.options.keyUse.consumeClick())
-                        ;
+            // Flight Start Logic (Tick-based double jump)
+            if (currentState != MacroState.OFF && isStartingFlight) {
+                if (performFlightToggle(client, true)) {
+                    isStartingFlight = false;
+                    flightToggleStage = 0;
+                    flightToggleTicks = 0;
                 }
             }
         });
@@ -426,14 +349,14 @@ public class IhanuatClient implements ClientModInitializer {
                                 if (client.player != null) {
                                     MacroConfig.startPos = client.player.blockPosition();
                                     String plot = PlotUtils.getPlotName(client);
-                                    // Sanity: Strip "Plot" if it somehow leaked through
                                     plot = plot.toLowerCase().replaceAll("plot", "").trim();
                                     MacroConfig.startPlot = plot;
                                     context.getSource()
                                             .sendFeedback(Component.literal(
-                                                    "§aStart position set to: §f" + MacroConfig.startPos.toShortString()
-                                                            + " §7(Automatic Warp Plot: §e" + MacroConfig.startPlot
-                                                            + "§7)"));
+                                                    "Â§aStart position set to: Â§f"
+                                                            + MacroConfig.startPos.toShortString()
+                                                            + " Â§7(Automatic Warp Plot: Â§e" + MacroConfig.startPlot
+                                                            + "Â§7)"));
                                 }
                                 return 1;
                             })).then(ClientCommandManager.literal("end").executes(context -> {
@@ -445,21 +368,11 @@ public class IhanuatClient implements ClientModInitializer {
                                     MacroConfig.endPlot = plot;
                                     context.getSource()
                                             .sendFeedback(Component.literal(
-                                                    "§cEnd position set to: §f" + MacroConfig.endPos.toShortString()
-                                                            + " §7(Plot: " + MacroConfig.endPlot + ")"));
+                                                    "Â§cEnd position set to: Â§f" + MacroConfig.endPos.toShortString()
+                                                            + " Â§7(Plot: " + MacroConfig.endPlot + ")"));
                                 }
-                                // Return 1 to indicate success
                                 return 1;
                             })));
-
-            dispatcher.register(
-                    ClientCommandManager.literal("visitortest").executes(context -> {
-                        Minecraft client = Minecraft.getInstance();
-                        int count = getVisitorCount(client);
-                        context.getSource()
-                                .sendFeedback(Component.literal("§e[Debug] Current Visitor Count: " + count));
-                        return 1;
-                    }));
         });
     }
 
@@ -470,8 +383,8 @@ public class IhanuatClient implements ClientModInitializer {
         if (mc.player == null)
             return;
 
-        // Priority 1: Debug 'R' Bezier Rotation
-        if (isRotating && startRot != null && targetRot != null && controlRot != null) {
+        // Priority 1: Time-Based Linear Rotation
+        if (isRotating && startRot != null && targetRot != null) {
             long currentTime = System.currentTimeMillis();
             long elapsed = currentTime - rotationStartTime;
             float t = (float) elapsed / (float) rotationDuration;
@@ -486,47 +399,69 @@ public class IhanuatClient implements ClientModInitializer {
                 // This prevents a 1-frame jitter if the next state hasn't set returnLookTarget
                 // yet
                 if (returnState == ReturnState.ALIGN_WAIT || returnState == ReturnState.FLY_APPROACH) {
-                    // Keep looking at the final Bezier point for this frame
+                    // Keep looking at the final target point for this frame
                 }
             }
 
-            RotationUtils.Rotation current = RotationUtils.calculateBezierPoint(t, startRot, targetRot, controlRot);
-            mc.player.setYRot(current.yaw);
-            mc.player.setXRot(current.pitch);
-            // Snap for Bezier too just in case
-            mc.player.yRotO = current.yaw;
-            mc.player.xRotO = current.pitch;
+            float currentYaw = startRot.yaw + (targetRot.yaw - startRot.yaw) * t;
+            float currentPitch = startRot.pitch + (targetRot.pitch - startRot.pitch) * t;
+            mc.player.setYRot(currentYaw);
+            mc.player.setXRot(currentPitch);
+            // Snap for interpolation too just in case
+            mc.player.yRotO = currentYaw;
+            mc.player.xRotO = currentPitch;
             return;
         }
 
-        // Priority 2: Return Sequence Tracking (Smoothed)
+        // Priority 2: Return Sequence Tracking (Time-Based Smooth)
+        // Smoothly rotates toward returnLookTarget at rotationSpeed deg/s.
+        // Non-blocking: does NOT gate movement.
         if (returnState != ReturnState.OFF && returnLookTarget != null) {
-            // 1. Calculate Target Rotation
             RotationUtils.Rotation target = RotationUtils.calculateLookAt(mc.player.getEyePosition(), returnLookTarget);
 
-            // 2. Smoothly Interpolate (Frame-based)
-            // Use a factor (0.4 roughly corresponds to a 2-3 frame lag, smoothing out
-            // jitters)
-            float smoothFactor = 0.4f;
+            // Time-based: compute how many degrees we can move this frame
+            long now = System.currentTimeMillis();
+            float deltaSeconds = (lastRotationUpdateTime == 0) ? (1.0f / 60.0f)
+                    : (now - lastRotationUpdateTime) / 1000.0f;
+            deltaSeconds = Math.min(deltaSeconds, 0.1f); // Cap to prevent teleport on lag spike
+            lastRotationUpdateTime = now;
+
+            float maxStep = (float) MacroConfig.rotationSpeed * deltaSeconds;
 
             float curYaw = mc.player.getYRot();
             float curPitch = mc.player.getXRot();
 
-            // Handle Yaw Wrapping (shortest path)
             float yawDiff = net.minecraft.util.Mth.wrapDegrees(target.yaw - curYaw);
-            float newYaw = curYaw + yawDiff * smoothFactor;
-
             float pitchDiff = target.pitch - curPitch;
-            float newPitch = curPitch + pitchDiff * smoothFactor;
+            float totalDiff = (float) Math.sqrt(yawDiff * yawDiff + pitchDiff * pitchDiff);
+
+            float newYaw, newPitch;
+            if (totalDiff <= maxStep || totalDiff < 0.1f) {
+                newYaw = curYaw + yawDiff;
+                newPitch = target.pitch;
+            } else {
+                float ratio = maxStep / totalDiff;
+                newYaw = curYaw + yawDiff * ratio;
+                newPitch = curPitch + pitchDiff * ratio;
+            }
+
+            // DEBUG: Show tracking info on screen
+            mc.player.displayClientMessage(Component.literal(
+                    String.format("§dTRACK: spd=%d step=%.2f diff=%.1f yaw=%.1f->%.1f",
+                            MacroConfig.rotationSpeed, maxStep, totalDiff, curYaw, newYaw)),
+                    true);
 
             mc.player.setYRot(newYaw);
             mc.player.setXRot(newPitch);
-
-            // Snap previous rotation to current to prevent engine-interpolation lag
             mc.player.yRotO = newYaw;
             mc.player.xRotO = newPitch;
             return;
         }
+    }
+
+    // Called by MixinMouseHandler to suppress mouse rotation during return sequence
+    public static boolean shouldSuppressMouseRotation() {
+        return returnState != ReturnState.OFF && (isRotating || returnLookTarget != null);
     }
 
     private static void useAspectItem() {
@@ -543,7 +478,7 @@ public class IhanuatClient implements ClientModInitializer {
                 // Found it!
                 ((com.ihanuat.mod.mixin.AccessorInventory) mc.player.getInventory()).setSelected(i);
 
-                mc.player.displayClientMessage(Component.literal("§dAspect Teleport! Switching to slot " + (i + 1)),
+                mc.player.displayClientMessage(Component.literal("Â§dAspect Teleport! Switching to slot " + (i + 1)),
                         true);
 
                 // Simulate Right Click
@@ -553,10 +488,12 @@ public class IhanuatClient implements ClientModInitializer {
                 return;
             }
         }
-        mc.player.displayClientMessage(Component.literal("§c'Aspect of the' item not found in hotbar!"), true);
+        mc.player.displayClientMessage(Component.literal("Â§c'Aspect of the' item not found in hotbar!"), true);
     }
 
     private int getVisitorCount(Minecraft client) {
+        if (!MacroConfig.autoVisitor)
+            return 0;
         if (client.level == null)
             return 0;
         try {
@@ -574,7 +511,7 @@ public class IhanuatClient implements ClientModInitializer {
                         name = String.valueOf(info.getProfile());
                     }
 
-                    String clean = name.replaceAll("§[0-9a-fk-or]", "").trim();
+                    String clean = name.replaceAll("Â§[0-9a-fk-or]", "").trim();
                     java.util.regex.Matcher m = VISITORS_PATTERN.matcher(clean);
                     if (m.find()) {
                         return Integer.parseInt(m.group(1));
@@ -601,37 +538,32 @@ public class IhanuatClient implements ClientModInitializer {
             for (String kw : keywords) {
                 if (name.contains(kw)) {
                     ((com.ihanuat.mod.mixin.AccessorInventory) client.player.getInventory()).setSelected(i);
-                    client.player.displayClientMessage(Component.literal("§aEquipped Farming Tool: " + name), true);
+                    client.player.displayClientMessage(Component.literal("Â§aEquipped Farming Tool: " + name), true);
                     return;
                 }
             }
         }
-        client.player.displayClientMessage(Component.literal("§cNo farming tool found in hotbar!"), true);
+        client.player.displayClientMessage(Component.literal("Â§cNo farming tool found in hotbar!"), true);
     }
 
     private void checkTabListForPests(Minecraft client) {
-        if (client.getConnection() == null)
+        if (client.getConnection() == null || isCleaningInProgress)
             return;
 
         java.util.Collection<net.minecraft.client.multiplayer.PlayerInfo> players = client.getConnection()
                 .getListedOnlinePlayers();
         int aliveCount = -1;
         String firstPlot = null;
-        boolean bonusInactive = false;
 
         for (net.minecraft.client.multiplayer.PlayerInfo info : players) {
             String name = "";
             if (info.getTabListDisplayName() != null) {
                 name = info.getTabListDisplayName().getString();
             } else if (info.getProfile() != null) {
-                // Fallback to simple string representation to avoid mapping issues
                 name = String.valueOf(info.getProfile());
             }
 
-            // Strip colors
-            String clean = name.replaceAll("§[0-9a-fk-or]", "").trim();
-
-            // Check "Alive: <N>"
+            String clean = name.replaceAll("Â§[0-9a-fk-or]", "").trim();
             java.util.regex.Matcher aliveMatcher = PESTS_ALIVE_PATTERN.matcher(clean);
             if (aliveMatcher.find()) {
                 try {
@@ -640,14 +572,66 @@ public class IhanuatClient implements ClientModInitializer {
                 }
             }
 
-            // Check "Bonus: INACTIVE"
-            if (clean.contains("Bonus:") && clean.contains("INACTIVE")) {
-                bonusInactive = true;
+            java.util.regex.Matcher cooldownMatcher = COOLDOWN_PATTERN.matcher(clean);
+            if (cooldownMatcher.find()) {
+                int cooldownSeconds = -1;
+                if (cooldownMatcher.group(1).equalsIgnoreCase("READY")) {
+                    cooldownSeconds = 0;
+                } else if (cooldownMatcher.group(2) != null) {
+                    cooldownSeconds = Integer.parseInt(cooldownMatcher.group(2)) * 60
+                            + Integer.parseInt(cooldownMatcher.group(3));
+                } else if (cooldownMatcher.group(4) != null) {
+                    cooldownSeconds = Integer.parseInt(cooldownMatcher.group(4));
+                }
+
+                if (currentState == MacroState.FARMING && cooldownSeconds != -1
+                        && cooldownSeconds > 0 && !prepSwappedForCurrentPestCycle) {
+
+                    boolean shouldEquipOption2 = MacroConfig.autoEquipment && cooldownSeconds <= 170;
+                    boolean shouldWardrobeOnly = !MacroConfig.autoEquipment && MacroConfig.autoWardrobe
+                            && cooldownSeconds <= 8;
+
+                    if (shouldEquipOption2 || shouldWardrobeOnly) {
+                        String msg = shouldEquipOption2 ? "§ePest cooldown <= 2m 50s. Equipping Option 2..."
+                                : "§ePest cooldown <= 8s. Swapping Wardrobe...";
+                        client.player.displayClientMessage(Component.literal(msg), true);
+
+                        prepSwappedForCurrentPestCycle = true;
+
+                        new Thread(() -> {
+                            try {
+                                sendCommand(client, ".ez-stopscript");
+                                Thread.sleep(500); // Wait for script to stop
+
+                                if (shouldEquipOption2) {
+                                    ensureEquipment(client, false); // Option 2 (farmTargets)
+                                    Thread.sleep(1000); // 1s wait for menu
+                                    while (isSwappingEquipment)
+                                        Thread.sleep(50);
+                                    Thread.sleep(500); // 500ms buffer
+                                }
+
+                                if (MacroConfig.autoWardrobe) {
+                                    targetWardrobeSlot = 2;
+                                    isSwappingWardrobe = true;
+                                    wardrobeInteractionTime = 0;
+                                    wardrobeInteractionStage = 0;
+                                    shouldRestartFarmingAfterSwap = true;
+                                    sendCommand(client, "/wardrobe");
+                                } else {
+                                    // Resume farming if no wardrobe swap
+                                    swapToFarmingTool(client);
+                                    sendCommand(client, ".ez-startscript netherwart:1");
+                                }
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        }).start();
+                    }
+                }
             }
 
-            // Check "Plots: <ID>, ..."
             if (clean.startsWith("Plots:")) {
-                // Example: "Plots: 3, 5" -> match 3
                 java.util.regex.Matcher plotMatcher = PLOTS_PATTERN.matcher(clean);
                 if (plotMatcher.find()) {
                     firstPlot = plotMatcher.group(1);
@@ -656,106 +640,92 @@ public class IhanuatClient implements ClientModInitializer {
         }
 
         if (aliveCount >= MacroConfig.pestThreshold && firstPlot != null) {
-            // Trigger Pest Cleaning
-            client.player.displayClientMessage(
-                    Component.literal(
-                            "§cPests detected (" + aliveCount + "). Starting cleaning sequence on Plot " + firstPlot),
-                    true);
+            isCleaningInProgress = true;
             currentState = MacroState.CLEANING;
+            currentInfestedPlot = firstPlot;
 
-            final String plotId = firstPlot;
-            final boolean isBonusInactive = bonusInactive;
+            client.player.displayClientMessage(
+                    Component.literal("Â§cPests detected (" + aliveCount + "). Starting cleaning sequence on Plot "
+                            + currentInfestedPlot),
+                    true);
 
-            // Use a separate thread to avoid blocking the main game loop during sleeps
             new Thread(() -> {
                 try {
-                    if (client.getConnection() != null) {
-                        // Wardrobe Swap Detection Setup
-                        java.util.concurrent.CountDownLatch wardrobeLatch = new java.util.concurrent.CountDownLatch(1);
-                        java.util.concurrent.atomic.AtomicBoolean wardrobeDetected = new java.util.concurrent.atomic.AtomicBoolean(
-                                false);
-
-                        // Temporary listener for Wardrobe Swap
-                        net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents.GAME
-                                .register((message, overlay) -> {
-                                    String msg = message.getString().toLowerCase();
-                                    if (msg.contains("wardrobe swap") && msg.contains("activated")) {
-                                        wardrobeDetected.set(true);
-                                    }
-                                    if (msg.contains("wardrobe swap") && msg.contains("finished")) {
-                                        wardrobeLatch.countDown();
-                                    }
-                                });
-
-                        sleepRandom(4000, 4500); // Wait 4-4.5s before stopping script
-                        if (currentState == MacroState.OFF)
-                            return;
-
-                        // Check if Wardrobe Swap was triggered during the wait
-                        if (wardrobeDetected.get()) {
-                            client.player.displayClientMessage(
-                                    Component.literal("§eWardrobe Swap detected! Waiting for completion..."), true);
-                            wardrobeLatch.await(30, java.util.concurrent.TimeUnit.SECONDS); // 30s timeout safety
-                            Thread.sleep(200); // User requested 200ms delay after finish
-                            if (currentState == MacroState.OFF)
-                                return;
-                        }
-
-                        client.getConnection().sendChat(".ez-stopscript");
-                        sleepRandom(1000, 1000);
-                        if (currentState == MacroState.OFF)
-                            return;
-
-                        client.getConnection().sendChat("/setspawn");
-                        sleepRandom(1000, 1000);
-                        if (currentState == MacroState.OFF)
-                            return;
-
-                        // Start Script EARLY (so it is "on" for the warp sequence)
-                        client.getConnection().sendChat(".ez-startscript misc:pestCleaner");
-                        sleepRandom(1000, 1000);
-                        if (currentState == MacroState.OFF)
-                            return;
-
-                        // Conditional Warp based on Bonus status
-                        if (isBonusInactive) {
-                            client.player.displayClientMessage(Component.literal("§eBonus Inactive! Warping to Barn."),
-                                    true);
-                            client.getConnection().sendChat("/tptoplot barn");
-
-                            // Wait for "Thanks for the" chat message
-                            java.util.concurrent.CountDownLatch latch = new java.util.concurrent.CountDownLatch(1);
-
-                            // Register temporary listener
-                            net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents.GAME
-                                    .register((message, overlay) -> {
-                                        if (latch.getCount() > 0 && message.getString().contains("Thanks for the")) {
-                                            latch.countDown();
-                                        }
-                                    });
-
-                            // Wait with timeout
-                            for (int i = 0; i < 200; i++) { // 10 seconds (200 * 50ms)
-                                if (currentState == MacroState.OFF)
-                                    return;
-                                if (latch.await(50, java.util.concurrent.TimeUnit.MILLISECONDS))
-                                    break;
-                            }
-
-                            if (currentState == MacroState.OFF)
-                                return;
-
-                            // IMMEDIATELY warp to infested plot (no delay)
-                            client.getConnection().sendChat("/tptoplot " + plotId);
-                        } else {
-                            client.getConnection().sendChat("/tptoplot " + plotId);
-                        }
+                    if (MacroConfig.autoWardrobe) {
+                        client.player.displayClientMessage(
+                                Component.literal("Â§eStarting cleaning sequence. Swapping to Wardrobe Slot 1..."),
+                                true);
+                        ensureWardrobeSlot(client, 1);
+                        Thread.sleep(750); // Wait for menu interaction
                     }
-                } catch (InterruptedException e) {
+
+                    // Simple 0.5s wait before starting cleaning sequence
+                    Thread.sleep(500);
+
+                    if (currentState == MacroState.OFF)
+                        return;
+
+                    // Direct sendChat to bypass the 250ms throttler
+                    if (client.getConnection() != null) {
+                        client.getConnection().sendChat(".ez-stopscript");
+                        lastCommandTime = System.currentTimeMillis();
+                    }
+
+                    Thread.sleep(500);
+                    if (currentState == MacroState.OFF)
+                        return;
+
+                    sendCommand(client, "/setspawn");
+                    Thread.sleep(500);
+                    if (currentState == MacroState.OFF)
+                        return;
+
+                    // Swap to Pest Gear before flight
+                    if (MacroConfig.autoEquipment) {
+                        client.player.displayClientMessage(Component.literal("Â§eSwapping to Pest Equipment..."), true);
+                        ensureEquipment(client, true);
+                        Thread.sleep(1000); // Base wait for menu opening
+                        while (isSwappingEquipment)
+                            Thread.sleep(50);
+                    }
+
+                    // Toggle Flight (Double Jump)
+                    isStartingFlight = true;
+                    Thread.sleep(600); // Wait for double jump sequence
+                    while (isStartingFlight)
+                        Thread.sleep(50);
+
+                    // Always warp directly to the plot
+                    sendCommand(client, "/tptoplot " + currentInfestedPlot);
+
+                    Thread.sleep(1150); // Ensure warp is complete (750ms base + 400ms buffer)
+                    if (currentState == MacroState.OFF)
+                        return;
+
+                    sendCommand(client, ".ez-startscript misc:pestCleaner");
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
             }).start();
         }
+    }
+
+    private void sendCommand(Minecraft client, String cmd) {
+        if (client.player == null || client.getConnection() == null)
+            return;
+
+        long now = System.currentTimeMillis();
+        long diff = now - lastCommandTime;
+
+        if (diff < COMMAND_COOLDOWN_MS) {
+            try {
+                Thread.sleep(COMMAND_COOLDOWN_MS - diff);
+            } catch (InterruptedException ignored) {
+            }
+        }
+
+        client.getConnection().sendChat(cmd);
+        lastCommandTime = System.currentTimeMillis();
     }
 
     private void sleepRandom(int min, int max) throws InterruptedException {
@@ -764,20 +734,32 @@ public class IhanuatClient implements ClientModInitializer {
         Thread.sleep(sleepTime);
     }
 
-    private void initiateReturnRotation(Minecraft mc, Vec3 targetPos, long duration) {
+    private void initiateReturnRotation(Minecraft mc, Vec3 targetPos, long minDuration) {
         if (mc.player == null)
             return;
 
         // 1. Clear the instant-look target so updateRotation uses isRotating logic
         returnLookTarget = null;
 
-        // 2. Setup Bezier Rotation
+        // 2. Setup Linear Rotation
         startRot = new RotationUtils.Rotation(mc.player.getYRot(), mc.player.getXRot());
         targetRot = RotationUtils.calculateLookAt(mc.player.getEyePosition(), targetPos);
-        controlRot = RotationUtils.generateControlPoint(startRot, targetRot);
 
+        // 3. Shortest Path Unwrapping: Ensure interpolation doesn't spin the
+        // "long way"
+        targetRot = RotationUtils.getAdjustedEnd(startRot, targetRot);
+
+        // 3. Dynamic Duration Calculation (based on angle distance)
+        float yawDiff = Math.abs(net.minecraft.util.Mth.wrapDegrees(targetRot.yaw - startRot.yaw));
+        float pitchDiff = Math.abs(targetRot.pitch - startRot.pitch);
+        float totalDistance = (float) Math.sqrt(yawDiff * yawDiff + pitchDiff * pitchDiff);
+
+        // duration (ms) = (distance / (speed * 1.5)) * 1000
+        long calculatedDuration = (long) ((totalDistance / ((float) MacroConfig.rotationSpeed * 1.5f)) * 1000f);
+
+        // Use the larger of calculated, requested minimum, or a global 150ms floor
+        rotationDuration = Math.max(150, Math.max(calculatedDuration, minDuration));
         rotationStartTime = System.currentTimeMillis();
-        rotationDuration = duration;
         isRotating = true;
     }
 
@@ -845,12 +827,12 @@ public class IhanuatClient implements ClientModInitializer {
                 double tz2 = MacroConfig.startPos.getZ() + 0.5;
                 Vec3 targetHigh = new Vec3(tx2, ty2, tz2);
 
-                // Lock view to target (instant) after smooth rotation finished
+                // Track target (non-blocking) — camera follows while player moves
                 returnLookTarget = targetHigh;
 
                 // Priority 1: Gated Rotation Wait
                 if (isRotating) {
-                    KeyMapping.set(mc.options.keyUp.getDefaultKey(), false); // Ensure W is off
+                    releaseMovementKeys(mc); // Stop all movement while rotating
                     return;
                 }
 
@@ -869,24 +851,24 @@ public class IhanuatClient implements ClientModInitializer {
 
                 // Debug Info
                 mc.player.displayClientMessage(Component.literal(
-                        String.format("§eMode: HIGH | Dist: %.1f | LOS: %s | TgtY: %.1f",
+                        String.format("Â§eMode: HIGH | Dist: %.1f | LOS: %s | TgtY: %.1f",
                                 distHigh, los ? "YES" : "NO", targetHigh.y)),
                         true);
 
-                // Transition Condition
-                if (distHigh <= 15.0) {
+                // Transition Condition: Distance Gate + LOS OR Forced Proximity Fallback
+                if ((distHigh <= 15.0 && los) || distHigh <= 3.0) {
+                    returnState = ReturnState.FLY_APPROACH;
+                    aspectUsageCount = 0;
+                    initiateReturnRotation(mc, startPosVec, 100);
+
                     if (los) {
-                        returnState = ReturnState.FLY_APPROACH;
-                        aspectUsageCount = 0;
-
-                        initiateReturnRotation(mc, startPosVec, 100);
-
-                        mc.player.displayClientMessage(Component.literal("§aLOS Stable. Rotating to Target..."), true);
+                        mc.player.displayClientMessage(Component.literal("Â§aLOS Established. Approaching..."), true);
+                    } else {
+                        mc.player.displayClientMessage(Component.literal("Â§eProximity Fallback. Forcing Approach..."),
+                                true);
                     }
-                }
-
-                // Phase 1 Action: > 15 blocks -> Aspect every 500ms
-                if (distHigh > 15) {
+                } else {
+                    // Phase 1 Action: > 15 blocks and NO LOS -> Aspect every 500ms to get closer
                     long now = System.currentTimeMillis();
                     if (now - lastAspectUsageTime >= 500) {
                         useAspectItem();
@@ -899,15 +881,18 @@ public class IhanuatClient implements ClientModInitializer {
                 Vec3 startPosVec2 = new Vec3(MacroConfig.startPos.getX() + 0.5, MacroConfig.startPos.getY(),
                         MacroConfig.startPos.getZ() + 0.5);
 
-                // 1. Disable W (Persistent)
-                KeyMapping.set(mc.options.keyUp.getDefaultKey(), false);
+                double dxF = mc.player.getX() - startPosVec2.x;
+                double dzF = mc.player.getZ() - startPosVec2.z;
+                double horizontalDistFinal = Math.sqrt(dxF * dxF + dzF * dzF);
 
-                // 2. Lock View
-                returnLookTarget = startPosVec2;
+                // 1. Track target (non-blocking, with overshoot deadzone)
+                if (horizontalDistFinal >= 1.0) {
+                    returnLookTarget = startPosVec2;
+                }
 
-                // 3. Gated Action: Wait for Rotation
+                // 2. Gated Action: Wait for Rotation
                 if (isRotating) {
-                    // Do nothing (W is off, Aspect is off)
+                    KeyMapping.set(mc.options.keyUp.getDefaultKey(), false);
                     return;
                 }
 
@@ -915,23 +900,52 @@ public class IhanuatClient implements ClientModInitializer {
 
                 // Debug Info
                 mc.player.displayClientMessage(Component.literal(
-                        String.format("§bMode: APPROACH | Dist: %.1f", distFinal)), true);
+                        String.format("Â§bMode: APPROACH | Dist: %.1f", distFinal)), true);
 
-                // 4. Action: Use Aspect if aligned and far enough
-                // Gated: !isRotating (implied here) AND dist > 1.0
-                if (distFinal > 1.0) {
+                // 3. Proximity Pathfinding logic (WASD/Jump/Shift)
+                if (distFinal < 3.0) {
+                    Vec3 detourTarget = getDetourTarget(mc, startPosVec2);
+
+                    // Transition to momentum glide when very close and path is clear
+                    boolean pathClear = detourTarget.distanceTo(startPosVec2) < 0.1;
+
+                    if (horizontalDistFinal < 0.8 && pathClear) {
+                        releaseMovementKeys(mc);
+                    } else {
+                        // Active steering to overcome blockages or align
+                        moveTowards(mc, detourTarget);
+                    }
+                } else {
+                    // Far approach: Use Aspect and simple forward movement logic
+                    // (Actually we usually come from FLY_HIGH which has forward enabled)
+                    // Let's ensure W is on if we are still far
+                    KeyMapping.set(mc.options.keyUp.getDefaultKey(), true);
+
                     long now = System.currentTimeMillis();
-                    if (now - lastAspectUsageTime >= 500) { // Keep 500ms cooldown to avoid spam
+                    if (now - lastAspectUsageTime >= 500) {
                         useAspectItem();
                         lastAspectUsageTime = now;
                     }
                 }
 
-                if (distFinal < 1.0) {
-                    KeyMapping.set(mc.options.keyUp.getDefaultKey(), false); // Release W
+                if (horizontalDistFinal < 0.3) {
+                    releaseMovementKeys(mc);
                     returnState = ReturnState.LANDING_SHIFT;
                     stateStartTime = System.currentTimeMillis();
                     returnLookTarget = null; // Stop looking
+                    isRotating = false; // Stop any active rotation
+
+                    // Snap to precise X/Z
+                    double targetX = MacroConfig.startPos.getX() + 0.5;
+                    double targetZ = MacroConfig.startPos.getZ() + 0.5;
+                    mc.player.setPos(targetX, mc.player.getY(), targetZ);
+                    mc.player.xo = targetX;
+                    mc.player.yo = mc.player.getY();
+                    mc.player.zo = targetZ;
+                    mc.player.xOld = targetX;
+                    mc.player.yOld = mc.player.getY();
+                    mc.player.zOld = targetZ;
+                    mc.player.setDeltaMovement(0, 0, 0); // Reset velocity to prevent sliding
                 }
                 break;
 
@@ -947,15 +961,43 @@ public class IhanuatClient implements ClientModInitializer {
                 break;
 
             case LANDING_WAIT:
-                // Wait 290ms after landing before restarting macro
-                if (System.currentTimeMillis() - stateStartTime >= 290) {
+                // Wait for player to be on the ground AND at least 290ms elapsed
+                boolean onGround = mc.player.onGround();
+                boolean timeElapsed = System.currentTimeMillis() - stateStartTime >= 290;
+
+                if (onGround && timeElapsed) {
+                    // Final position verification: ensure we are actually at the start pos
+                    double landDx = mc.player.getX() - (MacroConfig.startPos.getX() + 0.5);
+                    double landDz = mc.player.getZ() - (MacroConfig.startPos.getZ() + 0.5);
+                    double landHDist = Math.sqrt(landDx * landDx + landDz * landDz);
+
+                    if (landHDist > 0.5) {
+                        // Not close enough, snap position
+                        double snapX = MacroConfig.startPos.getX() + 0.5;
+                        double snapZ = MacroConfig.startPos.getZ() + 0.5;
+                        mc.player.setPos(snapX, mc.player.getY(), snapZ);
+                        mc.player.xo = snapX;
+                        mc.player.yo = mc.player.getY();
+                        mc.player.zo = snapZ;
+                        mc.player.xOld = snapX;
+                        mc.player.yOld = mc.player.getY();
+                        mc.player.zOld = snapZ;
+                        mc.player.setDeltaMovement(0, 0, 0);
+                        mc.player.displayClientMessage(Component.literal("Â§eSnapping to start position..."), true);
+                        stateStartTime = System.currentTimeMillis();
+                        return;
+                    }
+
                     returnState = ReturnState.OFF;
                     currentState = MacroState.FARMING;
                     if (mc.getConnection() != null) {
                         swapToFarmingTool(mc);
                         mc.getConnection().sendChat(".ez-startscript netherwart:1");
                     }
-                    mc.player.displayClientMessage(Component.literal("§aAuto-Restarting Macro: Farming Mode"), true);
+                    mc.player.displayClientMessage(Component.literal("Â§aAuto-Restarting Macro: Farming Mode"), true);
+                } else if (!onGround) {
+                    // Still in the air, keep holding shift to descend
+                    KeyMapping.set(mc.options.keyShift.getDefaultKey(), true);
                 }
                 break;
         }
@@ -1035,7 +1077,7 @@ public class IhanuatClient implements ClientModInitializer {
         // Raytrace block only, ignore fluids
         net.minecraft.world.phys.BlockHitResult result = level.clip(new net.minecraft.world.level.ClipContext(
                 start, target,
-                net.minecraft.world.level.ClipContext.Block.COLLIDER,
+                net.minecraft.world.level.ClipContext.Block.VISUAL,
                 net.minecraft.world.level.ClipContext.Fluid.NONE,
                 player));
 
@@ -1044,25 +1086,91 @@ public class IhanuatClient implements ClientModInitializer {
         // Actually clip returns MISS if nothing hit.
         // If it returns BLOCK, we hit something.
         if (result.getType() == net.minecraft.world.phys.HitResult.Type.BLOCK) {
-            // Check if the hit block is close to target?
-            // Actually user said "Glass and see through blocks count as blockage".
-            // ClipContext.Block.COLLIDER includes glass? No, glass is usually not a
-            // collider for movement but for rays check visual?
-            // Actually, COLLIDER checks physical collision. VISUAL checks visual.
-            // User said "glass ... count as blockage". Glass blocks movement? No, glass is
-            // solid.
-            // Wait, user said "yes glass and see through blocks count as a blockage".
-            // If they mean "Line of Sight", usually means "Can I see it?".
-            // But context is "flying towards it".
-            // Glass blocks movement. So COLLIDER is correct.
-
-            // If hit result is close to target, it's fine.
-            // But clip() stops at the first block.
-            // If result.getLocation() is close to target...
-            // Let's rely on Type.MISS means clear path.
+            // Robust check: If the ray hits a block within 1.0 block of the target center,
+            // it's considered LOS established (we hit the target block or something right
+            // next to it).
+            double distToTarget = result.getLocation().distanceTo(target);
+            if (distToTarget < 1.0) {
+                return true;
+            }
             return false;
         }
         return true;
+    }
+
+    private void handlePestCleaningFinished(Minecraft client) {
+        client.player.displayClientMessage(Component.literal("Â§aPest cleaning finished detected."), true);
+
+        new Thread(() -> {
+            try {
+                int visitors = getVisitorCount(client);
+                if (visitors >= MacroConfig.visitorThreshold) {
+                    client.player.displayClientMessage(
+                            Component.literal(
+                                    "Â§dVisitor Threshold Met (" + visitors + "). Starting Visitor Sequence..."),
+                            true);
+
+                    isStoppingFlight = true;
+                    Thread.sleep(600);
+                    while (isStoppingFlight)
+                        Thread.sleep(50);
+
+                    Thread.sleep(750);
+                    swapToFarmingTool(client);
+                    Thread.sleep(500);
+
+                    sendCommand(client, ".ez-startscript misc:visitor");
+                } else {
+                    client.player.displayClientMessage(
+                            Component.literal("Â§eVisitor count (" + visitors + ") low. Warping Garden."), true);
+
+                    isStoppingFlight = true;
+                    Thread.sleep(600);
+                    while (isStoppingFlight)
+                        Thread.sleep(50);
+
+                    sendCommand(client, "/warp garden");
+                    Thread.sleep(750);
+
+                    finalizeReturnToFarm(client);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }).start();
+    }
+
+    private void handleVisitorScriptFinished(Minecraft client) {
+        client.player.displayClientMessage(Component.literal("Â§aVisitor sequence complete. Returning to farm..."),
+                true);
+        new Thread(() -> {
+            try {
+                sendCommand(client, "/warp garden");
+                Thread.sleep(1500);
+                finalizeReturnToFarm(client);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }).start();
+    }
+
+    private void finalizeReturnToFarm(Minecraft client) {
+        prepSwappedForCurrentPestCycle = false;
+        if (currentState == MacroState.OFF)
+            return;
+
+        if (isInEndRow(client)) {
+            client.player.displayClientMessage(
+                    Component.literal("§cDetected same row as End Position! Triggering early return..."), true);
+            isCleaningInProgress = false; // Reset flag before early return
+            returnState = ReturnState.TP_START;
+            returnTickCounter = 0;
+        } else {
+            swapToFarmingTool(client);
+            sendCommand(client, ".ez-startscript netherwart:1");
+            isCleaningInProgress = false; // Reset flag after script start
+            currentState = MacroState.FARMING;
+        }
     }
 
     private void stopMacro(Minecraft client) {
@@ -1076,6 +1184,15 @@ public class IhanuatClient implements ClientModInitializer {
         flightStopStage = 0;
         flightStopTicks = 0;
         isRotating = false;
+        isCleaningInProgress = false;
+        prepSwappedForCurrentPestCycle = false;
+        isSwappingWardrobe = false;
+        shouldRestartFarmingAfterSwap = false;
+        wardrobeOpenPendingTime = 0;
+        wardrobeCleanupTicks = 0;
+        targetWardrobeSlot = -1;
+        wardrobeInteractionTime = 0;
+        wardrobeInteractionStage = 0;
         returnLookTarget = null;
 
         // Release keys
@@ -1095,14 +1212,15 @@ public class IhanuatClient implements ClientModInitializer {
         }
 
         if (client.player != null) {
-            client.player.displayClientMessage(Component.literal("§cMacro Stopped Forcefully"), true);
+            client.player.displayClientMessage(Component.literal("Â§cMacro Stopped Forcefully"), true);
         }
     }
 
     private Screen createConfigScreen(Screen parent) {
         ConfigBuilder builder = ConfigBuilder.create()
                 .setParentScreen(parent)
-                .setTitle(Component.literal("Ihanuat Config"));
+                .setTitle(Component.literal("Ihanuat Config"))
+                .setSavingRunnable(MacroConfig::save);
 
         ConfigCategory general = builder.getOrCreateCategory(Component.literal("General"));
 
@@ -1120,10 +1238,38 @@ public class IhanuatClient implements ClientModInitializer {
                 .setSaveConsumer(newValue -> MacroConfig.visitorThreshold = newValue)
                 .build());
 
+        // Rotation Speed Slider
+        general.addEntry(builder.getEntryBuilder()
+                .startIntSlider(Component.literal("Rotation Speed (deg/s)"), MacroConfig.rotationSpeed, 10, 2000)
+                .setDefaultValue(200)
+                .setSaveConsumer(newValue -> MacroConfig.rotationSpeed = newValue)
+                .build());
+
+        // Auto-Wardrobe Toggle
+        general.addEntry(builder.getEntryBuilder()
+                .startBooleanToggle(Component.literal("Auto-Wardrobe"), MacroConfig.autoWardrobe)
+                .setDefaultValue(false)
+                .setSaveConsumer(newValue -> MacroConfig.autoWardrobe = newValue)
+                .build());
+
+        // Auto-Visitor Toggle
+        general.addEntry(builder.getEntryBuilder()
+                .startBooleanToggle(Component.literal("Auto-Visitor"), MacroConfig.autoVisitor)
+                .setDefaultValue(true)
+                .setSaveConsumer(newValue -> MacroConfig.autoVisitor = newValue)
+                .build());
+
+        // Auto-Equipment Toggle
+        general.addEntry(builder.getEntryBuilder()
+                .startBooleanToggle(Component.literal("Auto-Equipment"), MacroConfig.autoEquipment)
+                .setDefaultValue(true)
+                .setSaveConsumer(newValue -> MacroConfig.autoEquipment = newValue)
+                .build());
+
         // Start Position Capture
         general.addEntry(new ButtonEntry(
-                Component.literal("§eCapture Start Position"),
-                Component.literal("§7Current: §f" + MacroConfig.startPos.toShortString() + " §7Plot: §f"
+                Component.literal("Â§eCapture Start Position"),
+                Component.literal("Â§7Current: Â§f" + MacroConfig.startPos.toShortString() + " Â§7Plot: Â§f"
                         + MacroConfig.startPlot),
                 btn -> {
                     Minecraft client = Minecraft.getInstance();
@@ -1138,8 +1284,8 @@ public class IhanuatClient implements ClientModInitializer {
 
         // End Position Capture
         general.addEntry(new ButtonEntry(
-                Component.literal("§bCapture End Position"),
-                Component.literal("§7Current: §f" + MacroConfig.endPos.toShortString() + " §7Plot: §f"
+                Component.literal("Â§bCapture End Position"),
+                Component.literal("Â§7Current: Â§f" + MacroConfig.endPos.toShortString() + " Â§7Plot: Â§f"
                         + MacroConfig.endPlot),
                 btn -> {
                     Minecraft client = Minecraft.getInstance();
@@ -1207,5 +1353,300 @@ public class IhanuatClient implements ClientModInitializer {
         @Override
         public void save() {
         }
+    }
+
+    private void ensureWardrobeSlot(Minecraft client, int slot) {
+        if (client.player == null)
+            return;
+        targetWardrobeSlot = slot;
+        isSwappingWardrobe = true;
+        wardrobeInteractionTime = 0;
+        wardrobeInteractionStage = 0;
+        shouldRestartFarmingAfterSwap = false; // Default, can be overridden by caller
+        client.player.connection.sendChat("/wardrobe");
+    }
+
+    private void handleWardrobeMenu(Minecraft client, AbstractContainerScreen<?> screen) {
+        if (!isSwappingWardrobe || targetWardrobeSlot == -1)
+            return;
+
+        String title = screen.getTitle().getString();
+        if (!title.contains("Wardrobe"))
+            return;
+
+        // Initialize time on first frame the screen is detected
+        if (wardrobeInteractionTime == 0) {
+            wardrobeInteractionTime = System.currentTimeMillis();
+            return;
+        }
+
+        // Wait delays based on stage
+        long currentDelay = 750; // Change to set: 750ms
+        if (wardrobeInteractionStage == 1) {
+            currentDelay = 500; // Change to close: 500ms
+        }
+
+        if (System.currentTimeMillis() - wardrobeInteractionTime < currentDelay) {
+            return;
+        }
+
+        // Search for the slot button
+        Slot targetSlotObj = null;
+        Slot closeSlotObj = null;
+
+        for (Slot slot : screen.getMenu().slots) {
+            if (!slot.hasItem())
+                continue;
+            String itemName = slot.getItem().getHoverName().getString();
+
+            if (itemName.contains("Slot " + targetWardrobeSlot + ":")) {
+                targetSlotObj = slot;
+                if (itemName.contains("Equipped")) {
+                    // Already equipped, just close
+                    isSwappingWardrobe = false;
+                    targetWardrobeSlot = -1;
+                    wardrobeCleanupTicks = 10;
+                    client.setScreen(null);
+                    return;
+                }
+            }
+
+            if (itemName.contains("Close") || itemName.contains("Go Back")) {
+                closeSlotObj = slot;
+            }
+        }
+
+        if (targetSlotObj != null) {
+            if (wardrobeInteractionStage == 0) {
+                // Click the slot
+                client.gameMode.handleInventoryMouseClick(screen.getMenu().containerId, targetSlotObj.index, 0,
+                        ClickType.PICKUP, client.player);
+                wardrobeInteractionTime = System.currentTimeMillis();
+                wardrobeInteractionStage = 1; // Wait for close click
+            } else if (wardrobeInteractionStage == 1) {
+                // Phase 1: Click the Close button
+                if (closeSlotObj != null) {
+                    client.gameMode.handleInventoryMouseClick(screen.getMenu().containerId, closeSlotObj.index, 0,
+                            ClickType.PICKUP, client.player);
+                }
+
+                wardrobeInteractionTime = System.currentTimeMillis();
+                wardrobeInteractionStage = 2; // Move to protocol reset phase
+            } else if (wardrobeInteractionStage == 2) {
+                // Phase 2: Protocol-level reset to clear any potentially stuck cursor items
+                int containerId = screen.getMenu().containerId;
+
+                // Standard protocol reset: Click outside slot (-999) for both wardrobe and
+                // player inventory
+                client.gameMode.handleInventoryMouseClick(containerId, -999, 0, ClickType.PICKUP, client.player);
+                client.gameMode.handleInventoryMouseClick(0, -999, 0, ClickType.PICKUP, client.player);
+
+                // Ensure client-side carried state is clear
+                if (client.player != null) {
+                    if (client.player.containerMenu != null)
+                        client.player.containerMenu.setCarried(net.minecraft.world.item.ItemStack.EMPTY);
+                    if (client.player.inventoryMenu != null)
+                        client.player.inventoryMenu.setCarried(net.minecraft.world.item.ItemStack.EMPTY);
+                }
+
+                isSwappingWardrobe = false;
+                targetWardrobeSlot = -1;
+                wardrobeInteractionTime = System.currentTimeMillis(); // Reset for post-close delay
+                wardrobeInteractionStage = 3; // Move to final cleanup phase
+                wardrobeCleanupTicks = 20; // Trigger extended restoration period (1s)
+
+                // Explicitly close the GUI to ensure state synchronization
+                client.setScreen(null);
+
+                if (client.mouseHandler != null) {
+                    client.mouseHandler.releaseMouse();
+                }
+            }
+        }
+    }
+
+    private void ensureEquipment(Minecraft client, boolean toPest) {
+        if (!MacroConfig.autoEquipment)
+            return;
+        isSwappingEquipment = true;
+        swappingToPestGear = toPest;
+        equipmentInteractionStage = 0;
+        equipmentInteractionTime = 0;
+        equipmentTargetIndex = 0;
+        client.player.connection.sendChat("/eq");
+    }
+
+    private void handleEquipmentMenu(Minecraft client, AbstractContainerScreen<?> screen) {
+        if (!isSwappingEquipment)
+            return;
+
+        String title = screen.getTitle().getString();
+        if (!title.contains("Equipment"))
+            return;
+
+        // Initialize time on first frame
+        if (equipmentInteractionTime == 0) {
+            equipmentInteractionTime = System.currentTimeMillis();
+            return;
+        }
+
+        // 700ms delay between clicks
+        if (System.currentTimeMillis() - equipmentInteractionTime < 700) {
+            return;
+        }
+
+        // Precise target groups per click index
+        String[][] pestTargets = {
+                { "Lotus Bracelet", "Blossom Bracelet" },
+                { "Lotus Belt", "Blossom Belt" },
+                { "Lotus Necklace", "Blossom Necklace" },
+                { "Lotus Cloak", "Blossom Cloak" }
+        };
+        String[][] farmTargets = {
+                { "Pesthunter's Necklace" },
+                { "Pesthunter's Belt" },
+                { "Pesthunter's Gloves" },
+                { "Pest Vest" }
+        };
+
+        if (equipmentTargetIndex < 4) {
+            // Search for the current target piece group
+            Slot targetSlotObj = null;
+            String[] currentTargetGroup = swappingToPestGear ? pestTargets[equipmentTargetIndex]
+                    : farmTargets[equipmentTargetIndex];
+
+            for (Slot slot : screen.getMenu().slots) {
+                if (!slot.hasItem() || slot.index < 54)
+                    continue;
+                String itemName = slot.getItem().getHoverName().getString();
+
+                for (String pattern : currentTargetGroup) {
+                    if (itemName.contains(pattern)) {
+                        targetSlotObj = slot;
+                        break;
+                    }
+                }
+                if (targetSlotObj != null)
+                    break;
+            }
+
+            if (targetSlotObj != null) {
+                client.gameMode.handleInventoryMouseClick(screen.getMenu().containerId, targetSlotObj.index, 0,
+                        ClickType.PICKUP, client.player);
+                equipmentInteractionTime = System.currentTimeMillis();
+                equipmentTargetIndex++;
+            } else {
+                // If not found, skip to next index to avoid getting stuck
+                equipmentTargetIndex++;
+                equipmentInteractionTime = System.currentTimeMillis();
+            }
+        } else {
+            // All 4 clicks done, close and cleanup
+            isSwappingEquipment = false;
+            wardrobeCleanupTicks = 10;
+            client.setScreen(null);
+        }
+    }
+
+    private void releaseMovementKeys(Minecraft mc) {
+        if (mc.options == null)
+            return;
+        KeyMapping.set(mc.options.keyUp.getDefaultKey(), false);
+        KeyMapping.set(mc.options.keyDown.getDefaultKey(), false);
+        KeyMapping.set(mc.options.keyLeft.getDefaultKey(), false);
+        KeyMapping.set(mc.options.keyRight.getDefaultKey(), false);
+        KeyMapping.set(mc.options.keyJump.getDefaultKey(), false);
+        KeyMapping.set(mc.options.keyShift.getDefaultKey(), false);
+    }
+
+    private void moveTowards(Minecraft mc, Vec3 target) {
+        if (mc.player == null)
+            return;
+
+        double deltaX = target.x - mc.player.getX();
+        double deltaZ = target.z - mc.player.getZ();
+
+        // Calculate angle to target in degrees (0 to 360)
+        double angleToTarget = Math.toDegrees(Math.atan2(-deltaX, deltaZ));
+        float playerYaw = mc.player.getYRot();
+
+        // Calculate relative angle (-180 to 180)
+        double relativeAngle = net.minecraft.util.Mth.wrapDegrees(angleToTarget - playerYaw);
+
+        // Movement Key Mapping logic:
+        // Forward (W): -45 to 45
+        // Backward (S): 135 to -135
+        // Left (A): -135 to -45
+        // Right (D): 45 to 135
+
+        boolean w = relativeAngle > -67.5 && relativeAngle < 67.5;
+        boolean s = relativeAngle > 112.5 || relativeAngle < -112.5;
+        boolean a = relativeAngle > -157.5 && relativeAngle < -22.5;
+        boolean d = relativeAngle > 22.5 && relativeAngle < 157.5;
+
+        KeyMapping.set(mc.options.keyUp.getDefaultKey(), w);
+        KeyMapping.set(mc.options.keyDown.getDefaultKey(), s);
+        KeyMapping.set(mc.options.keyLeft.getDefaultKey(), a);
+        KeyMapping.set(mc.options.keyRight.getDefaultKey(), d);
+
+        // Vertical Movement
+        double deltaY = target.y - mc.player.getY();
+        boolean jump = deltaY > 0.3;
+        boolean sneak = deltaY < -0.3;
+        KeyMapping.set(mc.options.keyJump.getDefaultKey(), jump);
+        KeyMapping.set(mc.options.keyShift.getDefaultKey(), sneak);
+    }
+
+    private Vec3 getDetourTarget(Minecraft mc, Vec3 target) {
+        if (mc.level == null || mc.player == null)
+            return target;
+
+        Vec3 start = mc.player.getEyePosition();
+
+        // Raytrace to check for blocks between eye and target
+        net.minecraft.world.phys.BlockHitResult result = mc.level.clip(new net.minecraft.world.level.ClipContext(
+                start, target,
+                net.minecraft.world.level.ClipContext.Block.COLLIDER,
+                net.minecraft.world.level.ClipContext.Fluid.NONE,
+                mc.player));
+
+        if (result.getType() == net.minecraft.world.phys.HitResult.Type.MISS) {
+            return target;
+        }
+
+        // If blocked, search for a detour point
+        BlockPos playerPos = mc.player.blockPosition();
+
+        // Search offsets: favored directions (higher, or closer to target)
+        int[][] searchOffsets = {
+                { 0, 1, 0 }, // Up
+                { 1, 0, 0 }, { -1, 0, 0 }, { 0, 0, 1 }, { 0, 0, -1 }, // Horizontal
+                { 1, 1, 0 }, { -1, 1, 0 }, { 0, 1, 1 }, { 0, 1, -1 }, // Up-Diagonal
+                { 0, 2, 0 }, // High Up
+                { 1, -1, 0 }, { -1, -1, 0 }, { 0, -1, 1 }, { 0, -1, -1 } // Down-Diagonal
+        };
+
+        for (int[] off : searchOffsets) {
+            BlockPos check = playerPos.offset(off[0], off[1], off[2]);
+            // Ensure the detour point is air and has a clear path from us
+            if (mc.level.getBlockState(check).isAir()) {
+                Vec3 detourVec = new Vec3(check.getX() + 0.5, check.getY() + 0.5, check.getZ() + 0.5);
+
+                // Final check: is this detour point clear from our eyes?
+                net.minecraft.world.phys.BlockHitResult detourRes = mc.level
+                        .clip(new net.minecraft.world.level.ClipContext(
+                                start, detourVec,
+                                net.minecraft.world.level.ClipContext.Block.COLLIDER,
+                                net.minecraft.world.level.ClipContext.Fluid.NONE,
+                                mc.player));
+
+                if (detourRes.getType() == net.minecraft.world.phys.HitResult.Type.MISS) {
+                    mc.player.displayClientMessage(Component.literal("Â§7Approach Detour: Avoiding blockage..."), true);
+                    return detourVec;
+                }
+            }
+        }
+
+        return target; // Fallback
     }
 }
