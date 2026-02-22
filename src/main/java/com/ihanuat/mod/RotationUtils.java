@@ -40,27 +40,20 @@ public class RotationUtils {
      * Bezier curve.
      */
     public static Rotation calculateBezierPoint(float t, Rotation start, Rotation end, Rotation control) {
-        float oneMinusT = 1 - t;
+        // Apply cubic easing for smoother start/end (Ease-In-Out)
+        // Formula: f(t) = t^2 * (3 - 2t)
+        float easedT = t * t * (3 - 2 * t);
+        float oneMinusT = 1 - easedT;
 
         // Quadratic Bezier Formula: B(t) = (1-t)^2 * P0 + 2(1-t)t * P1 + t^2 * P2
 
-        // Interpolate Yaw
-        // We need to handle wrapping for yaw, but since control point generation
-        // handles the direction,
-        // we can assume the raw values are "unwrapped" relative to each other if we
-        // prepared them right.
-        // However, for simplicity here, we'll just interpolate the raw values.
-        // A better approach for the control point generation is to ensure 'end' and
-        // 'control' are
-        // adjusted to be close to 'start' (handling the 360 wrap).
-
         float yaw = (oneMinusT * oneMinusT * start.yaw) +
-                (2 * oneMinusT * t * control.yaw) +
-                (t * t * end.yaw);
+                (2 * oneMinusT * easedT * control.yaw) +
+                (easedT * easedT * end.yaw);
 
         float pitch = (oneMinusT * oneMinusT * start.pitch) +
-                (2 * oneMinusT * t * control.pitch) +
-                (t * t * end.pitch);
+                (2 * oneMinusT * easedT * control.pitch) +
+                (easedT * easedT * end.pitch);
 
         return new Rotation(yaw, pitch);
     }
