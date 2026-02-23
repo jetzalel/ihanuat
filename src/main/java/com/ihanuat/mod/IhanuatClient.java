@@ -2600,7 +2600,6 @@ public class IhanuatClient implements ClientModInitializer {
                     returnState = ReturnState.OFF;
 
                     if (isProactiveReturnPending) {
-                        isProactiveReturnPending = false;
                         triggerPestGearSwap(mc);
                         mc.player.displayClientMessage(
                                 Component.literal("Â§eReturn complete. Triggering pending gear swap..."), true);
@@ -3005,6 +3004,8 @@ public class IhanuatClient implements ClientModInitializer {
     }
 
     private void startFarmingWithGearCheck(Minecraft client) {
+        if (isProactiveReturnPending)
+            return; // Prevent normal restart if proactive swap is booked
 
         new Thread(() -> {
 
@@ -3123,6 +3124,7 @@ public class IhanuatClient implements ClientModInitializer {
 
         new Thread(() -> {
             try {
+                isProactiveReturnPending = false; // Consume the booking now that we are in the thread
                 if (isCleaningInProgress)
                     return;
                 Thread.sleep(100);
