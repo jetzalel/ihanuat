@@ -2623,27 +2623,27 @@ public class IhanuatClient implements ClientModInitializer {
     // Helper: Row Safeguard
 
     private boolean isInEndRow(Minecraft client) {
-
-        if (client.player == null || MacroConfig.endPos == null)
-
+        if (client.player == null || MacroConfig.startPos == null || MacroConfig.endPos == null)
             return false;
 
         double currentX = client.player.getX();
-
         double currentZ = client.player.getZ();
 
+        double startX = MacroConfig.startPos.getX() + 0.5;
+        double startZ = MacroConfig.startPos.getZ() + 0.5;
         double endX = MacroConfig.endPos.getX() + 0.5;
-
         double endZ = MacroConfig.endPos.getZ() + 0.5;
 
-        // Check if X or Z matches within 1.0 block
+        double deltaX = Math.abs(startX - endX);
+        double deltaZ = Math.abs(startZ - endZ);
 
-        boolean xMatch = Math.abs(currentX - endX) < 1.0;
-
-        boolean zMatch = Math.abs(currentZ - endZ) < 1.0;
-
-        return xMatch || zMatch;
-
+        if (deltaX < deltaZ) {
+            // Z is the primary axis of displacement. Match Z against end row.
+            return Math.abs(currentZ - endZ) < 2.0;
+        } else {
+            // X is the primary axis of displacement. Match X against end row.
+            return Math.abs(currentX - endX) < 2.0;
+        }
     }
 
     // Helper: Perform Double Jump (Toggle Flight)
