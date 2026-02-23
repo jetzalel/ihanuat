@@ -1303,6 +1303,8 @@ public class IhanuatClient implements ClientModInitializer {
                     isStoppingFlight = false;
                     flightStopStage = 0;
                     flightStopTicks = 0;
+                    if (client.options.keyJump != null)
+                        KeyMapping.set(client.options.keyJump.getDefaultKey(), false);
                     return;
                 }
                 flightStopTicks++;
@@ -1384,15 +1386,12 @@ public class IhanuatClient implements ClientModInitializer {
             if (currentState != MacroState.OFF && isStartingFlight) {
                 if ((client.player != null && client.player.getAbilities().flying)
                         || performFlightToggle(client, true)) {
-
                     isStartingFlight = false;
-
                     flightToggleStage = 0;
-
                     flightToggleTicks = 0;
-
+                    if (client.options.keyJump != null)
+                        KeyMapping.set(client.options.keyJump.getDefaultKey(), false);
                 }
-
             }
 
         });
@@ -2257,7 +2256,8 @@ public class IhanuatClient implements ClientModInitializer {
 
             case FLIGHT_START:
                 if (mc.player.getAbilities().flying || performFlightToggle(mc, true)) {
-
+                    if (mc.options.keyJump != null)
+                        KeyMapping.set(mc.options.keyJump.getDefaultKey(), false);
                     returnState = ReturnState.ALIGN_WAIT;
 
                     // Trigger Smooth Rotation to High Target (230ms)
@@ -2675,15 +2675,11 @@ public class IhanuatClient implements ClientModInitializer {
             }
 
             // Stage 3: Release Space and Finish
-
             else if (flightToggleStage == 3) {
-
                 if (flightToggleTicks == 1)
-
                     KeyMapping.set(mc.options.keyJump.getDefaultKey(), false);
-
-                return true;
-
+                if (flightToggleTicks >= 2)
+                    return true;
             }
 
         }
