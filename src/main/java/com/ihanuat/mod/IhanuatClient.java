@@ -812,7 +812,8 @@ public class IhanuatClient implements ClientModInitializer {
 
                                 // or if we know we previously swapped away.
 
-                                if (MacroConfig.autoWardrobe && prepSwappedForCurrentPestCycle) {
+                                if (MacroConfig.autoWardrobe && prepSwappedForCurrentPestCycle
+                                        && trackedWardrobeSlot != 1) {
 
                                     client.execute(() -> ensureWardrobeSlot(client, 1));
 
@@ -3018,7 +3019,7 @@ public class IhanuatClient implements ClientModInitializer {
             try {
                 shouldRestartFarmingAfterSwap = false; // Prevent tick handler from sending duplicate startscript
 
-                if (MacroConfig.autoWardrobe && prepSwappedForCurrentPestCycle) {
+                if (MacroConfig.autoWardrobe && prepSwappedForCurrentPestCycle && trackedWardrobeSlot != 1) {
 
                     client.player.displayClientMessage(Component.literal("§eRestoring Farming Wardrobe (Slot 1)..."),
                             true);
@@ -3039,7 +3040,8 @@ public class IhanuatClient implements ClientModInitializer {
 
                 }
 
-                if (MacroConfig.autoEquipment && prepSwappedForCurrentPestCycle) {
+                if (MacroConfig.autoEquipment && prepSwappedForCurrentPestCycle
+                        && !Boolean.FALSE.equals(trackedIsPestGear)) {
 
                     client.player.displayClientMessage(Component.literal("§eRestoring Farming Accessories..."), true);
 
