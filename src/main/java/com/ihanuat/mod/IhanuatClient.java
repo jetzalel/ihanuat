@@ -1817,7 +1817,8 @@ public class IhanuatClient implements ClientModInitializer {
                 }
 
                 if (currentState == MacroState.FARMING && cooldownSeconds != -1
-                        && cooldownSeconds > 0 && !isCleaningInProgress && returnState == ReturnState.OFF) {
+                        && cooldownSeconds > 0 && !isCleaningInProgress && !prepSwappedForCurrentPestCycle
+                        && returnState == ReturnState.OFF) {
 
                     boolean shouldEquipSoon = MacroConfig.autoEquipment && cooldownSeconds <= 180;
                     boolean shouldWardrobeSoon = (!MacroConfig.autoEquipment && MacroConfig.autoWardrobe
@@ -1833,6 +1834,7 @@ public class IhanuatClient implements ClientModInitializer {
                                 if (currentState == MacroState.FARMING || currentState == MacroState.OFF) {
                                     synchronized (IhanuatClient.class) {
                                         isCleaningInProgress = false;
+                                        prepSwappedForCurrentPestCycle = true;
                                         shouldRestartFarmingAfterSwap = false;
                                         returnState = ReturnState.TP_START;
                                         returnTickCounter = 0;
