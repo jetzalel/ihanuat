@@ -479,6 +479,7 @@ public class IhanuatClient implements ClientModInitializer {
     private static volatile long wardrobeOpenPendingTime = 0;
 
     private static volatile int wardrobeCleanupTicks = 0;
+    private static volatile int trackedWardrobeSlot = -1; // -1 = Unknown, 1 = Farming, 2 = Pest
 
     private static volatile boolean isStartingFlight = false;
 
@@ -493,6 +494,7 @@ public class IhanuatClient implements ClientModInitializer {
     private static volatile boolean swappingToPestGear = false;
 
     private static volatile int equipmentTargetIndex = 0; // 0-3 for the 4 pieces
+    private static volatile Boolean trackedIsPestGear = null; // null = Unknown, true = Pest, false = Farming
 
     @Override
 
@@ -3500,10 +3502,14 @@ public class IhanuatClient implements ClientModInitializer {
     }
 
     private void ensureWardrobeSlot(Minecraft client, int slot) {
-
         if (client.player == null)
-
             return;
+
+        if (trackedWardrobeSlot == slot) {
+            // Already there, but if we are here via a script restart,
+            // we should still trigger the 'finished' cleanup if needed.
+            return;
+        }
 
         targetWardrobeSlot = slot;
 
@@ -3697,6 +3703,7 @@ public class IhanuatClient implements ClientModInitializer {
 
                 // Explicitly close the GUI to ensure state synchronization
 
+                trackedWardrobeSlot = targetWardrobeSlot; // Update tracked state
                 client.setScreen(null);
 
                 if (client.mouseHandler != null) {
@@ -3712,10 +3719,12 @@ public class IhanuatClient implements ClientModInitializer {
     }
 
     private void ensureEquipment(Minecraft client, boolean toPest) {
-
         if (!MacroConfig.autoEquipment)
-
             return;
+
+        if (trackedIsPestGear != null && trackedIsPestGear == toPest) {
+            return;
+        }
 
         isSwappingEquipment = true;
 
@@ -3931,6 +3940,7 @@ public class IhanuatClient implements ClientModInitializer {
 
                 }
 
+                trackedIsPestGear = swappingToPestGear; // Update tracked state
                 equipmentInteractionStage = 3; // Done
 
             }
