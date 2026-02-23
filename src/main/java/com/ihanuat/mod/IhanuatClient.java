@@ -1,7 +1,5 @@
 package com.ihanuat.mod;
 
-
-
 import me.shedaniel.clothconfig2.api.ConfigBuilder;
 
 import me.shedaniel.clothconfig2.api.ConfigCategory;
@@ -42,15 +40,9 @@ import net.minecraft.world.inventory.Slot;
 
 import net.minecraft.world.inventory.ClickType;
 
-
-
 public class IhanuatClient implements ClientModInitializer {
 
-
-
     private static KeyMapping configKey;
-
-
 
     // Pest Control State
 
@@ -66,11 +58,7 @@ public class IhanuatClient implements ClientModInitializer {
 
     }
 
-
-
     private static volatile MacroState currentState = MacroState.OFF;
-
-
 
     // Return Sequence State
 
@@ -100,8 +88,6 @@ public class IhanuatClient implements ClientModInitializer {
 
     }
 
-
-
     private static volatile ReturnState returnState = ReturnState.OFF;
 
     private static int returnTickCounter = 0;
@@ -118,13 +104,9 @@ public class IhanuatClient implements ClientModInitializer {
 
     private static volatile long stateStartTime = 0; // Generic timer for states
 
-
-
     // Return Sequence Look Target
 
     private static Vec3 returnLookTarget = null;
-
-
 
     // Movement Simulation
 
@@ -134,8 +116,6 @@ public class IhanuatClient implements ClientModInitializer {
 
     private static final double MOVE_TARGET_DISTANCE = 5.0;
 
-
-
     // Flight Stop Logic
 
     private static volatile boolean isStoppingFlight = false;
@@ -143,8 +123,6 @@ public class IhanuatClient implements ClientModInitializer {
     private static volatile int flightStopStage = 0;
 
     private static volatile int flightStopTicks = 0;
-
-
 
     // Rotation Logic
 
@@ -159,8 +137,6 @@ public class IhanuatClient implements ClientModInitializer {
     private static long rotationDuration;
 
     private static long lastRotationUpdateTime = 0;
-
-
 
     // Regex for Pest Control
 
@@ -180,8 +156,6 @@ public class IhanuatClient implements ClientModInitializer {
 
             .compile("Cooldown:\\s*(READY|(\\d+)m\\s*(\\d+)s|(\\d+)s)");
 
-
-
     // Stability & Gating
 
     private static long lastCommandTime = 0;
@@ -198,8 +172,6 @@ public class IhanuatClient implements ClientModInitializer {
 
     private static volatile boolean prepSwappedForCurrentPestCycle = false;
 
-
-
     private static volatile int currentPestSessionId = 0;
 
     private static volatile long swapSecurityTimer = 0;
@@ -214,23 +186,17 @@ public class IhanuatClient implements ClientModInitializer {
 
     private static boolean hasCheckedPersistenceOnJoin = false;
 
-
-
     public static boolean isMacroRunning() {
 
         return currentState != MacroState.OFF;
 
     }
 
-
-
     public static boolean isIntentionalDisconnect() {
 
         return intentionalDisconnect;
 
     }
-
-
 
     // Recovery State
 
@@ -240,15 +206,11 @@ public class IhanuatClient implements ClientModInitializer {
 
     private static Location lastRecoveryLocation = Location.UNKNOWN;
 
-
-
     private enum Location {
 
         GARDEN, HUB, LOBBY, LIMBO, UNKNOWN
 
     }
-
-
 
     // Plot helper (Deprecated since rollback, but keeping for references)
 
@@ -258,15 +220,11 @@ public class IhanuatClient implements ClientModInitializer {
 
     }
 
-
-
     private static Location getCurrentLocation(Minecraft client) {
 
         if (client.level == null || client.player == null)
 
             return Location.UNKNOWN;
-
-
 
         net.minecraft.world.scores.Scoreboard scoreboard = client.level.getScoreboard();
 
@@ -276,15 +234,11 @@ public class IhanuatClient implements ClientModInitializer {
 
                 : null;
 
-
-
         // Limbo has no sidebar
 
         if (sidebar == null)
 
             return Location.LIMBO;
-
-
 
         // Check for Game Menu and My Profile in hotbar for Lobby
 
@@ -320,8 +274,6 @@ public class IhanuatClient implements ClientModInitializer {
 
         }
 
-
-
         // Parse Tab List for Area:
 
         if (client.getConnection() != null) {
@@ -344,8 +296,6 @@ public class IhanuatClient implements ClientModInitializer {
 
                 }
 
-
-
                 String clean = name.replaceAll("Â§[0-9a-fk-or]", "").trim();
 
                 if (clean.contains("Area: Garden"))
@@ -356,15 +306,13 @@ public class IhanuatClient implements ClientModInitializer {
 
                     return Location.HUB; // If we see "Area:" and it's not Garden, we treat it as HUB so it sends /warp
 
-                                         // garden
+                    // garden
 
                 }
 
             }
 
         }
-
-
 
         // If sidebar exists but we didn't match the others, just fallback to HUB to try
 
@@ -373,8 +321,6 @@ public class IhanuatClient implements ClientModInitializer {
         return Location.HUB;
 
     }
-
-
 
     // Delayed Restart State
 
@@ -386,23 +332,17 @@ public class IhanuatClient implements ClientModInitializer {
 
     private static long nextRestartActionTime = 0;
 
-
-
     private static long getContestRemainingMs(Minecraft client) {
 
         if (client.level == null || client.player == null)
 
             return 0;
 
-
-
         net.minecraft.world.scores.Scoreboard scoreboard = client.level.getScoreboard();
 
         if (scoreboard == null)
 
             return 0;
-
-
 
         net.minecraft.world.scores.Objective sidebar = scoreboard
 
@@ -412,13 +352,9 @@ public class IhanuatClient implements ClientModInitializer {
 
             return 0;
 
-
-
         java.util.Collection<net.minecraft.world.scores.PlayerScoreEntry> scores = scoreboard.listPlayerScores(sidebar);
 
         boolean foundContestHeader = false;
-
-
 
         // Iterate through scores (these are rendered bottom-up or top-down depending on
 
@@ -448,13 +384,9 @@ public class IhanuatClient implements ClientModInitializer {
 
         }
 
-
-
         // Reverse to match visual order (top-down)
 
         java.util.Collections.reverse(lines);
-
-
 
         for (int i = 0; i < lines.size(); i++) {
 
@@ -465,8 +397,6 @@ public class IhanuatClient implements ClientModInitializer {
                 if (i + 1 < lines.size()) {
 
                     String timeLine = lines.get(i + 1); // e.g. "Ã¢â€ºÅ¸ Mushroom 10m50s"
-
-
 
                     // Regex to extract optional minutes and seconds: (?:(\d+)m\s*)?(?:(\d+)s)?
 
@@ -498,19 +428,13 @@ public class IhanuatClient implements ClientModInitializer {
 
         }
 
-
-
         return 0;
 
     }
 
-
-
     // Dynamic Rest Tracking
 
     private static long nextRestTriggerMs = 0;
-
-
 
     private static void forceReleaseKeys(Minecraft client) {
 
@@ -542,8 +466,6 @@ public class IhanuatClient implements ClientModInitializer {
 
     }
 
-
-
     private static volatile boolean isSwappingWardrobe = false;
 
     private static volatile long wardrobeInteractionTime = 0;
@@ -558,8 +480,6 @@ public class IhanuatClient implements ClientModInitializer {
 
     private static volatile boolean isStartingFlight = false;
 
-
-
     // Equipment Swap Logic
 
     private static volatile boolean isSwappingEquipment = false;
@@ -572,8 +492,6 @@ public class IhanuatClient implements ClientModInitializer {
 
     private static volatile int equipmentTargetIndex = 0; // 0-3 for the 4 pieces
 
-
-
     @Override
 
     public void onInitializeClient() {
@@ -581,8 +499,6 @@ public class IhanuatClient implements ClientModInitializer {
         // Load Config
 
         MacroConfig.load();
-
-
 
         // Check for persisted rest state
 
@@ -630,7 +546,8 @@ public class IhanuatClient implements ClientModInitializer {
 
                         client.player.displayClientMessage(
 
-                                Component.literal("Â§6[Ihanuat] Session persistence detected! Initializing recovery..."),
+                                Component
+                                        .literal("Â§6[Ihanuat] Session persistence detected! Initializing recovery..."),
 
                                 false);
 
@@ -638,7 +555,7 @@ public class IhanuatClient implements ClientModInitializer {
 
                         lastRecoveryActionTime = System.currentTimeMillis() + 2000; // Give it 2s to load before first
 
-                                                                                    // pulse
+                        // pulse
 
                     }
 
@@ -652,11 +569,7 @@ public class IhanuatClient implements ClientModInitializer {
 
         });
 
-
-
         KeyMapping.Category category = new KeyMapping.Category(Identifier.fromNamespaceAndPath("ihanuat", "main"));
-
-
 
         configKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(
 
@@ -666,8 +579,6 @@ public class IhanuatClient implements ClientModInitializer {
 
                 category));
 
-
-
         KeyMapping startScriptKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(
 
                 "key.ihanuat.start_script",
@@ -676,13 +587,10 @@ public class IhanuatClient implements ClientModInitializer {
 
                 category));
 
-
         KeyMapping returnKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(
                 "key.ihanuat.return_to_start",
                 GLFW.GLFW_KEY_R,
                 category));
-
-
 
         // Centralized Chat Listener
 
@@ -699,8 +607,6 @@ public class IhanuatClient implements ClientModInitializer {
                 String text = message.getString();
 
                 String lowerText = text.toLowerCase();
-
-
 
                 // 0. Server Restart Checks
 
@@ -754,8 +660,6 @@ public class IhanuatClient implements ClientModInitializer {
 
                 }
 
-
-
                 // 0.5 Limbo/Lobby Disconnect Checks
 
                 if (text.contains("You were spawned in Limbo.") ||
@@ -794,11 +698,7 @@ public class IhanuatClient implements ClientModInitializer {
 
                 }
 
-
-
                 // 1. Bonus/Barn Sync
-
-
 
                 // 3. Pest Cleaning Finished
 
@@ -812,8 +712,6 @@ public class IhanuatClient implements ClientModInitializer {
 
                 }
 
-
-
                 // 4. Visitor Script Finished
 
                 if (currentState == MacroState.CLEANING && lowerText.contains("visitor")
@@ -825,7 +723,6 @@ public class IhanuatClient implements ClientModInitializer {
                     handleVisitorScriptFinished(Minecraft.getInstance());
 
                 }
-
 
                 // Void death during return-to-start -> fully restart the sequence
                 if (returnState != ReturnState.OFF && lowerText.contains("fell into the void")) {
@@ -845,8 +742,6 @@ public class IhanuatClient implements ClientModInitializer {
 
         });
 
-
-
         // Config & Script Toggle Keys (Start Tick)
 
         ClientTickEvents.START_CLIENT_TICK.register(client -> {
@@ -855,14 +750,11 @@ public class IhanuatClient implements ClientModInitializer {
 
                 return;
 
-
-
             while (configKey.consumeClick()) {
 
                 client.setScreen(createConfigScreen(client.screen));
 
             }
-
 
             while (returnKey.consumeClick()) {
                 if (client.player != null) {
@@ -872,15 +764,11 @@ public class IhanuatClient implements ClientModInitializer {
                 }
             }
 
-
-
             while (startScriptKey.consumeClick()) {
 
                 if (currentState == MacroState.OFF) {
 
                     currentState = MacroState.FARMING;
-
-
 
                     // Generate Next Rest Trigger Time
 
@@ -896,8 +784,6 @@ public class IhanuatClient implements ClientModInitializer {
 
                         nextRestTriggerMs = System.currentTimeMillis() + (finalSeconds * 60L * 1000L);
 
-
-
                         long minutes = finalSeconds;
 
                         long seconds = 0;
@@ -911,8 +797,6 @@ public class IhanuatClient implements ClientModInitializer {
                                 false);
 
                     }
-
-
 
                     new Thread(() -> {
 
@@ -932,8 +816,6 @@ public class IhanuatClient implements ClientModInitializer {
 
                                 }
 
-
-
                                 client.execute(() -> {
 
                                     swapToFarmingTool(client);
@@ -952,8 +834,6 @@ public class IhanuatClient implements ClientModInitializer {
 
                     }).start();
 
-
-
                     client.player.displayClientMessage(Component.literal("Â§aMacro Started: Farming Mode"), true);
 
                 } else {
@@ -965,8 +845,6 @@ public class IhanuatClient implements ClientModInitializer {
             }
 
         });
-
-
 
         // Main Tick Loop (Pest Control, Rotation Logic, Movement)
 
@@ -986,8 +864,6 @@ public class IhanuatClient implements ClientModInitializer {
 
             }
 
-
-
             if (client.screen instanceof AbstractContainerScreen) {
 
                 handleWardrobeMenu(client, (AbstractContainerScreen<?>) client.screen);
@@ -999,8 +875,6 @@ public class IhanuatClient implements ClientModInitializer {
                 handleEquipmentMenu(client, (AbstractContainerScreen<?>) client.screen);
 
             }
-
-
 
             // --- Swap Safety Reset ---
 
@@ -1021,8 +895,6 @@ public class IhanuatClient implements ClientModInitializer {
                     swapSecurityTimer = 0;
 
                 }
-
-
 
                 // Proactive Screen-Missing Check (e.g. menu closed but macro didn't see it)
 
@@ -1054,8 +926,6 @@ public class IhanuatClient implements ClientModInitializer {
 
             }
 
-
-
             // --- Dynamic Rest Screen Watchdog ---
 
             if (isRestingForDynamicRest) {
@@ -1085,8 +955,6 @@ public class IhanuatClient implements ClientModInitializer {
                 isReconnectingForDynamicRest = false;
 
             }
-
-
 
             // Delayed Restart Pending
 
@@ -1136,8 +1004,6 @@ public class IhanuatClient implements ClientModInitializer {
 
             }
 
-
-
             // Auto-Recovery Sequence Check
 
             if (currentState == MacroState.RECOVERING) {
@@ -1148,19 +1014,13 @@ public class IhanuatClient implements ClientModInitializer {
 
                 }
 
-
-
                 if (System.currentTimeMillis() - lastRecoveryActionTime < 5000) {
 
                     return; // Wait 5 seconds between actions
 
                 }
 
-
-
                 Location currentLoc = getCurrentLocation(client);
-
-
 
                 // Reset failed attempts if location successfully changed
 
@@ -1171,8 +1031,6 @@ public class IhanuatClient implements ClientModInitializer {
                     lastRecoveryLocation = currentLoc;
 
                 }
-
-
 
                 if (recoveryFailedAttempts >= 15) {
 
@@ -1188,13 +1046,9 @@ public class IhanuatClient implements ClientModInitializer {
 
                 }
 
-
-
                 lastRecoveryActionTime = System.currentTimeMillis();
 
                 recoveryFailedAttempts++;
-
-
 
                 switch (currentLoc) {
 
@@ -1264,8 +1118,6 @@ public class IhanuatClient implements ClientModInitializer {
 
             }
 
-
-
             // Automated Return to Start (Distance-based)
 
             if (currentState == MacroState.FARMING && returnState == ReturnState.OFF && MacroConfig.endPos != null) {
@@ -1282,13 +1134,9 @@ public class IhanuatClient implements ClientModInitializer {
 
                             true);
 
-
-
                     // Immediately stop script
 
                     sendCommand(client, ".ez-stopscript");
-
-
 
                     // 250ms pre-sequence wait
 
@@ -1299,8 +1147,6 @@ public class IhanuatClient implements ClientModInitializer {
                 }
 
             }
-
-
 
             // Delayed Wardrobe Open after StopScript
 
@@ -1315,8 +1161,6 @@ public class IhanuatClient implements ClientModInitializer {
                 wardrobeOpenPendingTime = 0;
 
             }
-
-
 
             // Delayed StartScript after Wardrobe Swap
 
@@ -1382,8 +1226,6 @@ public class IhanuatClient implements ClientModInitializer {
 
             }
 
-
-
             // Post-interaction Cleanup (Fixes inventory locks/phantom items)
 
             if (wardrobeCleanupTicks > 0) {
@@ -1430,8 +1272,6 @@ public class IhanuatClient implements ClientModInitializer {
 
             }
 
-
-
             // Return Sequence Logic
 
             if (returnState != ReturnState.OFF) {
@@ -1439,8 +1279,6 @@ public class IhanuatClient implements ClientModInitializer {
                 handleReturnSequence(client);
 
             }
-
-
 
             // Pest Control Logic
 
@@ -1458,16 +1296,17 @@ public class IhanuatClient implements ClientModInitializer {
 
             }
 
-
-
             // Flight Stop Logic (Tick-based)
 
             if (isStoppingFlight) {
-
+                if (client.player != null && !client.player.getAbilities().flying) {
+                    isStoppingFlight = false;
+                    flightStopStage = 0;
+                    flightStopTicks = 0;
+                    return;
+                }
                 flightStopTicks++;
-
                 Minecraft mc = client;
-
                 if (mc.options.keyJump != null) {
 
                     // Stage 0: Press Space
@@ -1540,13 +1379,11 @@ public class IhanuatClient implements ClientModInitializer {
 
             }
 
-
-
             // Flight Start Logic (Tick-based double jump)
 
             if (currentState != MacroState.OFF && isStartingFlight) {
-
-                if (performFlightToggle(client, true)) {
+                if ((client.player != null && client.player.getAbilities().flying)
+                        || performFlightToggle(client, true)) {
 
                     isStartingFlight = false;
 
@@ -1559,8 +1396,6 @@ public class IhanuatClient implements ClientModInitializer {
             }
 
         });
-
-
 
         // Command Registration
 
@@ -1592,7 +1427,8 @@ public class IhanuatClient implements ClientModInitializer {
 
                                                             + MacroConfig.startPos.toShortString()
 
-                                                            + " Ãƒâ€šÂ§7(Automatic Warp Plot: Ãƒâ€šÂ§e" + MacroConfig.startPlot
+                                                            + " Ãƒâ€šÂ§7(Automatic Warp Plot: Ãƒâ€šÂ§e"
+                                                            + MacroConfig.startPlot
 
                                                             + "Ãƒâ€šÂ§7)"));
 
@@ -1618,7 +1454,8 @@ public class IhanuatClient implements ClientModInitializer {
 
                                             .sendFeedback(Component.literal(
 
-                                                    "Ãƒâ€šÂ§cEnd position set to: Ãƒâ€šÂ§f" + MacroConfig.endPos.toShortString()
+                                                    "Ãƒâ€šÂ§cEnd position set to: Ãƒâ€šÂ§f"
+                                                            + MacroConfig.endPos.toShortString()
 
                                                             + " Ãƒâ€šÂ§7(Plot: " + MacroConfig.endPlot + ")"));
 
@@ -1632,11 +1469,7 @@ public class IhanuatClient implements ClientModInitializer {
 
     }
 
-
-
     // Return Sequence State
-
-
 
     public static void updateRotation() {
 
@@ -1645,8 +1478,6 @@ public class IhanuatClient implements ClientModInitializer {
         if (mc.player == null)
 
             return;
-
-
 
         // Priority 1: Time-Based Linear Rotation
 
@@ -1658,8 +1489,6 @@ public class IhanuatClient implements ClientModInitializer {
 
             float t = (float) elapsed / (float) rotationDuration;
 
-
-
             if (t >= 1.0f) {
 
                 t = 1.0f;
@@ -1669,8 +1498,6 @@ public class IhanuatClient implements ClientModInitializer {
                 // mc.player.displayClientMessage(Component.literal("Â§aRotation complete."),
 
                 // true);
-
-
 
                 // If we finished a rotation, ensure we snap to the final target look
 
@@ -1685,8 +1512,6 @@ public class IhanuatClient implements ClientModInitializer {
                 }
 
             }
-
-
 
             float currentYaw = startRot.yaw + (targetRot.yaw - startRot.yaw) * t;
 
@@ -1706,8 +1531,6 @@ public class IhanuatClient implements ClientModInitializer {
 
         }
 
-
-
         // Priority 2: Return Sequence Tracking (Time-Based Smooth)
 
         // Smoothly rotates toward returnLookTarget at rotationSpeed deg/s.
@@ -1717,8 +1540,6 @@ public class IhanuatClient implements ClientModInitializer {
         if (returnState != ReturnState.OFF && returnLookTarget != null) {
 
             RotationUtils.Rotation target = RotationUtils.calculateLookAt(mc.player.getEyePosition(), returnLookTarget);
-
-
 
             // Time-based: compute how many degrees we can move this frame
 
@@ -1732,25 +1553,17 @@ public class IhanuatClient implements ClientModInitializer {
 
             lastRotationUpdateTime = now;
 
-
-
             float maxStep = (float) MacroConfig.rotationSpeed * deltaSeconds;
-
-
 
             float curYaw = mc.player.getYRot();
 
             float curPitch = mc.player.getXRot();
-
-
 
             float yawDiff = net.minecraft.util.Mth.wrapDegrees(target.yaw - curYaw);
 
             float pitchDiff = target.pitch - curPitch;
 
             float totalDiff = (float) Math.sqrt(yawDiff * yawDiff + pitchDiff * pitchDiff);
-
-
 
             float newYaw, newPitch;
 
@@ -1770,8 +1583,6 @@ public class IhanuatClient implements ClientModInitializer {
 
             }
 
-
-
             mc.player.setYRot(newYaw);
 
             mc.player.setXRot(newPitch);
@@ -1786,8 +1597,6 @@ public class IhanuatClient implements ClientModInitializer {
 
     }
 
-
-
     // Called by MixinMouseHandler to suppress mouse rotation during return sequence
 
     public static boolean shouldSuppressMouseRotation() {
@@ -1796,8 +1605,6 @@ public class IhanuatClient implements ClientModInitializer {
 
     }
 
-
-
     private static void useAspectItem() {
 
         Minecraft mc = Minecraft.getInstance();
@@ -1805,8 +1612,6 @@ public class IhanuatClient implements ClientModInitializer {
         if (mc.player == null)
 
             return;
-
-
 
         // Search hotbar (0-8)
 
@@ -1824,13 +1629,10 @@ public class IhanuatClient implements ClientModInitializer {
 
                 ((com.ihanuat.mod.mixin.AccessorInventory) mc.player.getInventory()).setSelected(i);
 
-
-
-                mc.player.displayClientMessage(Component.literal("Ãƒâ€šÂ§dAspect Teleport! Switching to slot " + (i + 1)),
+                mc.player.displayClientMessage(
+                        Component.literal("Ãƒâ€šÂ§dAspect Teleport! Switching to slot " + (i + 1)),
 
                         true);
-
-
 
                 // Simulate Right Click
 
@@ -1849,8 +1651,6 @@ public class IhanuatClient implements ClientModInitializer {
         mc.player.displayClientMessage(Component.literal("Ãƒâ€šÂ§c'Aspect of the' item not found in hotbar!"), true);
 
     }
-
-
 
     private int getVisitorCount(Minecraft client) {
 
@@ -1872,8 +1672,6 @@ public class IhanuatClient implements ClientModInitializer {
 
                         .getListedOnlinePlayers();
 
-
-
                 for (net.minecraft.client.multiplayer.PlayerInfo info : players) {
 
                     String name = "";
@@ -1889,8 +1687,6 @@ public class IhanuatClient implements ClientModInitializer {
                         name = String.valueOf(info.getProfile());
 
                     }
-
-
 
                     String clean = name.replaceAll("Ãƒâ€šÂ§[0-9a-fk-or]", "").trim();
 
@@ -1916,19 +1712,13 @@ public class IhanuatClient implements ClientModInitializer {
 
     }
 
-
-
     private void swapToFarmingTool(Minecraft client) {
 
         if (client.player == null)
 
             return;
 
-
-
         String[] keywords = { "hoe", "dicer", "knife", "chopper", "cutter" };
-
-
 
         // Scan 0-8
 
@@ -1938,15 +1728,14 @@ public class IhanuatClient implements ClientModInitializer {
 
             String name = stack.getHoverName().getString().toLowerCase();
 
-
-
             for (String kw : keywords) {
 
                 if (name.contains(kw)) {
 
                     ((com.ihanuat.mod.mixin.AccessorInventory) client.player.getInventory()).setSelected(i);
 
-                    client.player.displayClientMessage(Component.literal("Ãƒâ€šÂ§aEquipped Farming Tool: " + name), true);
+                    client.player.displayClientMessage(Component.literal("Ãƒâ€šÂ§aEquipped Farming Tool: " + name),
+                            true);
 
                     return;
 
@@ -1960,21 +1749,15 @@ public class IhanuatClient implements ClientModInitializer {
 
     }
 
-
-
     private void checkTabListForPests(Minecraft client) {
 
         if (client.getConnection() == null || isCleaningInProgress)
 
             return;
 
-
-
         int aliveCount = -1;
 
         java.util.Set<String> infestedPlots = new java.util.HashSet<>();
-
-
 
         for (net.minecraft.client.multiplayer.PlayerInfo info : client.getConnection().getListedOnlinePlayers()) {
 
@@ -1989,8 +1772,6 @@ public class IhanuatClient implements ClientModInitializer {
                 name = String.valueOf(info.getProfile());
 
             }
-
-
 
             String clean = name.replaceAll("Ãƒâ€šÂ§[0-9a-fk-or]", "").trim();
 
@@ -2007,8 +1788,6 @@ public class IhanuatClient implements ClientModInitializer {
                 }
 
             }
-
-
 
             java.util.regex.Matcher cooldownMatcher = COOLDOWN_PATTERN.matcher(clean);
 
@@ -2032,8 +1811,6 @@ public class IhanuatClient implements ClientModInitializer {
 
                 }
 
-
-
                 // If timer is above threshold, allow pre-swap again next cycle
                 if (cooldownSeconds > 170 && prepSwappedForCurrentPestCycle && !isCleaningInProgress) {
                     prepSwappedForCurrentPestCycle = false;
@@ -2045,15 +1822,11 @@ public class IhanuatClient implements ClientModInitializer {
 
                         && !isCleaningInProgress) {
 
-
-
                     boolean shouldEquipOption2 = MacroConfig.autoEquipment && cooldownSeconds <= 170;
 
                     boolean shouldWardrobeOnly = !MacroConfig.autoEquipment && MacroConfig.autoWardrobe
 
                             && cooldownSeconds <= 8;
-
-
 
                     if (shouldEquipOption2 || shouldWardrobeOnly) {
 
@@ -2069,15 +1842,11 @@ public class IhanuatClient implements ClientModInitializer {
 
                         }
 
-
-
                         String msg = shouldEquipOption2 ? "Â§ePest cooldown <= 2m 50s. Equipping Option 2..."
 
                                 : "Â§ePest cooldown <= 8s. Swapping Wardrobe...";
 
                         client.player.displayClientMessage(Component.literal(msg), true);
-
-
 
                         new Thread(() -> {
 
@@ -2087,19 +1856,13 @@ public class IhanuatClient implements ClientModInitializer {
 
                                     return;
 
-
-
                                 sendCommand(client, ".ez-stopscript");
 
                                 Thread.sleep(375);
 
-
-
                                 if (isCleaningInProgress)
 
                                     return;
-
-
 
                                 if (shouldEquipOption2) {
 
@@ -2115,13 +1878,9 @@ public class IhanuatClient implements ClientModInitializer {
 
                                 }
 
-
-
                                 if (isCleaningInProgress)
 
                                     return;
-
-
 
                                 if (MacroConfig.autoWardrobe) {
 
@@ -2161,8 +1920,6 @@ public class IhanuatClient implements ClientModInitializer {
 
             }
 
-
-
             if (clean.contains("Plots:")) {
 
                 java.util.regex.Matcher m = java.util.regex.Pattern.compile("(\\d+)").matcher(clean);
@@ -2176,8 +1933,6 @@ public class IhanuatClient implements ClientModInitializer {
             }
 
         }
-
-
 
         if (aliveCount >= MacroConfig.pestThreshold && !infestedPlots.isEmpty()) {
 
@@ -2193,17 +1948,11 @@ public class IhanuatClient implements ClientModInitializer {
 
             }
 
-
-
             isCleaningInProgress = true;
 
             currentState = MacroState.CLEANING;
 
             currentInfestedPlot = infestedPlots.iterator().next();
-
-
-
-
 
             final int sessionId = ++currentPestSessionId;
 
@@ -2221,23 +1970,15 @@ public class IhanuatClient implements ClientModInitializer {
 
                     }
 
-
-
                     Thread.sleep(750); // 750ms wait for script to fully halt
 
-
-
                     if (sessionId != currentPestSessionId || currentState != MacroState.CLEANING)
 
                         return;
 
-
-
                     if (sessionId != currentPestSessionId || currentState != MacroState.CLEANING)
 
                         return;
-
-
 
                     if (MacroConfig.autoWardrobe) {
 
@@ -2252,8 +1993,6 @@ public class IhanuatClient implements ClientModInitializer {
                         ensureWardrobeSlot(client, 1);
 
                         Thread.sleep(375); // Base wait for menu opening
-
-
 
                         long wardrobeStart = System.currentTimeMillis();
 
@@ -2273,8 +2012,6 @@ public class IhanuatClient implements ClientModInitializer {
 
                         }
 
-
-
                         while (wardrobeCleanupTicks > 0 && currentState == MacroState.CLEANING
 
                                 && sessionId == currentPestSessionId)
@@ -2285,13 +2022,9 @@ public class IhanuatClient implements ClientModInitializer {
 
                     }
 
-
-
                     if (currentState != MacroState.CLEANING)
 
                         return;
-
-
 
                     // Swap to Pest Gear AFTER Wardrobe but BEFORE SetSpawn/Warp
 
@@ -2302,8 +2035,6 @@ public class IhanuatClient implements ClientModInitializer {
                         ensureEquipment(client, true);
 
                         Thread.sleep(375); // Base wait for menu opening
-
-
 
                         long eqStart = System.currentTimeMillis();
 
@@ -2327,19 +2058,13 @@ public class IhanuatClient implements ClientModInitializer {
 
                     }
 
-
-
                     if (currentState != MacroState.CLEANING)
 
                         return;
 
-
-
                     sendCommand(client, "/setspawn");
 
                     Thread.sleep(500);
-
-
 
                     // Default Logic: Trigger Flight then Warp
 
@@ -2348,8 +2073,6 @@ public class IhanuatClient implements ClientModInitializer {
                     flightToggleTicks = 0;
 
                     isStartingFlight = true;
-
-
 
                     long startWait = System.currentTimeMillis();
 
@@ -2369,13 +2092,9 @@ public class IhanuatClient implements ClientModInitializer {
 
                     }
 
-
-
                     if (sessionId != currentPestSessionId || currentState != MacroState.CLEANING)
 
                         return;
-
-
 
                     sendCommand(client, "/tptoplot " + currentInfestedPlot);
 
@@ -2385,11 +2104,7 @@ public class IhanuatClient implements ClientModInitializer {
 
                         return;
 
-
-
                     sendCommand(client, ".ez-startscript misc:pestCleaner");
-
-
 
                 } catch (Exception e) {
 
@@ -2403,21 +2118,15 @@ public class IhanuatClient implements ClientModInitializer {
 
     }
 
-
-
     private void sendCommand(Minecraft client, String cmd) {
 
         if (client.player == null || client.getConnection() == null)
 
             return;
 
-
-
         long now = System.currentTimeMillis();
 
         long diff = now - lastCommandTime;
-
-
 
         if (diff < COMMAND_COOLDOWN_MS) {
 
@@ -2431,15 +2140,11 @@ public class IhanuatClient implements ClientModInitializer {
 
         }
 
-
-
         client.getConnection().sendChat(cmd);
 
         lastCommandTime = System.currentTimeMillis();
 
     }
-
-
 
     private void sleepRandom(int min, int max) throws InterruptedException {
 
@@ -2451,21 +2156,15 @@ public class IhanuatClient implements ClientModInitializer {
 
     }
 
-
-
     private void initiateReturnRotation(Minecraft mc, Vec3 targetPos, long minDuration) {
 
         if (mc.player == null)
 
             return;
 
-
-
         // 1. Clear the instant-look target so updateRotation uses isRotating logic
 
         returnLookTarget = null;
-
-
 
         // 2. Setup Linear Rotation
 
@@ -2473,15 +2172,11 @@ public class IhanuatClient implements ClientModInitializer {
 
         targetRot = RotationUtils.calculateLookAt(mc.player.getEyePosition(), targetPos);
 
-
-
         // 3. Shortest Path Unwrapping: Ensure interpolation doesn't spin the
 
         // "long way"
 
         targetRot = RotationUtils.getAdjustedEnd(startRot, targetRot);
-
-
 
         // 3. Dynamic Duration Calculation (based on angle distance)
 
@@ -2491,13 +2186,9 @@ public class IhanuatClient implements ClientModInitializer {
 
         float totalDistance = (float) Math.sqrt(yawDiff * yawDiff + pitchDiff * pitchDiff);
 
-
-
         // duration (ms) = (distance / (speed * 1.5)) * 1000
 
         long calculatedDuration = (long) ((totalDistance / ((float) MacroConfig.rotationSpeed * 1.5f)) * 1000f);
-
-
 
         // Use the larger of calculated, requested minimum, or a global 150ms floor
 
@@ -2509,8 +2200,6 @@ public class IhanuatClient implements ClientModInitializer {
 
     }
 
-
-
     private void handleReturnSequence(Minecraft mc) {
 
         if (mc.player == null || mc.gameMode == null) {
@@ -2521,11 +2210,7 @@ public class IhanuatClient implements ClientModInitializer {
 
         }
 
-
-
         returnTickCounter++;
-
-
 
         switch (returnState) {
 
@@ -2543,8 +2228,6 @@ public class IhanuatClient implements ClientModInitializer {
 
                 break;
 
-
-
             case TP_START:
 
                 String startPlot = MacroConfig.startPlot != null ? MacroConfig.startPlot : "8";
@@ -2556,8 +2239,6 @@ public class IhanuatClient implements ClientModInitializer {
                 returnTickCounter = 0;
 
                 break;
-
-
 
             case TP_WAIT:
 
@@ -2574,15 +2255,10 @@ public class IhanuatClient implements ClientModInitializer {
 
                 break;
 
-
-
             case FLIGHT_START:
-
-                if (performFlightToggle(mc, true)) {
+                if (mc.player.getAbilities().flying || performFlightToggle(mc, true)) {
 
                     returnState = ReturnState.ALIGN_WAIT;
-
-
 
                     // Trigger Smooth Rotation to High Target (230ms)
 
@@ -2594,8 +2270,6 @@ public class IhanuatClient implements ClientModInitializer {
 
                     initiateReturnRotation(mc, new Vec3(tx, ty, tz), 230);
 
-
-
                     stateStartTime = System.currentTimeMillis();
 
                     // Do NOT set returnLookTarget yet, let smooth rotation finish
@@ -2603,8 +2277,6 @@ public class IhanuatClient implements ClientModInitializer {
                 }
 
                 break;
-
-
 
             case ALIGN_WAIT:
 
@@ -2624,8 +2296,6 @@ public class IhanuatClient implements ClientModInitializer {
 
                 break;
 
-
-
             case FLY_HIGH:
 
                 // Target: StartPos + 0.5, + 3.5, + 0.5
@@ -2638,13 +2308,9 @@ public class IhanuatClient implements ClientModInitializer {
 
                 Vec3 targetHigh = new Vec3(tx2, ty2, tz2);
 
-
-
                 // Track target (non-blocking) Ã¢â‚¬â€ camera follows while player moves
 
                 returnLookTarget = targetHigh;
-
-
 
                 // Priority 1: Gated Rotation Wait
 
@@ -2656,19 +2322,13 @@ public class IhanuatClient implements ClientModInitializer {
 
                 }
 
-
-
                 // Priority 2: Persistent Forward Movement (Only if NOT rotating)
 
                 KeyMapping.set(mc.options.keyUp.getDefaultKey(), true);
 
-
-
                 // Priority 3: Distance Check & Transition
 
                 double distHigh = mc.player.position().distanceTo(targetHigh);
-
-
 
                 // Check Line of Sight to START POS (not current target 3.5y up)
 
@@ -2676,13 +2336,9 @@ public class IhanuatClient implements ClientModInitializer {
 
                         MacroConfig.startPos.getZ() + 0.5);
 
-
-
                 // We check LOS to the *actual start pos* because that's our next target
 
                 boolean los = hasLineOfSight(mc.player, startPosVec);
-
-
 
                 // Transition Condition: Distance Gate + LOS OR Forced Proximity Fallback
 
@@ -2694,15 +2350,15 @@ public class IhanuatClient implements ClientModInitializer {
 
                     initiateReturnRotation(mc, startPosVec, 100);
 
-
-
                     if (los) {
 
-                        mc.player.displayClientMessage(Component.literal("Ãƒâ€šÂ§aLOS Established. Approaching..."), true);
+                        mc.player.displayClientMessage(Component.literal("Ãƒâ€šÂ§aLOS Established. Approaching..."),
+                                true);
 
                     } else {
 
-                        mc.player.displayClientMessage(Component.literal("Ãƒâ€šÂ§eProximity Fallback. Forcing Approach..."),
+                        mc.player.displayClientMessage(
+                                Component.literal("Ãƒâ€šÂ§eProximity Fallback. Forcing Approach..."),
 
                                 true);
 
@@ -2726,23 +2382,17 @@ public class IhanuatClient implements ClientModInitializer {
 
                 break;
 
-
-
             case FLY_APPROACH:
 
                 Vec3 startPosVec2 = new Vec3(MacroConfig.startPos.getX() + 0.5, MacroConfig.startPos.getY(),
 
                         MacroConfig.startPos.getZ() + 0.5);
 
-
-
                 double dxF = mc.player.getX() - startPosVec2.x;
 
                 double dzF = mc.player.getZ() - startPosVec2.z;
 
                 double horizontalDistFinal = Math.sqrt(dxF * dxF + dzF * dzF);
-
-
 
                 // 1. Track target (non-blocking, with overshoot deadzone)
 
@@ -2751,8 +2401,6 @@ public class IhanuatClient implements ClientModInitializer {
                     returnLookTarget = startPosVec2;
 
                 }
-
-
 
                 // 2. Gated Action: Wait for Rotation
 
@@ -2764,11 +2412,7 @@ public class IhanuatClient implements ClientModInitializer {
 
                 }
 
-
-
                 double distFinal = mc.player.position().distanceTo(startPosVec2);
-
-
 
                 // 3. Proximity Pathfinding logic (WASD/Jump/Shift)
 
@@ -2776,13 +2420,9 @@ public class IhanuatClient implements ClientModInitializer {
 
                     Vec3 detourTarget = getDetourTarget(mc, startPosVec2);
 
-
-
                     // Transition to momentum glide when very close and path is clear
 
                     boolean pathClear = detourTarget.distanceTo(startPosVec2) < 0.1;
-
-
 
                     if (horizontalDistFinal < 0.8 && pathClear) {
 
@@ -2806,8 +2446,6 @@ public class IhanuatClient implements ClientModInitializer {
 
                     KeyMapping.set(mc.options.keyUp.getDefaultKey(), true);
 
-
-
                     long now = System.currentTimeMillis();
 
                     if (now - lastAspectUsageTime >= 500) {
@@ -2820,8 +2458,6 @@ public class IhanuatClient implements ClientModInitializer {
 
                 }
 
-
-
                 if (horizontalDistFinal < 0.3) {
 
                     releaseMovementKeys(mc);
@@ -2833,8 +2469,6 @@ public class IhanuatClient implements ClientModInitializer {
                     returnLookTarget = null; // Stop looking
 
                     isRotating = false; // Stop any active rotation
-
-
 
                     // Snap to precise X/Z
 
@@ -2862,15 +2496,11 @@ public class IhanuatClient implements ClientModInitializer {
 
                 break;
 
-
-
             case LANDING_SHIFT:
 
                 // Hold Shift
 
                 KeyMapping.set(mc.options.keyShift.getDefaultKey(), true);
-
-
 
                 if (System.currentTimeMillis() - stateStartTime > 500) {
 
@@ -2884,8 +2514,6 @@ public class IhanuatClient implements ClientModInitializer {
 
                 break;
 
-
-
             case LANDING_WAIT:
 
                 // Wait for player to be on the ground AND at least 290ms elapsed
@@ -2893,8 +2521,6 @@ public class IhanuatClient implements ClientModInitializer {
                 boolean onGround = mc.player.onGround();
 
                 boolean timeElapsed = System.currentTimeMillis() - stateStartTime >= 290;
-
-
 
                 if (onGround && timeElapsed) {
 
@@ -2905,8 +2531,6 @@ public class IhanuatClient implements ClientModInitializer {
                     double landDz = mc.player.getZ() - (MacroConfig.startPos.getZ() + 0.5);
 
                     double landHDist = Math.sqrt(landDx * landDx + landDz * landDz);
-
-
 
                     if (landHDist > 0.5) {
 
@@ -2940,8 +2564,6 @@ public class IhanuatClient implements ClientModInitializer {
 
                     }
 
-
-
                     returnState = ReturnState.OFF;
 
                     startFarmingWithGearCheck(mc);
@@ -2962,8 +2584,6 @@ public class IhanuatClient implements ClientModInitializer {
 
     }
 
-
-
     // Helper: Row Safeguard
 
     private boolean isInEndRow(Minecraft client) {
@@ -2971,8 +2591,6 @@ public class IhanuatClient implements ClientModInitializer {
         if (client.player == null || MacroConfig.endPos == null)
 
             return false;
-
-
 
         double currentX = client.player.getX();
 
@@ -2982,21 +2600,15 @@ public class IhanuatClient implements ClientModInitializer {
 
         double endZ = MacroConfig.endPos.getZ() + 0.5;
 
-
-
         // Check if X or Z matches within 1.0 block
 
         boolean xMatch = Math.abs(currentX - endX) < 1.0;
 
         boolean zMatch = Math.abs(currentZ - endZ) < 1.0;
 
-
-
         return xMatch || zMatch;
 
     }
-
-
 
     // Helper: Perform Double Jump (Toggle Flight)
 
@@ -3014,7 +2626,7 @@ public class IhanuatClient implements ClientModInitializer {
 
                 if (flightToggleTicks == 1)
 
-                KeyMapping.set(mc.options.keyJump.getDefaultKey(), true);
+                    KeyMapping.set(mc.options.keyJump.getDefaultKey(), true);
 
                 if (flightToggleTicks >= 2) { // 100ms
 
@@ -3032,7 +2644,7 @@ public class IhanuatClient implements ClientModInitializer {
 
                 if (flightToggleTicks == 1)
 
-                KeyMapping.set(mc.options.keyJump.getDefaultKey(), false);
+                    KeyMapping.set(mc.options.keyJump.getDefaultKey(), false);
 
                 if (flightToggleTicks >= 3) { // 150ms gap
 
@@ -3050,7 +2662,7 @@ public class IhanuatClient implements ClientModInitializer {
 
                 if (flightToggleTicks == 1)
 
-                KeyMapping.set(mc.options.keyJump.getDefaultKey(), true);
+                    KeyMapping.set(mc.options.keyJump.getDefaultKey(), true);
 
                 if (flightToggleTicks >= 2) { // 100ms
 
@@ -3068,7 +2680,7 @@ public class IhanuatClient implements ClientModInitializer {
 
                 if (flightToggleTicks == 1)
 
-                KeyMapping.set(mc.options.keyJump.getDefaultKey(), false);
+                    KeyMapping.set(mc.options.keyJump.getDefaultKey(), false);
 
                 return true;
 
@@ -3079,8 +2691,6 @@ public class IhanuatClient implements ClientModInitializer {
         return false;
 
     }
-
-
 
     // Helper: Look At
 
@@ -3104,8 +2714,6 @@ public class IhanuatClient implements ClientModInitializer {
 
     }
 
-
-
     // Helper: LOS Check
 
     private boolean hasLineOfSight(net.minecraft.world.entity.player.Player player, Vec3 target) {
@@ -3125,8 +2733,6 @@ public class IhanuatClient implements ClientModInitializer {
                 net.minecraft.world.level.ClipContext.Fluid.NONE,
 
                 player));
-
-
 
         // If we hit something, and it's not the target (block pos), then LOS is
 
@@ -3160,13 +2766,9 @@ public class IhanuatClient implements ClientModInitializer {
 
     }
 
-
-
     private void handlePestCleaningFinished(Minecraft client) {
 
         client.player.displayClientMessage(Component.literal("Â§aPest cleaning finished detected."), true);
-
-
 
         new Thread(() -> {
 
@@ -3180,8 +2782,6 @@ public class IhanuatClient implements ClientModInitializer {
 
                     Thread.sleep(50);
 
-
-
                 // Wait for sync before checking visitors
 
                 Thread.sleep(500);
@@ -3192,7 +2792,8 @@ public class IhanuatClient implements ClientModInitializer {
 
                     client.player.displayClientMessage(
 
-                            Component.literal("Â§dVisitor Threshold Met (" + visitors + "). Direct Transition in 1s..."),
+                            Component
+                                    .literal("Â§dVisitor Threshold Met (" + visitors + "). Direct Transition in 1s..."),
 
                             true);
 
@@ -3208,15 +2809,11 @@ public class IhanuatClient implements ClientModInitializer {
 
                 }
 
-
-
                 Thread.sleep(600); // 600ms delay before warp
 
                 sendCommand(client, "/warp garden");
 
                 Thread.sleep(375);
-
-
 
                 finalizeReturnToFarm(client);
 
@@ -3229,8 +2826,6 @@ public class IhanuatClient implements ClientModInitializer {
         }).start();
 
     }
-
-
 
     private void handleVisitorScriptFinished(Minecraft client) {
 
@@ -3259,15 +2854,11 @@ public class IhanuatClient implements ClientModInitializer {
 
     }
 
-
-
     private void finalizeReturnToFarm(Minecraft client) {
 
         if (currentState == MacroState.OFF)
 
             return;
-
-
 
         // Visitor Sync Gap
 
@@ -3278,8 +2869,6 @@ public class IhanuatClient implements ClientModInitializer {
         } catch (InterruptedException ignored) {
 
         }
-
-
 
         int visitors = getVisitorCount(client);
 
@@ -3298,8 +2887,6 @@ public class IhanuatClient implements ClientModInitializer {
             return;
 
         }
-
-
 
         if (isInEndRow(client)) {
 
@@ -3334,8 +2921,6 @@ public class IhanuatClient implements ClientModInitializer {
 
                         Component.literal("Â§b[Ihanuat] Dynamic Rest triggered! Taking a break..."), true);
 
-
-
                 // Calculate random break duration
 
                 int base = MacroConfig.restBreakTime;
@@ -3351,8 +2936,6 @@ public class IhanuatClient implements ClientModInitializer {
                 cachedRestEndTimeMs = restEndTimeMs;
 
                 isRestingForDynamicRest = true;
-
-
 
                 // Disconnect and schedule reconnection
 
@@ -3405,8 +2988,6 @@ public class IhanuatClient implements ClientModInitializer {
 
     }
 
-
-
     private void startFarmingWithGearCheck(Minecraft client) {
 
         new Thread(() -> {
@@ -3436,8 +3017,6 @@ public class IhanuatClient implements ClientModInitializer {
 
                 }
 
-
-
                 if (MacroConfig.autoEquipment && prepSwappedForCurrentPestCycle) {
 
                     client.player.displayClientMessage(Component.literal("Â§eRestoring Farming Accessories..."), true);
@@ -3453,8 +3032,6 @@ public class IhanuatClient implements ClientModInitializer {
                     Thread.sleep(250);
 
                 }
-
-
 
                 // When no swap was queued, apply normal startup delay
                 if (!prepSwappedForCurrentPestCycle || (!MacroConfig.autoWardrobe && !MacroConfig.autoEquipment)) {
@@ -3483,23 +3060,17 @@ public class IhanuatClient implements ClientModInitializer {
 
     }
 
-
-
     private static void stopMacro(Minecraft client) {
 
         if (currentState == MacroState.OFF && returnState == ReturnState.OFF)
 
             return;
 
-
-
         currentState = MacroState.OFF;
 
         returnState = ReturnState.OFF;
 
         currentPestSessionId++; // Kill background cleaning thread
-
-
 
         isCleaningInProgress = false;
 
@@ -3527,19 +3098,13 @@ public class IhanuatClient implements ClientModInitializer {
 
         returnLookTarget = null;
 
-
-
         forceReleaseKeys(client);
-
-
 
         if (client.getConnection() != null) {
 
             client.getConnection().sendChat(".ez-stopscript");
 
         }
-
-
 
         if (client.player != null) {
 
@@ -3548,8 +3113,6 @@ public class IhanuatClient implements ClientModInitializer {
         }
 
     }
-
-
 
     private Screen createConfigScreen(Screen parent) {
 
@@ -3561,11 +3124,7 @@ public class IhanuatClient implements ClientModInitializer {
 
                 .setSavingRunnable(MacroConfig::save);
 
-
-
         ConfigCategory general = builder.getOrCreateCategory(Component.literal("General"));
-
-
 
         // Pest Threshold Slider
 
@@ -3579,8 +3138,6 @@ public class IhanuatClient implements ClientModInitializer {
 
                 .build());
 
-
-
         // Visitor Threshold Slider
 
         general.addEntry(builder.getEntryBuilder()
@@ -3592,8 +3149,6 @@ public class IhanuatClient implements ClientModInitializer {
                 .setSaveConsumer(newValue -> MacroConfig.visitorThreshold = newValue)
 
                 .build());
-
-
 
         // Rotation Speed Slider
 
@@ -3607,8 +3162,6 @@ public class IhanuatClient implements ClientModInitializer {
 
                 .build());
 
-
-
         // Auto-Wardrobe Toggle
 
         general.addEntry(builder.getEntryBuilder()
@@ -3620,8 +3173,6 @@ public class IhanuatClient implements ClientModInitializer {
                 .setSaveConsumer(newValue -> MacroConfig.autoWardrobe = newValue)
 
                 .build());
-
-
 
         // Auto-Visitor Toggle
 
@@ -3635,8 +3186,6 @@ public class IhanuatClient implements ClientModInitializer {
 
                 .build());
 
-
-
         // Auto-Equipment Toggle
 
         general.addEntry(builder.getEntryBuilder()
@@ -3649,11 +3198,7 @@ public class IhanuatClient implements ClientModInitializer {
 
                 .build());
 
-
-
         ConfigCategory dynamicRest = builder.getOrCreateCategory(Component.literal("Dynamic Rest"));
-
-
 
         dynamicRest.addEntry(builder.getEntryBuilder()
 
@@ -3664,8 +3209,6 @@ public class IhanuatClient implements ClientModInitializer {
                 .setSaveConsumer(newValue -> MacroConfig.restScriptingTime = newValue)
 
                 .build());
-
-
 
         dynamicRest.addEntry(builder.getEntryBuilder()
 
@@ -3679,8 +3222,6 @@ public class IhanuatClient implements ClientModInitializer {
 
                 .build());
 
-
-
         dynamicRest.addEntry(builder.getEntryBuilder()
 
                 .startIntField(Component.literal("Break Time (Minutes)"), MacroConfig.restBreakTime)
@@ -3690,8 +3231,6 @@ public class IhanuatClient implements ClientModInitializer {
                 .setSaveConsumer(newValue -> MacroConfig.restBreakTime = newValue)
 
                 .build());
-
-
 
         dynamicRest.addEntry(builder.getEntryBuilder()
 
@@ -3703,17 +3242,16 @@ public class IhanuatClient implements ClientModInitializer {
 
                 .build());
 
-
-
         // Start Position Capture
 
         general.addEntry(new ButtonEntry(
 
                 Component.literal("Ãƒâ€šÂ§eCapture Start Position"),
 
-                Component.literal("Ãƒâ€šÂ§7Current: Ãƒâ€šÂ§f" + MacroConfig.startPos.toShortString() + " Ãƒâ€šÂ§7Plot: Ãƒâ€šÂ§f"
+                Component.literal(
+                        "Ãƒâ€šÂ§7Current: Ãƒâ€šÂ§f" + MacroConfig.startPos.toShortString() + " Ãƒâ€šÂ§7Plot: Ãƒâ€šÂ§f"
 
-                        + MacroConfig.startPlot),
+                                + MacroConfig.startPlot),
 
                 btn -> {
 
@@ -3735,17 +3273,16 @@ public class IhanuatClient implements ClientModInitializer {
 
                 }));
 
-
-
         // End Position Capture
 
         general.addEntry(new ButtonEntry(
 
                 Component.literal("Ãƒâ€šÂ§bCapture End Position"),
 
-                Component.literal("Ãƒâ€šÂ§7Current: Ãƒâ€šÂ§f" + MacroConfig.endPos.toShortString() + " Ãƒâ€šÂ§7Plot: Ãƒâ€šÂ§f"
+                Component.literal(
+                        "Ãƒâ€šÂ§7Current: Ãƒâ€šÂ§f" + MacroConfig.endPos.toShortString() + " Ãƒâ€šÂ§7Plot: Ãƒâ€šÂ§f"
 
-                        + MacroConfig.endPlot),
+                                + MacroConfig.endPlot),
 
                 btn -> {
 
@@ -3767,18 +3304,14 @@ public class IhanuatClient implements ClientModInitializer {
 
                 }));
 
-
-
         return builder.build();
 
     }
 
-
-
     /**
-
+     * 
      * Custom Cloth Config entry for a simple action button.
-
+     * 
      */
 
     private static class ButtonEntry extends me.shedaniel.clothconfig2.gui.entries.TooltipListEntry<Object> {
@@ -3786,8 +3319,6 @@ public class IhanuatClient implements ClientModInitializer {
         private final net.minecraft.client.gui.components.Button button;
 
         private final Component fieldName;
-
-
 
         public ButtonEntry(Component fieldName, Component tooltip,
 
@@ -3805,8 +3336,6 @@ public class IhanuatClient implements ClientModInitializer {
 
         }
 
-
-
         @Override
 
         public void render(net.minecraft.client.gui.GuiGraphics graphics, int index, int y, int x, int entryWidth,
@@ -3823,15 +3352,11 @@ public class IhanuatClient implements ClientModInitializer {
 
             this.button.render(graphics, mouseX, mouseY, tickDelta);
 
-
-
             // Render Label
 
             graphics.drawString(Minecraft.getInstance().font, fieldName, x, y + 6, 0xFFFFFF);
 
         }
-
-
 
         @Override
 
@@ -3841,8 +3366,6 @@ public class IhanuatClient implements ClientModInitializer {
 
         }
 
-
-
         @Override
 
         public java.util.List<? extends net.minecraft.client.gui.narration.NarratableEntry> narratables() {
@@ -3850,8 +3373,6 @@ public class IhanuatClient implements ClientModInitializer {
             return java.util.Collections.singletonList(button);
 
         }
-
-
 
         @Override
 
@@ -3861,8 +3382,6 @@ public class IhanuatClient implements ClientModInitializer {
 
         }
 
-
-
         @Override
 
         public java.util.Optional<Object> getDefaultValue() {
@@ -3871,8 +3390,6 @@ public class IhanuatClient implements ClientModInitializer {
 
         }
 
-
-
         @Override
 
         public void save() {
@@ -3880,8 +3397,6 @@ public class IhanuatClient implements ClientModInitializer {
         }
 
     }
-
-
 
     private void ensureWardrobeSlot(Minecraft client, int slot) {
 
@@ -3903,23 +3418,17 @@ public class IhanuatClient implements ClientModInitializer {
 
     }
 
-
-
     private void handleWardrobeMenu(Minecraft client, AbstractContainerScreen<?> screen) {
 
         if (!isSwappingWardrobe || targetWardrobeSlot == -1)
 
             return;
 
-
-
         String title = screen.getTitle().getString();
 
         if (!title.contains("Wardrobe"))
 
             return;
-
-
 
         // Initialize time on first frame the screen is detected
 
@@ -3930,8 +3439,6 @@ public class IhanuatClient implements ClientModInitializer {
             return;
 
         }
-
-
 
         // Wait delays based on stage
 
@@ -3947,23 +3454,17 @@ public class IhanuatClient implements ClientModInitializer {
 
         }
 
-
-
         if (System.currentTimeMillis() - wardrobeInteractionTime < currentDelay) {
 
             return;
 
         }
 
-
-
         // Search for the slot button
 
         Slot targetSlotObj = null;
 
         Slot closeSlotObj = null;
-
-
 
         for (Slot slot : screen.getMenu().slots) {
 
@@ -3972,8 +3473,6 @@ public class IhanuatClient implements ClientModInitializer {
                 continue;
 
             String itemName = slot.getItem().getHoverName().getString();
-
-
 
             if (itemName.contains("Slot " + targetWardrobeSlot + ":")) {
 
@@ -4003,8 +3502,6 @@ public class IhanuatClient implements ClientModInitializer {
 
             }
 
-
-
             if (itemName.contains("Close") || itemName.contains("Go Back")) {
 
                 closeSlotObj = slot;
@@ -4012,8 +3509,6 @@ public class IhanuatClient implements ClientModInitializer {
             }
 
         }
-
-
 
         if (targetSlotObj != null) {
 
@@ -4057,8 +3552,6 @@ public class IhanuatClient implements ClientModInitializer {
 
                 wardrobeCleanupTicks = 20;
 
-
-
                 // Explicitly close the GUI
 
                 client.setScreen(null);
@@ -4069,8 +3562,6 @@ public class IhanuatClient implements ClientModInitializer {
 
                 int containerId = screen.getMenu().containerId;
 
-
-
                 // Standard protocol reset: Click outside slot (-999) for both wardrobe and
 
                 // player inventory
@@ -4078,8 +3569,6 @@ public class IhanuatClient implements ClientModInitializer {
                 client.gameMode.handleInventoryMouseClick(containerId, -999, 0, ClickType.PICKUP, client.player);
 
                 client.gameMode.handleInventoryMouseClick(0, -999, 0, ClickType.PICKUP, client.player);
-
-
 
                 // Ensure client-side carried state is clear
 
@@ -4095,8 +3584,6 @@ public class IhanuatClient implements ClientModInitializer {
 
                 }
 
-
-
                 isSwappingWardrobe = false; // Clear IMMEDIATELY after close click sent
 
                 targetWardrobeSlot = -1;
@@ -4107,13 +3594,9 @@ public class IhanuatClient implements ClientModInitializer {
 
                 wardrobeCleanupTicks = 20;
 
-
-
                 // Explicitly close the GUI to ensure state synchronization
 
                 client.setScreen(null);
-
-
 
                 if (client.mouseHandler != null) {
 
@@ -4126,8 +3609,6 @@ public class IhanuatClient implements ClientModInitializer {
         }
 
     }
-
-
 
     private void ensureEquipment(Minecraft client, boolean toPest) {
 
@@ -4149,15 +3630,11 @@ public class IhanuatClient implements ClientModInitializer {
 
     }
 
-
-
     private void handleEquipmentMenu(Minecraft client, AbstractContainerScreen<?> screen) {
 
         if (!isSwappingEquipment)
 
             return;
-
-
 
         // If something went wrong and the screen isn't what we expect, or it's just
 
@@ -4171,8 +3648,6 @@ public class IhanuatClient implements ClientModInitializer {
 
         }
 
-
-
         // Initialize time on first frame
 
         if (equipmentInteractionTime == 0) {
@@ -4183,8 +3658,6 @@ public class IhanuatClient implements ClientModInitializer {
 
         }
 
-
-
         // 500ms delay between clicks
 
         if (System.currentTimeMillis() - equipmentInteractionTime < 500) {
@@ -4192,8 +3665,6 @@ public class IhanuatClient implements ClientModInitializer {
             return;
 
         }
-
-
 
         // Precise target groups per click index
 
@@ -4221,8 +3692,6 @@ public class IhanuatClient implements ClientModInitializer {
 
         };
 
-
-
         if (equipmentTargetIndex < 4) {
 
             // Search for the current target piece group
@@ -4233,8 +3702,6 @@ public class IhanuatClient implements ClientModInitializer {
 
                     : farmTargets[equipmentTargetIndex];
 
-
-
             for (Slot slot : screen.getMenu().slots) {
 
                 if (!slot.hasItem() || slot.index < 54)
@@ -4242,8 +3709,6 @@ public class IhanuatClient implements ClientModInitializer {
                     continue;
 
                 String itemName = slot.getItem().getHoverName().getString();
-
-
 
                 for (String pattern : currentTargetGroup) {
 
@@ -4262,8 +3727,6 @@ public class IhanuatClient implements ClientModInitializer {
                     break; // Found one
 
             }
-
-
 
             if (targetSlotObj != null) {
 
@@ -4315,8 +3778,6 @@ public class IhanuatClient implements ClientModInitializer {
 
                 }
 
-
-
                 if (closeSlotObj != null) {
 
                     client.gameMode.handleInventoryMouseClick(screen.getMenu().containerId, closeSlotObj.index, 0,
@@ -4324,8 +3785,6 @@ public class IhanuatClient implements ClientModInitializer {
                             ClickType.PICKUP, client.player);
 
                 }
-
-
 
                 equipmentInteractionTime = System.currentTimeMillis();
 
@@ -4353,8 +3812,6 @@ public class IhanuatClient implements ClientModInitializer {
 
                 client.gameMode.handleInventoryMouseClick(0, -999, 0, ClickType.PICKUP, client.player);
 
-
-
                 if (client.player != null) {
 
                     if (client.player.containerMenu != null)
@@ -4366,8 +3823,6 @@ public class IhanuatClient implements ClientModInitializer {
                         client.player.inventoryMenu.setCarried(net.minecraft.world.item.ItemStack.EMPTY);
 
                 }
-
-
 
                 if (client.mouseHandler != null) {
 
@@ -4383,21 +3838,15 @@ public class IhanuatClient implements ClientModInitializer {
 
     }
 
-
-
     // --- Dynamic Rest Custom Screen ---
 
     private static volatile long cachedRestEndTimeMs = 0;
-
-
 
     private static class DynamicRestScreen extends Screen {
 
         private final long restEndTimeMs;
 
         private boolean reconnecting = false;
-
-
 
         protected DynamicRestScreen(long restEndTimeMs) {
 
@@ -4406,8 +3855,6 @@ public class IhanuatClient implements ClientModInitializer {
             this.restEndTimeMs = restEndTimeMs;
 
         }
-
-
 
         @Override
 
@@ -4419,8 +3866,6 @@ public class IhanuatClient implements ClientModInitializer {
 
             super.render(graphics, mouseX, mouseY, partialTick);
 
-
-
             long remainingMs = Math.max(0, restEndTimeMs - System.currentTimeMillis());
 
             long totalSeconds = remainingMs / 1000;
@@ -4429,27 +3874,19 @@ public class IhanuatClient implements ClientModInitializer {
 
             long seconds = totalSeconds % 60;
 
-
-
             String title = "Â§bDynamic Rest";
 
             String subTitle = String.format("Â§eRemaining on rest: %02d:%02d", minutes, seconds);
 
-
-
             int width = this.width;
 
             int height = this.height;
-
-
 
             graphics.drawCenteredString(this.font, title, width / 2, height / 2 - 20, 0xFFFFFF);
 
             graphics.drawCenteredString(this.font, subTitle, width / 2, height / 2, 0xFFFFFF);
 
         }
-
-
 
         @Override
 
@@ -4458,8 +3895,6 @@ public class IhanuatClient implements ClientModInitializer {
             super.tick();
 
         }
-
-
 
         @Override
 
@@ -4474,8 +3909,6 @@ public class IhanuatClient implements ClientModInitializer {
         }
 
     }
-
-
 
     private void releaseMovementKeys(Minecraft mc) {
 
@@ -4497,21 +3930,15 @@ public class IhanuatClient implements ClientModInitializer {
 
     }
 
-
-
     private void moveTowards(Minecraft mc, Vec3 target) {
 
         if (mc.player == null)
 
             return;
 
-
-
         double deltaX = target.x - mc.player.getX();
 
         double deltaZ = target.z - mc.player.getZ();
-
-
 
         // Calculate angle to target in degrees (0 to 360)
 
@@ -4519,13 +3946,9 @@ public class IhanuatClient implements ClientModInitializer {
 
         float playerYaw = mc.player.getYRot();
 
-
-
         // Calculate relative angle (-180 to 180)
 
         double relativeAngle = net.minecraft.util.Mth.wrapDegrees(angleToTarget - playerYaw);
-
-
 
         // Movement Key Mapping logic:
 
@@ -4537,8 +3960,6 @@ public class IhanuatClient implements ClientModInitializer {
 
         // Right (D): 45 to 135
 
-
-
         boolean w = relativeAngle > -67.5 && relativeAngle < 67.5;
 
         boolean s = relativeAngle > 112.5 || relativeAngle < -112.5;
@@ -4547,8 +3968,6 @@ public class IhanuatClient implements ClientModInitializer {
 
         boolean d = relativeAngle > 22.5 && relativeAngle < 157.5;
 
-
-
         KeyMapping.set(mc.options.keyUp.getDefaultKey(), w);
 
         KeyMapping.set(mc.options.keyDown.getDefaultKey(), s);
@@ -4556,8 +3975,6 @@ public class IhanuatClient implements ClientModInitializer {
         KeyMapping.set(mc.options.keyLeft.getDefaultKey(), a);
 
         KeyMapping.set(mc.options.keyRight.getDefaultKey(), d);
-
-
 
         // Vertical Movement
 
@@ -4573,19 +3990,13 @@ public class IhanuatClient implements ClientModInitializer {
 
     }
 
-
-
     private Vec3 getDetourTarget(Minecraft mc, Vec3 target) {
 
         if (mc.level == null || mc.player == null)
 
             return target;
 
-
-
         Vec3 start = mc.player.getEyePosition();
-
-
 
         // Raytrace to check for blocks between eye and target
 
@@ -4599,21 +4010,15 @@ public class IhanuatClient implements ClientModInitializer {
 
                 mc.player));
 
-
-
         if (result.getType() == net.minecraft.world.phys.HitResult.Type.MISS) {
 
             return target;
 
         }
 
-
-
         // If blocked, search for a detour point
 
         BlockPos playerPos = mc.player.blockPosition();
-
-
 
         // Search offsets: favored directions (higher, or closer to target)
 
@@ -4631,8 +4036,6 @@ public class IhanuatClient implements ClientModInitializer {
 
         };
 
-
-
         for (int[] off : searchOffsets) {
 
             BlockPos check = playerPos.offset(off[0], off[1], off[2]);
@@ -4642,8 +4045,6 @@ public class IhanuatClient implements ClientModInitializer {
             if (mc.level.getBlockState(check).isAir()) {
 
                 Vec3 detourVec = new Vec3(check.getX() + 0.5, check.getY() + 0.5, check.getZ() + 0.5);
-
-
 
                 // Final check: is this detour point clear from our eyes?
 
@@ -4659,8 +4060,6 @@ public class IhanuatClient implements ClientModInitializer {
 
                                 mc.player));
 
-
-
                 if (detourRes.getType() == net.minecraft.world.phys.HitResult.Type.MISS) {
 
                     mc.player.displayClientMessage(Component.literal("Ãƒâ€šÂ§7Approach Detour: Avoiding blockage..."),
@@ -4675,13 +4074,9 @@ public class IhanuatClient implements ClientModInitializer {
 
         }
 
-
-
         return target; // Fallback
 
     }
-
-
 
     private static void debugMsg(Minecraft client, String msg) {
 
