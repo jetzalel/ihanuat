@@ -1828,7 +1828,7 @@ public class IhanuatClient implements ClientModInitializer {
 
                     if ((shouldEquipSoon || shouldWardrobeSoon) && isInEndRow(client)) {
                         client.player.displayClientMessage(
-                                Component.literal("Â§eProactive Return: Low Cooldown & End Row."), true);
+                                Component.literal("§eProactive Return: Low Cooldown & End Row."), true);
                         new Thread(() -> {
                             try {
                                 currentState = MacroState.OFF; // End farming immediately
@@ -2172,7 +2172,11 @@ public class IhanuatClient implements ClientModInitializer {
 
         }
 
-        client.getConnection().sendChat(cmd);
+        if (cmd.startsWith("/")) {
+            client.getConnection().sendCommand(cmd.substring(1));
+        } else {
+            client.getConnection().sendChat(cmd);
+        }
 
         lastCommandTime = System.currentTimeMillis();
 
@@ -2602,14 +2606,14 @@ public class IhanuatClient implements ClientModInitializer {
                     if (isProactiveReturnPending) {
                         triggerPestGearSwap(mc);
                         mc.player.displayClientMessage(
-                                Component.literal("Â§eReturn complete. Triggering pending gear swap..."), true);
+                                Component.literal("§eReturn complete. Triggering pending gear swap..."), true);
                     } else if (!shouldRestartFarmingAfterSwap && !isSwappingWardrobe) {
                         startFarmingWithGearCheck(mc);
-                        mc.player.displayClientMessage(Component.literal("Â§aAuto-Restarting Macro: Farming Mode"),
+                        mc.player.displayClientMessage(Component.literal("§aAuto-Restarting Macro: Farming Mode"),
                                 true);
                     } else {
                         mc.player.displayClientMessage(
-                                Component.literal("Â§eReturn complete. Waiting for gear swap..."), true);
+                                Component.literal("§eReturn complete. Waiting for gear swap..."), true);
                     }
 
                 } else if (!onGround) {
@@ -3014,8 +3018,7 @@ public class IhanuatClient implements ClientModInitializer {
 
                 if (MacroConfig.autoWardrobe && prepSwappedForCurrentPestCycle) {
 
-                    client.player.displayClientMessage(Component.literal("Â§eRestoring Farming Wardrobe (Slot 1)..."),
-
+                    client.player.displayClientMessage(Component.literal("§eRestoring Farming Wardrobe (Slot 1)..."),
                             true);
 
                     ensureWardrobeSlot(client, 1);
@@ -3036,7 +3039,7 @@ public class IhanuatClient implements ClientModInitializer {
 
                 if (MacroConfig.autoEquipment && prepSwappedForCurrentPestCycle) {
 
-                    client.player.displayClientMessage(Component.literal("Â§eRestoring Farming Accessories..."), true);
+                    client.player.displayClientMessage(Component.literal("§eRestoring Farming Accessories..."), true);
 
                     ensureEquipment(client, true); // Lotus/Blossom (farming restoration gear)
 
@@ -3118,8 +3121,8 @@ public class IhanuatClient implements ClientModInitializer {
             prepSwappedForCurrentPestCycle = true;
         }
 
-        String msg = shouldEquipOption2 ? "Â§eTriggering scheduled exchange: Option 2..."
-                : "Â§eTriggering scheduled exchange: Wardrobe...";
+        String msg = shouldEquipOption2 ? "§eTriggering scheduled exchange: Option 2..."
+                : "§eTriggering scheduled exchange: Wardrobe...";
         client.player.displayClientMessage(Component.literal(msg), true);
 
         new Thread(() -> {
