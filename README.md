@@ -1,11 +1,20 @@
-uh before you start the macro, use O to open up the config, and stand at the start of farm and click button and then the same at the end to save the start and end positions.  
-set your thresholds to trigger the pests and visitors there as well.  
-Whatever pest and visitor settings you have will be handled natively by taunahi(including spray, pest trap, wardrobe swap etc), all you have to do is ensure that "Activate during Farming" is off for both Pests and Visitors.  
-if you have a ceiling on your farm for easier pests, leave a lil 3x3 open area in the ceiling at the start, even if the start would be in the corner of that 3x3 spot.  
-YOU NEED AN AOTE/AOTV FOR THIS, ETHERWARP FUNCTIONALITY COMING SOON  
-use K to start the macro.  
+use o to open the config and k to start the macro (change in controls accordingly)  
+before starting, ensure the rewarper, auto start pest, auto start visitor, and wardrobe swap is off in taunahi settings.  
+enable visitors, wardrobe swap, equipment swap according to your needs, all can be toggled on or off  
+set the start and end of the farm using the button in config while standing on that block in the config.  
+
+if adding a ceiling, have a lil 3x3 gap in ceiling at start, even if said start is in the furthest corner of that 3x3  
+so  
+001  
+000  
+000  
+with 1 being start of farm is fine  
 
 
-TODO:  
-better auto sell  
-aotv shortcuts  
+oh also wardrobe swap as of now only works on slots 1 and 2, 1 being the farming/killing and 2 being spawning  
+only runs on s shape crop/netherwart as of now as well  
+change the auto direction and should work on most crops until i add choosing what script to run  
+
+<img width="1273" height="716" alt="image" src="https://github.com/user-attachments/assets/7dd88694-b0bc-48ad-8ff0-20478ebf19ea" />
+dynamic rest works by setting the scripting time and break time, with the offset offsetting that scripting/break time by plus or minus the offset minutes  
+dynamic rest is always on, can disable by setting scripting time very high  
