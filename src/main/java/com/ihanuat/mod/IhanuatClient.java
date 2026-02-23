@@ -677,6 +677,12 @@ public class IhanuatClient implements ClientModInitializer {
                 category));
 
 
+        KeyMapping returnKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(
+                "key.ihanuat.return_to_start",
+                GLFW.GLFW_KEY_R,
+                category));
+
+
 
         // Centralized Chat Listener
 
@@ -820,6 +826,17 @@ public class IhanuatClient implements ClientModInitializer {
 
                 }
 
+
+                // Void death during return-to-start -> fully restart the sequence
+                if (returnState != ReturnState.OFF && lowerText.contains("fell into the void")) {
+                    returnState = ReturnState.TP_START;
+                    returnTickCounter = 0;
+                    flightToggleStage = 0;
+                    flightToggleTicks = 0;
+                    isStartingFlight = false;
+                    isStoppingFlight = false;
+                    forceReleaseKeys(Minecraft.getInstance());
+                }
             } finally {
 
                 isHandlingMessage = false;
@@ -844,6 +861,15 @@ public class IhanuatClient implements ClientModInitializer {
 
                 client.setScreen(createConfigScreen(client.screen));
 
+            }
+
+
+            while (returnKey.consumeClick()) {
+                if (client.player != null) {
+                    returnState = ReturnState.TP_START;
+                    returnTickCounter = 0;
+                    currentState = MacroState.OFF;
+                }
             }
 
 
@@ -2540,6 +2566,7 @@ public class IhanuatClient implements ClientModInitializer {
                     returnState = ReturnState.FLIGHT_START;
 
                     flightToggleStage = 0;
+                    flightToggleTicks = 0;
 
                     returnTickCounter = 0;
 
@@ -3281,6 +3308,7 @@ public class IhanuatClient implements ClientModInitializer {
                     Component.literal("Â§cDetected same row as End Position! Triggering early return..."), true);
 
             isCleaningInProgress = false; // Reset flag before early return
+            shouldRestartFarmingAfterSwap = false; // Cancel tick handler before return sequence takes over
 
             returnState = ReturnState.TP_START;
 
@@ -3384,6 +3412,7 @@ public class IhanuatClient implements ClientModInitializer {
         new Thread(() -> {
 
             try {
+                shouldRestartFarmingAfterSwap = false; // Prevent tick handler from sending duplicate startscript
 
                 if (MacroConfig.autoWardrobe && prepSwappedForCurrentPestCycle) {
 
@@ -3427,15 +3456,22 @@ public class IhanuatClient implements ClientModInitializer {
 
 
 
+                // When no swap was queued, apply normal startup delay
+                if (!prepSwappedForCurrentPestCycle || (!MacroConfig.autoWardrobe && !MacroConfig.autoEquipment)) {
+                    Thread.sleep(500);
+                }
+
+                // Wait for any open menus to fully close before starting
+                long menuWaitStart = System.currentTimeMillis();
+                while (client.screen != null && System.currentTimeMillis() - menuWaitStart < 5000)
+                    Thread.sleep(50);
+                Thread.sleep(350);
+
                 prepSwappedForCurrentPestCycle = false;
-
                 swapToFarmingTool(client);
-
-                sendCommand(client, ".ez-startscript netherwart:1");
-
-                isCleaningInProgress = false;
-
                 currentState = MacroState.FARMING;
+                isCleaningInProgress = false;
+                sendCommand(client, ".ez-startscript netherwart:1");
 
             } catch (Exception e) {
 
