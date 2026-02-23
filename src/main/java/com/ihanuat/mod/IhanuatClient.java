@@ -3045,7 +3045,7 @@ public class IhanuatClient implements ClientModInitializer {
                 }
 
                 if (MacroConfig.autoEquipment && prepSwappedForCurrentPestCycle
-                        && !Boolean.FALSE.equals(trackedIsPestGear)) {
+                        && !Boolean.TRUE.equals(trackedIsPestGear)) {
 
                     client.player.displayClientMessage(Component.literal("§eRestoring Farming Accessories..."), true);
 
@@ -3811,6 +3811,36 @@ public class IhanuatClient implements ClientModInitializer {
                 { "Pest Vest" }
 
         };
+
+        if (equipmentTargetIndex < 4) {
+            // Fast Scan: If matching pieces are already equipped, skip to close
+            if (equipmentTargetIndex == 0) {
+                int equippedCount = 0;
+                for (int i = 0; i < 4; i++) {
+                    String[] currentTargetGroup = swappingToPestGear ? pestTargets[i] : farmTargets[i];
+                    boolean foundEquipped = false;
+                    for (Slot slot : screen.getMenu().slots) {
+                        if (!slot.hasItem() || slot.index < 54)
+                            continue;
+                        String itemName = slot.getItem().getHoverName().getString();
+                        for (String pattern : currentTargetGroup) {
+                            if (itemName.contains(pattern) && itemName.contains("Equipped")) {
+                                foundEquipped = true;
+                                break;
+                            }
+                        }
+                        if (foundEquipped)
+                            break;
+                    }
+                    if (foundEquipped)
+                        equippedCount++;
+                }
+
+                if (equippedCount == 4) {
+                    equipmentTargetIndex = 4; // Jump to close
+                }
+            }
+        }
 
         if (equipmentTargetIndex < 4) {
 
