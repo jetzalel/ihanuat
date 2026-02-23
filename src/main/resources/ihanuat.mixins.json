@@ -8,7 +8,8 @@
     "client": [
         "PlayerTabOverlayAccessor",
         "MixinGameRenderer",
-        "MixinMouseHandler"
+        "MixinMouseHandler",
+        "MixinClientPacketListener"
     ],
     "injectors": {
         "defaultRequire": 1

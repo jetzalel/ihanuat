@@ -21,6 +21,12 @@ public class MacroConfig {
     public static boolean autoWardrobe = false;
     public static boolean autoVisitor = true;
     public static boolean autoEquipment = true;
+
+    // Dynamic Rest (Minutes)
+    public static int restScriptingTime = 30;
+    public static int restScriptingTimeOffset = 3;
+    public static int restBreakTime = 20;
+    public static int restBreakTimeOffset = 3;
     public static int rotationSpeed = 200;
 
     private static final File CONFIG_FILE = FabricLoader.getInstance().getConfigDir().resolve("pest_macro_config.json")
@@ -38,7 +44,13 @@ public class MacroConfig {
         data.autoWardrobe = autoWardrobe;
         data.autoVisitor = autoVisitor;
         data.autoEquipment = autoEquipment;
+        data.autoEquipment = autoEquipment;
         data.rotationSpeed = rotationSpeed;
+
+        data.restScriptingTime = restScriptingTime;
+        data.restScriptingTimeOffset = restScriptingTimeOffset;
+        data.restBreakTime = restBreakTime;
+        data.restBreakTimeOffset = restBreakTimeOffset;
 
         try (FileWriter writer = new FileWriter(CONFIG_FILE)) {
             GSON.toJson(data, writer);
@@ -73,7 +85,13 @@ public class MacroConfig {
                 visitorThreshold = data.visitorThreshold;
                 autoWardrobe = data.autoWardrobe;
                 autoEquipment = data.autoEquipment;
+                autoEquipment = data.autoEquipment;
                 rotationSpeed = data.rotationSpeed;
+
+                restScriptingTime = data.restScriptingTime;
+                restScriptingTimeOffset = data.restScriptingTimeOffset;
+                restBreakTime = data.restBreakTime;
+                restBreakTimeOffset = data.restBreakTimeOffset;
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -91,5 +109,10 @@ public class MacroConfig {
         boolean autoVisitor = true;
         boolean autoEquipment = true;
         int rotationSpeed = 200;
+
+        int restScriptingTime = 30;
+        int restScriptingTimeOffset = 3;
+        int restBreakTime = 20;
+        int restBreakTimeOffset = 3;
     }
 }
