@@ -1164,7 +1164,8 @@ public class IhanuatClient implements ClientModInitializer {
 
             // Delayed StartScript after Wardrobe Swap
 
-            if (shouldRestartFarmingAfterSwap && !isSwappingWardrobe && client.screen == null) {
+            if (shouldRestartFarmingAfterSwap && !isSwappingWardrobe && client.screen == null
+                    && returnState == ReturnState.OFF) {
 
                 if (wardrobeInteractionTime != 0 && System.currentTimeMillis() - wardrobeInteractionTime >= 500) {
 
@@ -1816,9 +1817,37 @@ public class IhanuatClient implements ClientModInitializer {
                 }
 
                 if (currentState == MacroState.FARMING && cooldownSeconds != -1
+                        && cooldownSeconds > 0 && !isCleaningInProgress && returnState == ReturnState.OFF) {
 
+                    boolean shouldEquipSoon = MacroConfig.autoEquipment && cooldownSeconds <= 180;
+                    boolean shouldWardrobeSoon = (!MacroConfig.autoEquipment && MacroConfig.autoWardrobe
+                            && cooldownSeconds <= 15);
+
+                    if ((shouldEquipSoon || shouldWardrobeSoon) && isInEndRow(client)) {
+                        client.player.displayClientMessage(
+                                Component.literal("Â§eProactive Return: Low Cooldown & End Row."), true);
+                        new Thread(() -> {
+                            try {
+                                sendCommand(client, ".ez-stopscript");
+                                Thread.sleep(500);
+                                if (currentState == MacroState.FARMING || currentState == MacroState.OFF) {
+                                    synchronized (IhanuatClient.class) {
+                                        isCleaningInProgress = false;
+                                        shouldRestartFarmingAfterSwap = false;
+                                        returnState = ReturnState.TP_START;
+                                        returnTickCounter = 0;
+                                        currentState = MacroState.OFF;
+                                    }
+                                }
+                            } catch (Exception ignored) {
+                            }
+                        }).start();
+                        return;
+                    }
+                }
+
+                if (currentState == MacroState.FARMING && cooldownSeconds != -1
                         && cooldownSeconds > 0 && !prepSwappedForCurrentPestCycle
-
                         && !isCleaningInProgress) {
 
                     boolean shouldEquipOption2 = MacroConfig.autoEquipment && cooldownSeconds <= 170;
@@ -2566,9 +2595,14 @@ public class IhanuatClient implements ClientModInitializer {
 
                     returnState = ReturnState.OFF;
 
-                    startFarmingWithGearCheck(mc);
-
-                    mc.player.displayClientMessage(Component.literal("Â§aAuto-Restarting Macro: Farming Mode"), true);
+                    if (!shouldRestartFarmingAfterSwap && !isSwappingWardrobe) {
+                        startFarmingWithGearCheck(mc);
+                        mc.player.displayClientMessage(Component.literal("Â§aAuto-Restarting Macro: Farming Mode"),
+                                true);
+                    } else {
+                        mc.player.displayClientMessage(
+                                Component.literal("Â§eReturn complete. Waiting for gear swap..."), true);
+                    }
 
                 } else if (!onGround) {
 
@@ -2884,104 +2918,81 @@ public class IhanuatClient implements ClientModInitializer {
 
         }
 
-        if (isInEndRow(client)) {
+        if (isRestartPending && System.currentTimeMillis() >= restartExecutionTime) {
 
             client.player.displayClientMessage(
 
-                    Component.literal("Â§cDetected same row as End Position! Triggering early return..."), true);
+                    Component.literal("Â§c[Ihanuat] Aborting farm resume due to pending Server Restart!"), true);
 
-            isCleaningInProgress = false; // Reset flag before early return
-            shouldRestartFarmingAfterSwap = false; // Cancel tick handler before return sequence takes over
+            currentState = MacroState.FARMING;
 
-            returnState = ReturnState.TP_START;
+            isCleaningInProgress = false;
 
-            returnTickCounter = 0;
+        } else if (nextRestTriggerMs != 0 && System.currentTimeMillis() >= nextRestTriggerMs) {
 
-            currentState = MacroState.OFF; // Crucial: Set to OFF so startFarmingWithGearCheck isn't called yet
+            client.player.displayClientMessage(
+
+                    Component.literal("Â§b[Ihanuat] Dynamic Rest triggered! Taking a break..."), true);
+
+            // Calculate random break duration
+
+            int base = MacroConfig.restBreakTime;
+
+            int offset = MacroConfig.restBreakTimeOffset;
+
+            int randomOffset = (offset > 0) ? (new java.util.Random().nextInt(offset * 2 + 1) - offset) : 0;
+
+            int finalSeconds = base + randomOffset;
+
+            long restEndTimeMs = System.currentTimeMillis() + (finalSeconds * 60L * 1000L);
+
+            cachedRestEndTimeMs = restEndTimeMs;
+
+            isRestingForDynamicRest = true;
+
+            // Disconnect and schedule reconnection
+
+            client.player.connection.sendChat("/setspawn");
+
+            new Thread(() -> {
+
+                try {
+
+                    Thread.sleep(500); // Give setspawn time to process
+
+                    client.execute(() -> {
+
+                        if (client.getConnection() != null) {
+
+                            intentionalDisconnect = true;
+
+                            ReconnectScheduler.scheduleReconnect(finalSeconds * 60L, true);
+
+                            client.getConnection().getConnection()
+
+                                    .disconnect(Component.literal("Dynamic Rest Initiated"));
+
+                            intentionalDisconnect = false;
+
+                        }
+
+                    });
+
+                } catch (Exception e) {
+
+                    e.printStackTrace();
+
+                }
+
+            }).start();
+
+            currentState = MacroState.OFF;
+
+            isCleaningInProgress = false;
 
         } else {
-
-            if (isRestartPending && System.currentTimeMillis() >= restartExecutionTime) {
-
-                client.player.displayClientMessage(
-
-                        Component.literal("Â§c[Ihanuat] Aborting farm resume due to pending Server Restart!"), true);
-
-                currentState = MacroState.FARMING;
-
-                isCleaningInProgress = false;
-
-            } else if (nextRestTriggerMs != 0 && System.currentTimeMillis() >= nextRestTriggerMs) {
-
-                client.player.displayClientMessage(
-
-                        Component.literal("Â§b[Ihanuat] Dynamic Rest triggered! Taking a break..."), true);
-
-                // Calculate random break duration
-
-                int base = MacroConfig.restBreakTime;
-
-                int offset = MacroConfig.restBreakTimeOffset;
-
-                int randomOffset = (offset > 0) ? (new java.util.Random().nextInt(offset * 2 + 1) - offset) : 0;
-
-                int finalSeconds = base + randomOffset;
-
-                long restEndTimeMs = System.currentTimeMillis() + (finalSeconds * 60L * 1000L);
-
-                cachedRestEndTimeMs = restEndTimeMs;
-
-                isRestingForDynamicRest = true;
-
-                // Disconnect and schedule reconnection
-
-                client.player.connection.sendChat("/setspawn");
-
-                new Thread(() -> {
-
-                    try {
-
-                        Thread.sleep(500); // Give setspawn time to process
-
-                        client.execute(() -> {
-
-                            if (client.getConnection() != null) {
-
-                                intentionalDisconnect = true;
-
-                                ReconnectScheduler.scheduleReconnect(finalSeconds * 60L, true);
-
-                                client.getConnection().getConnection()
-
-                                        .disconnect(Component.literal("Dynamic Rest Initiated"));
-
-                                intentionalDisconnect = false;
-
-                            }
-
-                        });
-
-                    } catch (Exception e) {
-
-                        e.printStackTrace();
-
-                    }
-
-                }).start();
-
-                currentState = MacroState.OFF;
-
-                isCleaningInProgress = false;
-
-            } else {
-                swapToFarmingTool(client);
-                currentState = MacroState.FARMING;
-                isCleaningInProgress = false;
-                sendCommand(client, ".ez-startscript netherwart:1");
-            }
-
+            startFarmingWithGearCheck(client);
         }
-
     }
 
     private void startFarmingWithGearCheck(Minecraft client) {
