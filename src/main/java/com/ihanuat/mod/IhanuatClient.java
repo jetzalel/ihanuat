@@ -824,7 +824,9 @@ public class IhanuatClient implements ClientModInitializer {
                                 client.execute(() -> {
 
                                     swapToFarmingTool(client);
-
+                                    client.player.displayClientMessage(
+                                            Component.literal("§d[DEBUG] Netherwart:1 from ChatEvent (PestWarpReady)"),
+                                            true);
                                     sendCommand(client, ".ez-startscript netherwart:1");
 
                                 });
@@ -1112,7 +1114,8 @@ public class IhanuatClient implements ClientModInitializer {
                         currentState = MacroState.FARMING;
 
                         swapToFarmingTool(client);
-
+                        client.player.displayClientMessage(
+                                Component.literal("§d[DEBUG] Netherwart:1 from RecoveryHandler"), true);
                         sendCommand(client, ".ez-startscript netherwart:1");
 
                         break;
@@ -1934,7 +1937,8 @@ public class IhanuatClient implements ClientModInitializer {
                                     // Resume farming if no wardrobe swap
 
                                     swapToFarmingTool(client);
-
+                                    client.player.displayClientMessage(
+                                            Component.literal("§d[DEBUG] Netherwart:1 from ProactiveStarter"), true);
                                     sendCommand(client, ".ez-startscript netherwart:1");
 
                                 }
@@ -3072,6 +3076,8 @@ public class IhanuatClient implements ClientModInitializer {
                 swapToFarmingTool(client);
                 currentState = MacroState.FARMING;
                 isCleaningInProgress = false;
+                client.player.displayClientMessage(
+                        Component.literal("§d[DEBUG] Netherwart:1 from LandingHandler (GearCheck)"), true);
                 sendCommand(client, ".ez-startscript netherwart:1");
 
             } catch (Exception e) {
@@ -3157,6 +3163,8 @@ public class IhanuatClient implements ClientModInitializer {
                 } else {
                     swapToFarmingTool(client);
                     currentState = MacroState.FARMING;
+                    client.player.displayClientMessage(Component.literal("§d[DEBUG] Netherwart:1 from PestGearHandler"),
+                            true);
                     sendCommand(client, ".ez-startscript netherwart:1");
                 }
             } catch (Exception e) {
