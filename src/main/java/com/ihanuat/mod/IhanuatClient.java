@@ -1860,70 +1860,47 @@ public class IhanuatClient implements ClientModInitializer {
                         && cooldownSeconds > 0 && !prepSwappedForCurrentPestCycle
                         && !isCleaningInProgress) {
 
-                    boolean shouldEquipOption2 = MacroConfig.autoEquipment && cooldownSeconds <= 170;
+                    int threshold = MacroConfig.autoEquipment ? 170 : 5;
 
-                    boolean shouldWardrobeOnly = !MacroConfig.autoEquipment && MacroConfig.autoWardrobe
-
-                            && cooldownSeconds <= 8;
-
-                    if (shouldEquipOption2 || shouldWardrobeOnly) {
+                    if (cooldownSeconds <= threshold) {
 
                         // Atomically set the flag to prevent a second thread
-
                         synchronized (IhanuatClient.class) {
-
                             if (prepSwappedForCurrentPestCycle || isCleaningInProgress)
-
                                 return;
-
                             prepSwappedForCurrentPestCycle = true;
-
                         }
 
-                        String msg = shouldEquipOption2 ? "Â§ePest cooldown <= 2m 50s. Equipping Option 2..."
-
-                                : "Â§ePest cooldown <= 8s. Swapping Wardrobe...";
-
-                        client.player.displayClientMessage(Component.literal(msg), true);
+                        client.player.displayClientMessage(
+                                Component.literal(
+                                        "§ePest cooldown detected (<= " + threshold + "s). Triggering prep-swap..."),
+                                true);
 
                         new Thread(() -> {
-
                             try {
-
                                 if (isCleaningInProgress)
-
                                     return;
-
                                 sendCommand(client, ".ez-stopscript");
-
                                 Thread.sleep(375);
-
                                 if (isCleaningInProgress)
-
                                     return;
 
-                                if (shouldEquipOption2) {
-
+                                // 1. Equipment Swap (Option 2) - Accessories
+                                if (MacroConfig.autoEquipment) {
                                     ensureEquipment(client, false); // Option 2 (farmTargets)
-
                                     Thread.sleep(375);
-
                                     while (isSwappingEquipment && !isCleaningInProgress)
-
                                         Thread.sleep(50);
-
                                     Thread.sleep(250);
-
                                 }
 
                                 if (isCleaningInProgress)
-
                                     return;
 
+                                // 2. Rod or Wardrobe Swap
                                 if (MacroConfig.autoRodSwap) {
                                     client.player.displayClientMessage(
-                                            Component.literal("§eExecuting Rod Swap sequence..."),
-                                            true);
+                                            Component.literal("§eExecuting Rod Swap sequence..."), true);
                                     client.execute(() -> {
                                         for (int i = 0; i < 9; i++) {
                                             String rodItemName = client.player.getInventory().getItem(i).getHoverName()
@@ -1952,23 +1929,17 @@ public class IhanuatClient implements ClientModInitializer {
                                     shouldRestartFarmingAfterSwap = true;
                                     sendCommand(client, "/wardrobe");
                                 } else {
-                                    // Resume farming if no wardrobe/rod swap
+                                    // Resume farming if neither rod nor wardrobe was requested
                                     swapToFarmingTool(client);
                                     client.player.displayClientMessage(
                                             Component.literal("§d[DEBUG] Netherwart:1 from ProactiveStarter"), false);
                                     sendCommand(client, ".ez-startscript netherwart:1");
                                 }
-
                             } catch (Exception e) {
-
                                 e.printStackTrace();
-
                             }
-
                         }).start();
-
                     }
-
                 }
 
             }
@@ -3135,7 +3106,7 @@ public class IhanuatClient implements ClientModInitializer {
         int cooldownSeconds = -1;
         for (net.minecraft.client.multiplayer.PlayerInfo info : connection.getListedOnlinePlayers()) {
             String name = (info.getTabListDisplayName() != null) ? info.getTabListDisplayName().getString() : "";
-            String clean = name.replaceAll("Ã‚Â§[0-9a-fk-or]", "").trim();
+            String clean = name.replaceAll("Â§[0-9a-fk-or]", "").trim();
             java.util.regex.Matcher cooldownMatcher = COOLDOWN_PATTERN.matcher(clean);
             if (cooldownMatcher.find()) {
                 if (cooldownMatcher.group(1).equalsIgnoreCase("READY"))
@@ -3154,10 +3125,9 @@ public class IhanuatClient implements ClientModInitializer {
             return;
         }
 
-        boolean shouldEquipOption2 = MacroConfig.autoEquipment && cooldownSeconds <= 170;
-        boolean shouldWardrobeOnly = !MacroConfig.autoEquipment && MacroConfig.autoWardrobe && cooldownSeconds <= 8;
+        int threshold = MacroConfig.autoEquipment ? 170 : 5;
 
-        if (!shouldEquipOption2 && !shouldWardrobeOnly) {
+        if (cooldownSeconds > threshold) {
             startFarmingWithGearCheck(client);
             return;
         }
@@ -3168,9 +3138,8 @@ public class IhanuatClient implements ClientModInitializer {
             prepSwappedForCurrentPestCycle = true;
         }
 
-        String msg = shouldEquipOption2 ? "§eTriggering scheduled exchange: Option 2..."
-                : "§eTriggering scheduled exchange: Wardrobe...";
-        client.player.displayClientMessage(Component.literal(msg), true);
+        client.player.displayClientMessage(Component.literal("§ePest exchange triggered (<= " + threshold + "s)..."),
+                true);
 
         new Thread(() -> {
             try {
@@ -3179,7 +3148,8 @@ public class IhanuatClient implements ClientModInitializer {
                     return;
                 Thread.sleep(100);
 
-                if (shouldEquipOption2) {
+                // 1. Equipment Swap (Option 2)
+                if (MacroConfig.autoEquipment) {
                     ensureEquipment(client, false);
                     Thread.sleep(375);
                     while (isSwappingEquipment && !isCleaningInProgress)
@@ -3190,6 +3160,7 @@ public class IhanuatClient implements ClientModInitializer {
                 if (isCleaningInProgress)
                     return;
 
+                // 2. Rod or Wardrobe Swap
                 if (MacroConfig.autoRodSwap) {
                     client.player.displayClientMessage(Component.literal("§eExecuting Rod Swap sequence..."), true);
                     client.execute(() -> {
