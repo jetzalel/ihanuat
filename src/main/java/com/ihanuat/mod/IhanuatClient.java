@@ -2642,7 +2642,10 @@ public class IhanuatClient implements ClientModInitializer {
                         triggerPestGearSwap(mc);
                         mc.player.displayClientMessage(
                                 Component.literal("§eReturn complete. Triggering pending gear swap..."), true);
-                    } else if (!shouldRestartFarmingAfterSwap && !isSwappingWardrobe) {
+                    } else if (prepSwappedForCurrentPestCycle
+                            || (!shouldRestartFarmingAfterSwap && !isSwappingWardrobe)) {
+                        // Priority: If we have a pending gear restoration (prepSwapped), we MUST handle
+                        // it here
                         startFarmingWithGearCheck(mc);
                         mc.player.displayClientMessage(Component.literal("§aAuto-Restarting Macro: Farming Mode"),
                                 true);
@@ -3119,9 +3122,9 @@ public class IhanuatClient implements ClientModInitializer {
                 Thread.sleep(350);
 
                 prepSwappedForCurrentPestCycle = false;
+                isCleaningInProgress = false;
                 swapToFarmingTool(client);
                 currentState = MacroState.FARMING;
-                isCleaningInProgress = false;
                 client.player.displayClientMessage(
                         Component.literal("§d[DEBUG] Netherwart:1 from LandingHandler (GearCheck)"), false);
                 sendCommand(client, ".ez-startscript netherwart:1");
