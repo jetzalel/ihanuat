@@ -1860,7 +1860,7 @@ public class IhanuatClient implements ClientModInitializer {
                         && cooldownSeconds > 0 && !prepSwappedForCurrentPestCycle
                         && !isCleaningInProgress) {
 
-                    int threshold = MacroConfig.autoEquipment ? 170 : 5;
+                    int threshold = MacroConfig.autoEquipment ? 170 : 8;
 
                     if (cooldownSeconds <= threshold) {
 
@@ -3125,7 +3125,7 @@ public class IhanuatClient implements ClientModInitializer {
             return;
         }
 
-        int threshold = MacroConfig.autoEquipment ? 170 : 5;
+        int threshold = MacroConfig.autoEquipment ? 170 : 8;
 
         if (cooldownSeconds > threshold) {
             startFarmingWithGearCheck(client);
