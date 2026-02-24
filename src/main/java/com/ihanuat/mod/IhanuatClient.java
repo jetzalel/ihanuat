@@ -770,32 +770,6 @@ public class IhanuatClient implements ClientModInitializer {
                 }
             }
 
-            if (MacroConfig.autoRodSwap && currentState == MacroState.FARMING) {
-                while (client.options.keyUse.consumeClick()) {
-                    new Thread(() -> {
-                        try {
-                            client.execute(() -> {
-                                // Find Rod
-                                for (int i = 0; i < 9; i++) {
-                                    if (client.player.getInventory().getItem(i).getHoverName().getString().toLowerCase()
-                                            .contains("fishing rod")) {
-                                        ((com.ihanuat.mod.mixin.AccessorInventory) client.player.getInventory())
-                                                .setSelected(i);
-                                        break;
-                                    }
-                                }
-                            });
-                            Thread.sleep(50);
-                            client.execute(() -> client.gameMode.useItem(client.player,
-                                    net.minecraft.world.InteractionHand.MAIN_HAND));
-                            Thread.sleep(50);
-                            client.execute(() -> swapToFarmingTool(client));
-                        } catch (Exception ignored) {
-                        }
-                    }).start();
-                }
-            }
-
             while (startScriptKey.consumeClick()) {
 
                 if (currentState == MacroState.OFF) {
@@ -1946,29 +1920,43 @@ public class IhanuatClient implements ClientModInitializer {
 
                                     return;
 
-                                if (MacroConfig.autoWardrobe) {
+                                if (MacroConfig.autoRodSwap) {
+                                    client.player.displayClientMessage(
+                                            Component.literal("§eExecuting Rod Swap sequence..."),
+                                            true);
+                                    client.execute(() -> {
+                                        for (int i = 0; i < 9; i++) {
+                                            String rodItemName = client.player.getInventory().getItem(i).getHoverName()
+                                                    .getString().toLowerCase();
+                                            if (rodItemName.contains("rod")) {
+                                                ((com.ihanuat.mod.mixin.AccessorInventory) client.player.getInventory())
+                                                        .setSelected(i);
+                                                break;
+                                            }
+                                        }
+                                    });
+                                    Thread.sleep(500);
+                                    client.execute(() -> client.gameMode.useItem(client.player,
+                                            net.minecraft.world.InteractionHand.MAIN_HAND));
+                                    Thread.sleep(400);
 
+                                    swapToFarmingTool(client);
+                                    client.player.displayClientMessage(
+                                            Component.literal("§d[DEBUG] Netherwart:1 from ProactiveRodSwap"), false);
+                                    sendCommand(client, ".ez-startscript netherwart:1");
+                                } else if (MacroConfig.autoWardrobe) {
                                     targetWardrobeSlot = 2;
-
                                     isSwappingWardrobe = true;
-
                                     wardrobeInteractionTime = 0;
-
                                     wardrobeInteractionStage = 0;
-
                                     shouldRestartFarmingAfterSwap = true;
-
                                     sendCommand(client, "/wardrobe");
-
                                 } else {
-
-                                    // Resume farming if no wardrobe swap
-
+                                    // Resume farming if no wardrobe/rod swap
                                     swapToFarmingTool(client);
                                     client.player.displayClientMessage(
                                             Component.literal("§d[DEBUG] Netherwart:1 from ProactiveStarter"), false);
                                     sendCommand(client, ".ez-startscript netherwart:1");
-
                                 }
 
                             } catch (Exception e) {
@@ -3202,7 +3190,29 @@ public class IhanuatClient implements ClientModInitializer {
                 if (isCleaningInProgress)
                     return;
 
-                if (MacroConfig.autoWardrobe) {
+                if (MacroConfig.autoRodSwap) {
+                    client.player.displayClientMessage(Component.literal("§eExecuting Rod Swap sequence..."), true);
+                    client.execute(() -> {
+                        for (int i = 0; i < 9; i++) {
+                            String rodItemName = client.player.getInventory().getItem(i).getHoverName().getString()
+                                    .toLowerCase();
+                            if (rodItemName.contains("rod")) {
+                                ((com.ihanuat.mod.mixin.AccessorInventory) client.player.getInventory()).setSelected(i);
+                                break;
+                            }
+                        }
+                    });
+                    Thread.sleep(500);
+                    client.execute(() -> client.gameMode.useItem(client.player,
+                            net.minecraft.world.InteractionHand.MAIN_HAND));
+                    Thread.sleep(400);
+
+                    swapToFarmingTool(client);
+                    currentState = MacroState.FARMING;
+                    client.player.displayClientMessage(Component.literal("§d[DEBUG] Netherwart:1 from RodSwapHandler"),
+                            false);
+                    sendCommand(client, ".ez-startscript netherwart:1");
+                } else if (MacroConfig.autoWardrobe) {
                     targetWardrobeSlot = 2;
                     isSwappingWardrobe = true;
                     wardrobeInteractionTime = 0;
