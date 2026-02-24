@@ -178,7 +178,10 @@ public class IhanuatClient implements ClientModInitializer {
 
     private static volatile int currentPestSessionId = 0;
 
-    private static volatile long swapSecurityTimer = 0;
+    private static volatile long swapSecurityTimer = 0; // Stash Management State
+    private static boolean isStashPickupActive = false;
+    private static long lastStashPickupTime = 0;
+    private static final long STASH_PICKUP_DELAY_MS = 3300;
 
     private static volatile long swapNullScreenStartTime = 0;
 
@@ -400,7 +403,7 @@ public class IhanuatClient implements ClientModInitializer {
 
                 if (i + 1 < lines.size()) {
 
-                    String timeLine = lines.get(i + 1); // e.g. "Ã¢â€ºÅ¸ Mushroom 10m50s"
+                    String timeLine = lines.get(i + 1); // e.g. "Mushroom 10m50s"
 
                     // Regex to extract optional minutes and seconds: (?:(\d+)m\s*)?(?:(\d+)s)?
 
@@ -553,7 +556,8 @@ public class IhanuatClient implements ClientModInitializer {
                         client.player.displayClientMessage(
 
                                 Component
-                                        .literal("Â§6[Ihanuat] Session persistence detected! Initializing recovery..."),
+                                        .literal(
+                                                "\u00A76[Ihanuat] Session persistence detected! Initializing recovery..."),
 
                                 false);
 
@@ -636,7 +640,7 @@ public class IhanuatClient implements ClientModInitializer {
 
                                     Component.literal(
 
-                                            "Â§c[Ihanuat] Server restart detected! Delaying abort until Jacob's contest ends..."),
+                                            "\u00A7c[Ihanuat] Server restart detected! Delaying abort until Jacob's contest ends..."),
 
                                     false);
 
@@ -648,7 +652,7 @@ public class IhanuatClient implements ClientModInitializer {
 
                                     Component.literal(
 
-                                            "Â§c[Ihanuat] Server restart/evacuation detected! Initiating abort sequence..."),
+                                            "\u00A7c[Ihanuat] Server restart/evacuation detected! Initiating abort sequence..."),
 
                                     false);
 
@@ -680,7 +684,7 @@ public class IhanuatClient implements ClientModInitializer {
 
                                 Component.literal(
 
-                                        "Â§c[Ihanuat] Disconnect detected! Starting recovery sequence..."),
+                                        "\u00A7c[Ihanuat] Disconnect detected! Starting recovery sequence..."),
 
                                 false);
 
@@ -730,7 +734,6 @@ public class IhanuatClient implements ClientModInitializer {
 
                 }
 
-                // Void death during return-to-start -> fully restart the sequence
                 if (returnState != ReturnState.OFF && lowerText.contains("fell into the void")) {
                     returnState = ReturnState.TP_START;
                     returnTickCounter = 0;
@@ -739,6 +742,21 @@ public class IhanuatClient implements ClientModInitializer {
                     isStartingFlight = false;
                     isStoppingFlight = false;
                     forceReleaseKeys(Minecraft.getInstance());
+                }
+
+                // 5. Stash Manager Triggers
+                if (MacroConfig.autoStashManager) {
+                    if (text.contains("You picked up all items from your material stash") ||
+                            text.contains("Your stash isn't holding any items or materials!")) {
+                        isStashPickupActive = false;
+                        Minecraft.getInstance().player.displayClientMessage(
+                                Component.literal("\u00A7c[Ihanuat] Stash empty. Manager deactivated."), true);
+                    } else if (text.contains("materials stashed away!") || text.contains("materials in stash,")) {
+                        isStashPickupActive = true;
+                        Minecraft.getInstance().player.displayClientMessage(
+                                Component.literal("\u00A7d[Ihanuat] Items detected in stash! Activating Manager..."),
+                                true);
+                    }
                 }
             } finally {
 
@@ -750,7 +768,9 @@ public class IhanuatClient implements ClientModInitializer {
 
         // Config & Script Toggle Keys (Start Tick)
 
-        ClientTickEvents.START_CLIENT_TICK.register(client -> {
+        ClientTickEvents.START_CLIENT_TICK.register(client ->
+
+        {
 
             if (client.player == null)
 
@@ -796,9 +816,10 @@ public class IhanuatClient implements ClientModInitializer {
 
                         client.player.displayClientMessage(
 
-                                Component.literal(String.format("Â§b[Ihanuat] Next Dynamic Rest scheduled in %02d:%02d",
+                                Component.literal(
+                                        String.format("\u00A7b[Ihanuat] Next Dynamic Rest scheduled in %02d:%02d",
 
-                                        minutes, seconds)),
+                                                minutes, seconds)),
 
                                 false);
 
@@ -814,7 +835,8 @@ public class IhanuatClient implements ClientModInitializer {
 
                                 // or if we know we previously swapped away.
 
-                                if (MacroConfig.autoWardrobe && prepSwappedForCurrentPestCycle
+                                if (MacroConfig.gearSwapMode == MacroConfig.GearSwapMode.WARDROBE
+                                        && prepSwappedForCurrentPestCycle
                                         && trackedWardrobeSlot != 1) {
 
                                     client.execute(() -> ensureWardrobeSlot(client, 1));
@@ -826,9 +848,6 @@ public class IhanuatClient implements ClientModInitializer {
                                 client.execute(() -> {
 
                                     swapToFarmingTool(client);
-                                    client.player.displayClientMessage(
-                                            Component.literal("§d[DEBUG] Netherwart:1 from ChatEvent (PestWarpReady)"),
-                                            false);
                                     sendCommand(client, ".ez-startscript netherwart:1");
 
                                 });
@@ -843,7 +862,7 @@ public class IhanuatClient implements ClientModInitializer {
 
                     }).start();
 
-                    client.player.displayClientMessage(Component.literal("Â§aMacro Started: Farming Mode"), true);
+                    client.player.displayClientMessage(Component.literal("\u00A7aMacro Started: Farming Mode"), true);
 
                 } else {
 
@@ -965,6 +984,17 @@ public class IhanuatClient implements ClientModInitializer {
 
             }
 
+            // --- Stash Manager Tick Logic ---
+            if (MacroConfig.autoStashManager && isStashPickupActive && client.player != null) {
+                long currentTime = System.currentTimeMillis();
+                if (currentTime - lastStashPickupTime >= STASH_PICKUP_DELAY_MS) {
+                    lastStashPickupTime = currentTime;
+                    client.player.connection.sendCommand("pickupstash");
+                }
+            } else if (!MacroConfig.autoStashManager) {
+                isStashPickupActive = false;
+            }
+
             // Delayed Restart Pending
 
             if (isRestartPending && currentState == MacroState.FARMING) {
@@ -973,7 +1003,7 @@ public class IhanuatClient implements ClientModInitializer {
 
                     client.player.displayClientMessage(
 
-                            Component.literal("Â§c[Ihanuat] Executing delayed restart abort sequence..."), false);
+                            Component.literal("\u00A7c[Ihanuat] Executing delayed restart abort sequence..."), false);
 
                     sendCommand(client, ".ez-stopscript");
 
@@ -1045,7 +1075,8 @@ public class IhanuatClient implements ClientModInitializer {
 
                     client.player.displayClientMessage(
 
-                            Component.literal("Â§c[Ihanuat] Auto-Recovery failed after 15 attempts. Stopping macro."),
+                            Component.literal(
+                                    "\u00A7c[Ihanuat] Auto-Recovery failed after 15 attempts. Stopping macro."),
 
                             false);
 
@@ -1065,7 +1096,7 @@ public class IhanuatClient implements ClientModInitializer {
 
                         client.player.displayClientMessage(
 
-                                Component.literal("Â§e[Ihanuat] Recovery (Attempt " + recoveryFailedAttempts
+                                Component.literal("\u00A7e[Ihanuat] Recovery (Attempt " + recoveryFailedAttempts
 
                                         + "): Warping to Lobby from Limbo..."),
 
@@ -1079,7 +1110,7 @@ public class IhanuatClient implements ClientModInitializer {
 
                         client.player.displayClientMessage(
 
-                                Component.literal("Â§e[Ihanuat] Recovery (Attempt " + recoveryFailedAttempts
+                                Component.literal("\u00A7e[Ihanuat] Recovery (Attempt " + recoveryFailedAttempts
 
                                         + "): Warping to SkyBlock from Lobby..."),
 
@@ -1095,7 +1126,7 @@ public class IhanuatClient implements ClientModInitializer {
 
                         client.player.displayClientMessage(
 
-                                Component.literal("Â§e[Ihanuat] Recovery (Attempt " + recoveryFailedAttempts
+                                Component.literal("\u00A7e[Ihanuat] Recovery (Attempt " + recoveryFailedAttempts
 
                                         + "): Warping to Garden..."),
 
@@ -1109,7 +1140,7 @@ public class IhanuatClient implements ClientModInitializer {
 
                         client.player.displayClientMessage(
 
-                                Component.literal("Â§a[Ihanuat] Recovery Successful! Resuming Farming..."), false);
+                                Component.literal("\u00A7a[Ihanuat] Recovery Successful! Resuming Farming..."), false);
 
                         recoveryFailedAttempts = 0;
 
@@ -1117,7 +1148,7 @@ public class IhanuatClient implements ClientModInitializer {
 
                         swapToFarmingTool(client);
                         client.player.displayClientMessage(
-                                Component.literal("§d[DEBUG] Netherwart:1 from RecoveryHandler"), false);
+                                Component.literal("\u00A7d[DEBUG] Netherwart:1 from RecoveryHandler"), false);
                         sendCommand(client, ".ez-startscript netherwart:1");
 
                         break;
@@ -1140,7 +1171,7 @@ public class IhanuatClient implements ClientModInitializer {
 
                     client.player.displayClientMessage(
 
-                            Component.literal("Ãƒâ€šÂ§6End Position reached. Stopping script..."),
+                            Component.literal("\u00A76End Position reached. Stopping script..."),
 
                             true);
 
@@ -1187,7 +1218,7 @@ public class IhanuatClient implements ClientModInitializer {
 
                                 Component.literal(
 
-                                        "Â§cDetected same row as End Position after swap! Triggering early return..."),
+                                        "\u00A7cDetected same row as End Position after swap! Triggering early return..."),
 
                                 true);
 
@@ -1207,7 +1238,7 @@ public class IhanuatClient implements ClientModInitializer {
 
                                     Component.literal(
 
-                                            "Â§c[Ihanuat] Aborting farm resume due to pending Server Restart!"),
+                                            "\u00A7c[Ihanuat] Aborting farm resume due to pending Server Restart!"),
 
                                     true);
 
@@ -1382,7 +1413,7 @@ public class IhanuatClient implements ClientModInitializer {
 
                         flightStopTicks = 0;
 
-                        client.player.displayClientMessage(Component.literal("Ãƒâ€šÂ§bFlight stop sequence finished."),
+                        client.player.displayClientMessage(Component.literal("\u00A7bFlight stop sequence finished."),
 
                                 true);
 
@@ -1433,14 +1464,14 @@ public class IhanuatClient implements ClientModInitializer {
 
                                             .sendFeedback(Component.literal(
 
-                                                    "Ãƒâ€šÂ§aStart position set to: Ãƒâ€šÂ§f"
+                                                    "\u00A7aStart position set to: \u00A7f"
 
                                                             + MacroConfig.startPos.toShortString()
 
-                                                            + " Ãƒâ€šÂ§7(Automatic Warp Plot: Ãƒâ€šÂ§e"
+                                                            + " \u00A77(Automatic Warp Plot: \u00A7e"
                                                             + MacroConfig.startPlot
 
-                                                            + "Ãƒâ€šÂ§7)"));
+                                                            + "\u00A77)"));
 
                                 }
 
@@ -1464,10 +1495,10 @@ public class IhanuatClient implements ClientModInitializer {
 
                                             .sendFeedback(Component.literal(
 
-                                                    "Ãƒâ€šÂ§cEnd position set to: Ãƒâ€šÂ§f"
+                                                    "\u00A7cEnd position set to: \u00A7f"
                                                             + MacroConfig.endPos.toShortString()
 
-                                                            + " Ãƒâ€šÂ§7(Plot: " + MacroConfig.endPlot + ")"));
+                                                            + " \u00A77(Plot: " + MacroConfig.endPlot + ")"));
 
                                 }
 
@@ -1505,7 +1536,8 @@ public class IhanuatClient implements ClientModInitializer {
 
                 isRotating = false;
 
-                // mc.player.displayClientMessage(Component.literal("Â§aRotation complete."),
+                // mc.player.displayClientMessage(Component.literal("\u00A7aRotation
+                // complete."),
 
                 // true);
 
@@ -1640,7 +1672,7 @@ public class IhanuatClient implements ClientModInitializer {
                 ((com.ihanuat.mod.mixin.AccessorInventory) mc.player.getInventory()).setSelected(i);
 
                 mc.player.displayClientMessage(
-                        Component.literal("Ãƒâ€šÂ§dAspect Teleport! Switching to slot " + (i + 1)),
+                        Component.literal("\u00A7dAspect Teleport! Switching to slot " + (i + 1)),
 
                         true);
 
@@ -1658,7 +1690,7 @@ public class IhanuatClient implements ClientModInitializer {
 
         }
 
-        mc.player.displayClientMessage(Component.literal("Ãƒâ€šÂ§c'Aspect of the' item not found in hotbar!"), true);
+        mc.player.displayClientMessage(Component.literal("\u00A7c'Aspect of the' item not found in hotbar!"), true);
 
     }
 
@@ -1744,7 +1776,7 @@ public class IhanuatClient implements ClientModInitializer {
 
                     ((com.ihanuat.mod.mixin.AccessorInventory) client.player.getInventory()).setSelected(i);
 
-                    client.player.displayClientMessage(Component.literal("Ãƒâ€šÂ§aEquipped Farming Tool: " + name),
+                    client.player.displayClientMessage(Component.literal("\u00A7aEquipped Farming Tool: " + name),
                             true);
 
                     return;
@@ -1755,7 +1787,7 @@ public class IhanuatClient implements ClientModInitializer {
 
         }
 
-        client.player.displayClientMessage(Component.literal("Ãƒâ€šÂ§cNo farming tool found in hotbar!"), true);
+        client.player.displayClientMessage(Component.literal("\u00A7cNo farming tool found in hotbar!"), true);
 
     }
 
@@ -1838,12 +1870,12 @@ public class IhanuatClient implements ClientModInitializer {
                         && returnState == ReturnState.OFF) {
 
                     boolean shouldEquipSoon = MacroConfig.autoEquipment && cooldownSeconds <= 180;
-                    boolean shouldWardrobeSoon = (!MacroConfig.autoEquipment && MacroConfig.autoWardrobe
+                    boolean shouldWardrobeSoon = (MacroConfig.gearSwapMode == MacroConfig.GearSwapMode.WARDROBE
                             && cooldownSeconds <= 15);
 
                     if ((shouldEquipSoon || shouldWardrobeSoon) && isInEndRow(client)) {
                         client.player.displayClientMessage(
-                                Component.literal("§eProactive Return: Low Cooldown & End Row."), true);
+                                Component.literal("\u00A7eProactive Return: Low Cooldown & End Row."), true);
                         new Thread(() -> {
                             try {
                                 currentState = MacroState.OFF; // End farming immediately
@@ -1891,12 +1923,12 @@ public class IhanuatClient implements ClientModInitializer {
                                     Thread.sleep(250);
                                     if (isCleaningInProgress)
                                         return;
-                                    if (MacroConfig.autoRodSwap) {
+                                    if (MacroConfig.gearSwapMode == MacroConfig.GearSwapMode.ROD) {
                                         executeRodSequence(client);
-                                    } else if (MacroConfig.autoWardrobe) {
+                                    } else if (MacroConfig.gearSwapMode == MacroConfig.GearSwapMode.WARDROBE) {
                                         triggerWardrobeSwap(client);
                                     } else {
-                                        resumeAfterPrepSwap(client, "ProactiveStarter");
+                                        resumeAfterPrepSwap(client);
                                     }
                                 } catch (Exception e) {
                                     e.printStackTrace();
@@ -1922,12 +1954,12 @@ public class IhanuatClient implements ClientModInitializer {
                                     Thread.sleep(375);
                                     if (isCleaningInProgress)
                                         return;
-                                    if (MacroConfig.autoRodSwap) {
+                                    if (MacroConfig.gearSwapMode == MacroConfig.GearSwapMode.ROD) {
                                         executeRodSequence(client);
-                                    } else if (MacroConfig.autoWardrobe) {
+                                    } else if (MacroConfig.gearSwapMode == MacroConfig.GearSwapMode.WARDROBE) {
                                         triggerWardrobeSwap(client);
                                     } else {
-                                        resumeAfterPrepSwap(client, "ProactiveStarter(8s)");
+                                        resumeAfterPrepSwap(client);
                                     }
                                 } catch (Exception e) {
                                     e.printStackTrace();
@@ -2001,46 +2033,26 @@ public class IhanuatClient implements ClientModInitializer {
 
                         return;
 
-                    if (MacroConfig.autoWardrobe) {
-
+                    if (MacroConfig.gearSwapMode == MacroConfig.GearSwapMode.WARDROBE) {
                         client.player.displayClientMessage(
-
-                                Component.literal("Â§eStarting cleaning sequence. Ensuring Wardrobe Slot 1..."),
-
+                                Component.literal("\u00A7eStarting cleaning sequence. Ensuring Wardrobe Slot 1..."),
                                 true);
-
                         prepSwappedForCurrentPestCycle = true; // Mark for return sync
-
                         ensureWardrobeSlot(client, 1);
-
                         Thread.sleep(375); // Base wait for menu opening
-
                         long wardrobeStart = System.currentTimeMillis();
-
                         while (isSwappingWardrobe && currentState == MacroState.CLEANING
-
                                 && sessionId == currentPestSessionId) {
-
                             Thread.sleep(50);
-
                             if (System.currentTimeMillis() - wardrobeStart > 5000) {
-
                                 isSwappingWardrobe = false;
-
                                 break;
-
                             }
-
                         }
-
                         while (wardrobeCleanupTicks > 0 && currentState == MacroState.CLEANING
-
                                 && sessionId == currentPestSessionId)
-
                             Thread.sleep(50);
-
                         Thread.sleep(250); // Added safety gap
-
                     }
 
                     if (currentState != MacroState.CLEANING)
@@ -2048,10 +2060,9 @@ public class IhanuatClient implements ClientModInitializer {
                         return;
 
                     // Swap to Pest Gear AFTER Wardrobe but BEFORE SetSpawn/Warp
-
                     if (MacroConfig.autoEquipment) {
-
-                        client.player.displayClientMessage(Component.literal("Â§eSwapping to Pest Equipment..."), true);
+                        client.player.displayClientMessage(Component.literal("\u00A7eSwapping to Pest Equipment..."),
+                                true);
 
                         ensureEquipment(client, true);
 
@@ -2334,7 +2345,7 @@ public class IhanuatClient implements ClientModInitializer {
 
                 Vec3 targetHigh = new Vec3(tx2, ty2, tz2);
 
-                // Track target (non-blocking) Ã¢â‚¬â€ camera follows while player moves
+                // Track target (non-blocking) - camera follows while player moves
 
                 returnLookTarget = targetHigh;
 
@@ -2378,13 +2389,13 @@ public class IhanuatClient implements ClientModInitializer {
 
                     if (los) {
 
-                        mc.player.displayClientMessage(Component.literal("Ãƒâ€šÂ§aLOS Established. Approaching..."),
+                        mc.player.displayClientMessage(Component.literal("\u00A7aLOS Established. Approaching..."),
                                 true);
 
                     } else {
 
                         mc.player.displayClientMessage(
-                                Component.literal("Ãƒâ€šÂ§eProximity Fallback. Forcing Approach..."),
+                                Component.literal("\u00A7eProximity Fallback. Forcing Approach..."),
 
                                 true);
 
@@ -2582,7 +2593,7 @@ public class IhanuatClient implements ClientModInitializer {
 
                         mc.player.setDeltaMovement(0, 0, 0);
 
-                        mc.player.displayClientMessage(Component.literal("Â§eSnapping to start position..."), true);
+                        mc.player.displayClientMessage(Component.literal("\u00A7eSnapping to start position..."), true);
 
                         stateStartTime = System.currentTimeMillis();
 
@@ -2595,17 +2606,17 @@ public class IhanuatClient implements ClientModInitializer {
                     if (isProactiveReturnPending) {
                         triggerPestGearSwap(mc);
                         mc.player.displayClientMessage(
-                                Component.literal("§eReturn complete. Triggering pending gear swap..."), true);
+                                Component.literal("\u00A7eReturn complete. Triggering pending gear swap..."), true);
                     } else if (prepSwappedForCurrentPestCycle
                             || (!shouldRestartFarmingAfterSwap && !isSwappingWardrobe)) {
                         // Priority: If we have a pending gear restoration (prepSwapped), we MUST handle
                         // it here
                         startFarmingWithGearCheck(mc);
-                        mc.player.displayClientMessage(Component.literal("§aAuto-Restarting Macro: Farming Mode"),
+                        mc.player.displayClientMessage(Component.literal("\u00A7aAuto-Restarting Macro: Farming Mode"),
                                 true);
                     } else {
                         mc.player.displayClientMessage(
-                                Component.literal("§eReturn complete. Waiting for gear swap..."), true);
+                                Component.literal("\u00A7eReturn complete. Waiting for gear swap..."), true);
                     }
 
                 } else if (!onGround) {
@@ -2802,7 +2813,7 @@ public class IhanuatClient implements ClientModInitializer {
 
     private void handlePestCleaningFinished(Minecraft client) {
 
-        client.player.displayClientMessage(Component.literal("Â§aPest cleaning finished detected."), true);
+        client.player.displayClientMessage(Component.literal("\u00A7aPest cleaning finished detected."), true);
 
         new Thread(() -> {
 
@@ -2827,7 +2838,8 @@ public class IhanuatClient implements ClientModInitializer {
                     client.player.displayClientMessage(
 
                             Component
-                                    .literal("Â§dVisitor Threshold Met (" + visitors + "). Direct Transition in 1s..."),
+                                    .literal("\u00A7dVisitor Threshold Met (" + visitors
+                                            + "). Direct Transition in 1s..."),
 
                             true);
 
@@ -2864,7 +2876,7 @@ public class IhanuatClient implements ClientModInitializer {
 
     private void handleVisitorScriptFinished(Minecraft client) {
 
-        client.player.displayClientMessage(Component.literal("Â§aVisitor sequence complete. Returning to farm..."),
+        client.player.displayClientMessage(Component.literal("\u00A7aVisitor sequence complete. Returning to farm..."),
 
                 true);
 
@@ -2912,7 +2924,8 @@ public class IhanuatClient implements ClientModInitializer {
 
             client.player.displayClientMessage(
 
-                    Component.literal("Â§dVisitor Threshold Met (" + visitors + "). Redirecting to Visitors..."), true);
+                    Component.literal("\u00A7dVisitor Threshold Met (" + visitors + "). Redirecting to Visitors..."),
+                    true);
 
             swapToFarmingTool(client);
 
@@ -2928,7 +2941,7 @@ public class IhanuatClient implements ClientModInitializer {
 
             client.player.displayClientMessage(
 
-                    Component.literal("Â§c[Ihanuat] Aborting farm resume due to pending Server Restart!"), true);
+                    Component.literal("\u00A7c[Ihanuat] Aborting farm resume due to pending Server Restart!"), true);
 
             currentState = MacroState.FARMING;
 
@@ -2938,7 +2951,7 @@ public class IhanuatClient implements ClientModInitializer {
 
             client.player.displayClientMessage(
 
-                    Component.literal("Â§b[Ihanuat] Dynamic Rest triggered! Taking a break..."), true);
+                    Component.literal("\u00A7b[Ihanuat] Dynamic Rest triggered! Taking a break..."), true);
 
             // Calculate random break duration
 
@@ -3026,31 +3039,24 @@ public class IhanuatClient implements ClientModInitializer {
                     return;
                 }
 
-                if (MacroConfig.autoWardrobe && prepSwappedForCurrentPestCycle && trackedWardrobeSlot != 1) {
-
-                    client.player.displayClientMessage(Component.literal("§eRestoring Farming Wardrobe (Slot 1)..."),
+                if (MacroConfig.gearSwapMode == MacroConfig.GearSwapMode.WARDROBE && prepSwappedForCurrentPestCycle
+                        && trackedWardrobeSlot != 1) {
+                    client.player.displayClientMessage(
+                            Component.literal("\u00A7eRestoring Farming Wardrobe (Slot 1)..."),
                             true);
-
                     ensureWardrobeSlot(client, 1);
-
                     Thread.sleep(375);
-
                     while (isSwappingWardrobe && currentState != MacroState.OFF)
-
                         Thread.sleep(50);
-
                     while (wardrobeCleanupTicks > 0 && currentState != MacroState.OFF)
-
                         Thread.sleep(50);
-
                     Thread.sleep(250);
-
                 }
 
                 if (MacroConfig.autoEquipment && prepSwappedForCurrentPestCycle
                         && !Boolean.TRUE.equals(trackedIsPestGear)) {
-
-                    client.player.displayClientMessage(Component.literal("§eRestoring Farming Accessories..."), true);
+                    client.player.displayClientMessage(Component.literal("\u00A7eRestoring Farming Accessories..."),
+                            true);
 
                     ensureEquipment(client, true); // Lotus/Blossom (farming restoration gear)
 
@@ -3065,7 +3071,8 @@ public class IhanuatClient implements ClientModInitializer {
                 }
 
                 // When no swap was queued, apply normal startup delay
-                if (!prepSwappedForCurrentPestCycle || (!MacroConfig.autoWardrobe && !MacroConfig.autoEquipment)) {
+                if (!prepSwappedForCurrentPestCycle || (MacroConfig.gearSwapMode != MacroConfig.GearSwapMode.WARDROBE
+                        && !MacroConfig.autoEquipment)) {
                     Thread.sleep(500);
                 }
 
@@ -3079,8 +3086,6 @@ public class IhanuatClient implements ClientModInitializer {
                 isCleaningInProgress = false;
                 swapToFarmingTool(client);
                 currentState = MacroState.FARMING;
-                client.player.displayClientMessage(
-                        Component.literal("§d[DEBUG] Netherwart:1 from LandingHandler (GearCheck)"), false);
                 sendCommand(client, ".ez-startscript netherwart:1");
 
             } catch (Exception e) {
@@ -3143,12 +3148,12 @@ public class IhanuatClient implements ClientModInitializer {
                         Thread.sleep(250);
                         if (isCleaningInProgress)
                             return;
-                        if (MacroConfig.autoRodSwap)
+                        if (MacroConfig.gearSwapMode == MacroConfig.GearSwapMode.ROD)
                             executeRodSequence(client);
-                        else if (MacroConfig.autoWardrobe)
+                        else if (MacroConfig.gearSwapMode == MacroConfig.GearSwapMode.WARDROBE)
                             triggerWardrobeSwap(client);
                         else
-                            resumeAfterPrepSwap(client, "PestGearHandler");
+                            resumeAfterPrepSwap(client);
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
@@ -3172,12 +3177,12 @@ public class IhanuatClient implements ClientModInitializer {
                         if (isCleaningInProgress)
                             return;
                         Thread.sleep(100);
-                        if (MacroConfig.autoRodSwap)
+                        if (MacroConfig.gearSwapMode == MacroConfig.GearSwapMode.ROD)
                             executeRodSequence(client);
-                        else if (MacroConfig.autoWardrobe)
+                        else if (MacroConfig.gearSwapMode == MacroConfig.GearSwapMode.WARDROBE)
                             triggerWardrobeSwap(client);
                         else
-                            resumeAfterPrepSwap(client, "PestGearHandler(8s)");
+                            resumeAfterPrepSwap(client);
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
@@ -3236,7 +3241,7 @@ public class IhanuatClient implements ClientModInitializer {
 
         if (client.player != null) {
 
-            client.player.displayClientMessage(Component.literal("Â§cMacro Stopped Forcefully"), true);
+            client.player.displayClientMessage(Component.literal("\u00A7cMacro Stopped Forcefully"), true);
 
         }
 
@@ -3253,6 +3258,14 @@ public class IhanuatClient implements ClientModInitializer {
                 .setSavingRunnable(MacroConfig::save);
 
         ConfigCategory general = builder.getOrCreateCategory(Component.literal("General"));
+
+        // Wardrobe/Rod Swap Mode (Mutually Exclusive)
+        general.addEntry(builder.getEntryBuilder()
+                .startEnumSelector(Component.literal("Wardrobe/Rod Swap Mode"), MacroConfig.GearSwapMode.class,
+                        MacroConfig.gearSwapMode)
+                .setDefaultValue(MacroConfig.GearSwapMode.NONE)
+                .setSaveConsumer(newValue -> MacroConfig.gearSwapMode = newValue)
+                .build());
 
         // Pest Threshold Slider
 
@@ -3290,18 +3303,6 @@ public class IhanuatClient implements ClientModInitializer {
 
                 .build());
 
-        // Auto-Wardrobe Toggle
-
-        general.addEntry(builder.getEntryBuilder()
-
-                .startBooleanToggle(Component.literal("Auto-Wardrobe"), MacroConfig.autoWardrobe)
-
-                .setDefaultValue(false)
-
-                .setSaveConsumer(newValue -> MacroConfig.autoWardrobe = newValue)
-
-                .build());
-
         // Auto-Visitor Toggle
 
         general.addEntry(builder.getEntryBuilder()
@@ -3323,16 +3324,6 @@ public class IhanuatClient implements ClientModInitializer {
                 .setDefaultValue(true)
 
                 .setSaveConsumer(newValue -> MacroConfig.autoEquipment = newValue)
-
-                .build());
-
-        general.addEntry(builder.getEntryBuilder()
-
-                .startBooleanToggle(Component.literal("Auto-Rod Swap"), MacroConfig.autoRodSwap)
-
-                .setDefaultValue(false)
-
-                .setSaveConsumer(newValue -> MacroConfig.autoRodSwap = newValue)
 
                 .build());
 
@@ -3380,15 +3371,25 @@ public class IhanuatClient implements ClientModInitializer {
 
                 .build());
 
+        ConfigCategory qol = builder.getOrCreateCategory(Component.literal("QOL"));
+
+        qol.addEntry(builder.getEntryBuilder()
+                .startBooleanToggle(Component.literal("Stash Manager"), MacroConfig.autoStashManager)
+                .setDefaultValue(false)
+                .setSaveConsumer(newValue -> {
+                    MacroConfig.autoStashManager = newValue;
+                    if (!newValue) {
+                        isStashPickupActive = false;
+                    }
+                })
+                .build());
+
         // Start Position Capture
 
         general.addEntry(new ButtonEntry(
-
-                Component.literal("Ãƒâ€šÂ§eCapture Start Position"),
-
+                Component.literal("\u00A7eCapture Start Position"),
                 Component.literal(
-                        "Ãƒâ€šÂ§7Current: Ãƒâ€šÂ§f" + MacroConfig.startPos.toShortString() + " Ãƒâ€šÂ§7Plot: Ãƒâ€šÂ§f"
-
+                        "\u00A77Current: \u00A7f" + MacroConfig.startPos.toShortString() + " \u00A77Plot: \u00A7f"
                                 + MacroConfig.startPlot),
 
                 btn -> {
@@ -3414,12 +3415,9 @@ public class IhanuatClient implements ClientModInitializer {
         // End Position Capture
 
         general.addEntry(new ButtonEntry(
-
-                Component.literal("Ãƒâ€šÂ§bCapture End Position"),
-
+                Component.literal("\u00A7bCapture End Position"),
                 Component.literal(
-                        "Ãƒâ€šÂ§7Current: Ãƒâ€šÂ§f" + MacroConfig.endPos.toShortString() + " Ãƒâ€šÂ§7Plot: Ãƒâ€šÂ§f"
-
+                        "\u00A77Current: \u00A7f" + MacroConfig.endPos.toShortString() + " \u00A77Plot: \u00A7f"
                                 + MacroConfig.endPlot),
 
                 btn -> {
@@ -3935,9 +3933,9 @@ public class IhanuatClient implements ClientModInitializer {
 
             long seconds = totalSeconds % 60;
 
-            String title = "Â§bDynamic Rest";
+            String title = "\u00A7bDynamic Rest";
 
-            String subTitle = String.format("Â§eRemaining on rest: %02d:%02d", minutes, seconds);
+            String subTitle = String.format("\u00A7eRemaining on rest: %02d:%02d", minutes, seconds);
 
             int width = this.width;
 
@@ -4123,7 +4121,7 @@ public class IhanuatClient implements ClientModInitializer {
 
                 if (detourRes.getType() == net.minecraft.world.phys.HitResult.Type.MISS) {
 
-                    mc.player.displayClientMessage(Component.literal("Ãƒâ€šÂ§7Approach Detour: Avoiding blockage..."),
+                    mc.player.displayClientMessage(Component.literal("\u00A77Approach Detour: Avoiding blockage..."),
 
                             true);
 
@@ -4158,7 +4156,7 @@ public class IhanuatClient implements ClientModInitializer {
             e.printStackTrace();
         }
 
-        resumeAfterPrepSwap(client, "RodSequence");
+        resumeAfterPrepSwap(client);
     }
 
     private void triggerWardrobeSwap(Minecraft client) {
@@ -4170,21 +4168,10 @@ public class IhanuatClient implements ClientModInitializer {
         sendCommand(client, "/wardrobe");
     }
 
-    private void resumeAfterPrepSwap(Minecraft client, String debugSource) {
+    private void resumeAfterPrepSwap(Minecraft client) {
         swapToFarmingTool(client);
         currentState = MacroState.FARMING;
-        client.player.displayClientMessage(Component.literal("\u00A7d[DEBUG] Netherwart:1 from " + debugSource), false);
         sendCommand(client, ".ez-startscript netherwart:1");
-    }
-
-    private static void debugMsg(Minecraft client, String msg) {
-
-        if (client.player != null) {
-
-            client.player.displayClientMessage(Component.literal(msg), false);
-
-        }
-
     }
 
 }

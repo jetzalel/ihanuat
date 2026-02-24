@@ -18,10 +18,15 @@ public class MacroConfig {
 
     public static int pestThreshold = 1;
     public static int visitorThreshold = 5;
-    public static boolean autoWardrobe = false;
+
+    public enum GearSwapMode {
+        NONE, WARDROBE, ROD
+    }
+
+    public static GearSwapMode gearSwapMode = GearSwapMode.NONE;
     public static boolean autoVisitor = true;
     public static boolean autoEquipment = true;
-    public static boolean autoRodSwap = false;
+    public static boolean autoStashManager = false;
 
     // Dynamic Rest (Minutes)
     public static int restScriptingTime = 30;
@@ -42,10 +47,10 @@ public class MacroConfig {
         data.endPlot = endPlot;
         data.pestThreshold = pestThreshold;
         data.visitorThreshold = visitorThreshold;
-        data.autoWardrobe = autoWardrobe;
+        data.gearSwapMode = gearSwapMode;
         data.autoVisitor = autoVisitor;
         data.autoEquipment = autoEquipment;
-        data.autoRodSwap = autoRodSwap;
+        data.autoStashManager = autoStashManager;
         data.rotationSpeed = rotationSpeed;
 
         data.restScriptingTime = restScriptingTime;
@@ -77,16 +82,12 @@ public class MacroConfig {
                     endPos = data.endPos;
                 if (data.endPlot != null)
                     endPlot = data.endPlot;
-                // 0 is technically valid but unlikely for a threshold, but let's trust the file
-                // if it's there.
-                // Reset to default 1 if it somehow is 0 and that's invalid?
-                // No, user might want 0 (always clean? unlikely but possible).
-                // Let's just load it.
                 pestThreshold = data.pestThreshold;
                 visitorThreshold = data.visitorThreshold;
-                autoWardrobe = data.autoWardrobe;
+                gearSwapMode = data.gearSwapMode != null ? data.gearSwapMode : GearSwapMode.NONE;
+                autoVisitor = data.autoVisitor;
                 autoEquipment = data.autoEquipment;
-                autoRodSwap = data.autoRodSwap;
+                autoStashManager = data.autoStashManager;
                 rotationSpeed = data.rotationSpeed;
 
                 restScriptingTime = data.restScriptingTime;
@@ -106,10 +107,10 @@ public class MacroConfig {
         String endPlot = "None";
         int pestThreshold = 1;
         int visitorThreshold = 5;
-        boolean autoWardrobe = false;
+        GearSwapMode gearSwapMode = GearSwapMode.NONE;
         boolean autoVisitor = true;
         boolean autoEquipment = true;
-        boolean autoRodSwap = false;
+        boolean autoStashManager = false;
         int rotationSpeed = 200;
 
         int restScriptingTime = 30;
