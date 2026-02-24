@@ -491,7 +491,7 @@ public class IhanuatClient implements ClientModInitializer {
 
     private static volatile long equipmentInteractionTime = 0;
 
-    private static volatile boolean swappingToPestGear = false;
+    private static volatile boolean swappingToFarmingGear = false;
 
     private static volatile int equipmentTargetIndex = 0; // 0-3 for the 4 pieces
     private static volatile Boolean trackedIsPestGear = null; // null = Unknown, true = Pest, false = Farming
@@ -765,6 +765,32 @@ public class IhanuatClient implements ClientModInitializer {
                     returnState = ReturnState.TP_START;
                     returnTickCounter = 0;
                     currentState = MacroState.OFF;
+                }
+            }
+
+            if (MacroConfig.autoRodSwap && currentState == MacroState.FARMING) {
+                while (client.options.keyUse.consumeClick()) {
+                    new Thread(() -> {
+                        try {
+                            client.execute(() -> {
+                                // Find Rod
+                                for (int i = 0; i < 9; i++) {
+                                    if (client.player.getInventory().getItem(i).getHoverName().getString().toLowerCase()
+                                            .contains("fishing rod")) {
+                                        ((com.ihanuat.mod.mixin.AccessorInventory) client.player.getInventory())
+                                                .setSelected(i);
+                                        break;
+                                    }
+                                }
+                            });
+                            Thread.sleep(50);
+                            client.execute(() -> client.gameMode.useItem(client.player,
+                                    net.minecraft.world.InteractionHand.MAIN_HAND));
+                            Thread.sleep(50);
+                            client.execute(() -> swapToFarmingTool(client));
+                        } catch (Exception ignored) {
+                        }
+                    }).start();
                 }
             }
 
@@ -3311,6 +3337,16 @@ public class IhanuatClient implements ClientModInitializer {
 
                 .build());
 
+        general.addEntry(builder.getEntryBuilder()
+
+                .startBooleanToggle(Component.literal("Auto-Rod Swap"), MacroConfig.autoRodSwap)
+
+                .setDefaultValue(false)
+
+                .setSaveConsumer(newValue -> MacroConfig.autoRodSwap = newValue)
+
+                .build());
+
         ConfigCategory dynamicRest = builder.getOrCreateCategory(Component.literal("Dynamic Rest"));
 
         dynamicRest.addEntry(builder.getEntryBuilder()
@@ -3516,238 +3552,122 @@ public class IhanuatClient implements ClientModInitializer {
             return;
 
         if (trackedWardrobeSlot == slot) {
-            // Already there, but if we are here via a script restart,
-            // we should still trigger the 'finished' cleanup if needed.
+            // Already there
             return;
         }
 
         targetWardrobeSlot = slot;
-
         isSwappingWardrobe = true;
-
         wardrobeInteractionTime = 0;
-
         wardrobeInteractionStage = 0;
-
-        shouldRestartFarmingAfterSwap = false; // Default, can be overridden by caller
-
+        shouldRestartFarmingAfterSwap = false;
         sendCommand(client, "/wardrobe");
-
     }
 
     private void handleWardrobeMenu(Minecraft client, AbstractContainerScreen<?> screen) {
-
         if (!isSwappingWardrobe || targetWardrobeSlot == -1)
-
             return;
 
         String title = screen.getTitle().getString();
-
         if (!title.contains("Wardrobe"))
-
             return;
-
-        // Initialize time on first frame the screen is detected
 
         if (wardrobeInteractionTime == 0) {
-
             wardrobeInteractionTime = System.currentTimeMillis();
-
             return;
-
         }
 
-        // Wait delays based on stage
-
-        long currentDelay = 600; // Initial delay: 600ms (halved)
-
-        if (wardrobeInteractionStage == 1) {
-
-            currentDelay = 375; // Delay before closing: 375ms (halved)
-
-        } else if (wardrobeInteractionStage == 2) {
-
-            currentDelay = 300; // Delay AFTER closing click before clearing flag: 300ms (halved)
-
-        }
+        long currentDelay = 500;
+        if (wardrobeInteractionStage == 1)
+            currentDelay = 500;
+        else if (wardrobeInteractionStage == 2)
+            currentDelay = 500;
 
         if (System.currentTimeMillis() - wardrobeInteractionTime < currentDelay) {
-
             return;
-
         }
 
-        // Search for the slot button
-
         Slot targetSlotObj = null;
-
         Slot closeSlotObj = null;
 
         for (Slot slot : screen.getMenu().slots) {
-
             if (!slot.hasItem())
-
                 continue;
-
             String itemName = slot.getItem().getHoverName().getString();
 
             if (itemName.contains("Slot " + targetWardrobeSlot + ":")) {
-
                 targetSlotObj = slot;
-
                 if (itemName.contains("Equipped")) {
-
-                    // Already in the correct slot, no swap needed - just close cleanly
-
+                    trackedWardrobeSlot = targetWardrobeSlot;
                     isSwappingWardrobe = false;
-
                     targetWardrobeSlot = -1;
-
                     wardrobeInteractionStage = 0;
-
-                    // Set to now so the shouldRestartFarmingAfterSwap 500ms gate can fire
-
-                    wardrobeInteractionTime = System.currentTimeMillis();
-
                     wardrobeCleanupTicks = 10;
-
-                    client.setScreen(null);
-
+                    if (client.screen != null)
+                        client.setScreen(null);
                     return;
-
                 }
-
             }
-
             if (itemName.contains("Close") || itemName.contains("Go Back")) {
-
                 closeSlotObj = slot;
-
             }
-
         }
 
         if (targetSlotObj != null) {
-
             if (wardrobeInteractionStage == 0) {
-
-                // Click the slot
-
                 client.gameMode.handleInventoryMouseClick(screen.getMenu().containerId, targetSlotObj.index, 0,
-
                         ClickType.PICKUP, client.player);
-
                 wardrobeInteractionTime = System.currentTimeMillis();
-
-                wardrobeInteractionStage = 1; // Wait for close click
-
+                wardrobeInteractionStage = 1;
             } else if (wardrobeInteractionStage == 1) {
-
-                // Phase 1: Click the Close button
-
                 if (closeSlotObj != null) {
-
                     client.gameMode.handleInventoryMouseClick(screen.getMenu().containerId, closeSlotObj.index, 0,
-
                             ClickType.PICKUP, client.player);
-
                 }
-
                 wardrobeInteractionTime = System.currentTimeMillis();
-
-                wardrobeInteractionStage = 2; // Wait for buffer before flag clear
-
+                wardrobeInteractionStage = 2;
             } else if (wardrobeInteractionStage == 2) {
-
-                isSwappingWardrobe = false; // FINALLY clear flag
-
-                targetWardrobeSlot = -1;
-
                 wardrobeInteractionTime = System.currentTimeMillis();
-
-                wardrobeInteractionStage = 3; // Protocol reset phase
-
-                wardrobeCleanupTicks = 20;
-
-                // Explicitly close the GUI
-
-                client.setScreen(null);
-
-            } else if (wardrobeInteractionStage == 3) {
-
-                // Phase 2: Protocol-level reset to clear any potentially stuck cursor items
-
-                int containerId = screen.getMenu().containerId;
-
-                // Standard protocol reset: Click outside slot (-999) for both wardrobe and
-
-                // player inventory
-
-                client.gameMode.handleInventoryMouseClick(containerId, -999, 0, ClickType.PICKUP, client.player);
-
-                client.gameMode.handleInventoryMouseClick(0, -999, 0, ClickType.PICKUP, client.player);
-
-                // Ensure client-side carried state is clear
-
-                if (client.player != null) {
-
-                    if (client.player.containerMenu != null)
-
-                        client.player.containerMenu.setCarried(net.minecraft.world.item.ItemStack.EMPTY);
-
-                    if (client.player.inventoryMenu != null)
-
-                        client.player.inventoryMenu.setCarried(net.minecraft.world.item.ItemStack.EMPTY);
-
-                }
-
-                isSwappingWardrobe = false; // Clear IMMEDIATELY after close click sent
-
-                targetWardrobeSlot = -1;
-
-                wardrobeInteractionTime = System.currentTimeMillis();
-
                 wardrobeInteractionStage = 3;
-
                 wardrobeCleanupTicks = 20;
-
-                // Explicitly close the GUI to ensure state synchronization
-
-                trackedWardrobeSlot = targetWardrobeSlot; // Update tracked state
-                client.setScreen(null);
-
-                if (client.mouseHandler != null) {
-
-                    client.mouseHandler.releaseMouse();
-
+                if (client.screen != null)
+                    client.setScreen(null);
+            } else if (wardrobeInteractionStage == 3) {
+                int containerId = screen.getMenu().containerId;
+                client.gameMode.handleInventoryMouseClick(containerId, -999, 0, ClickType.PICKUP, client.player);
+                client.gameMode.handleInventoryMouseClick(0, -999, 0, ClickType.PICKUP, client.player);
+                if (client.player != null) {
+                    if (client.player.containerMenu != null)
+                        client.player.containerMenu.setCarried(net.minecraft.world.item.ItemStack.EMPTY);
+                    if (client.player.inventoryMenu != null)
+                        client.player.inventoryMenu.setCarried(net.minecraft.world.item.ItemStack.EMPTY);
                 }
-
+                trackedWardrobeSlot = targetWardrobeSlot;
+                targetWardrobeSlot = -1;
+                isSwappingWardrobe = false;
+                wardrobeInteractionStage = 0;
+                if (client.screen != null)
+                    client.setScreen(null);
+                if (client.mouseHandler != null)
+                    client.mouseHandler.releaseMouse();
             }
-
         }
-
     }
 
-    private void ensureEquipment(Minecraft client, boolean toPest) {
+    private void ensureEquipment(Minecraft client, boolean toFarming) {
         if (!MacroConfig.autoEquipment)
             return;
 
-        if (trackedIsPestGear != null && trackedIsPestGear == toPest) {
+        if (trackedIsPestGear != null && trackedIsPestGear == !toFarming) {
             return;
         }
 
         isSwappingEquipment = true;
-
-        swappingToPestGear = toPest;
-
+        swappingToFarmingGear = toFarming;
         equipmentInteractionStage = 0;
-
         equipmentInteractionTime = 0;
-
         equipmentTargetIndex = 0;
-
         sendCommand(client, "/eq");
-
     }
 
     private void handleEquipmentMenu(Minecraft client, AbstractContainerScreen<?> screen) {
@@ -3817,7 +3737,7 @@ public class IhanuatClient implements ClientModInitializer {
             if (equipmentTargetIndex == 0) {
                 int equippedCount = 0;
                 for (int i = 0; i < 4; i++) {
-                    String[] currentTargetGroup = swappingToPestGear ? pestTargets[i] : farmTargets[i];
+                    String[] currentTargetGroup = swappingToFarmingGear ? pestTargets[i] : farmTargets[i];
                     boolean foundEquipped = false;
                     for (Slot slot : screen.getMenu().slots) {
                         if (!slot.hasItem() || slot.index < 54)
@@ -3848,7 +3768,7 @@ public class IhanuatClient implements ClientModInitializer {
 
             Slot targetSlotObj = null;
 
-            String[] currentTargetGroup = swappingToPestGear ? pestTargets[equipmentTargetIndex]
+            String[] currentTargetGroup = swappingToFarmingGear ? pestTargets[equipmentTargetIndex]
 
                     : farmTargets[equipmentTargetIndex];
 
@@ -3980,7 +3900,8 @@ public class IhanuatClient implements ClientModInitializer {
 
                 }
 
-                trackedIsPestGear = swappingToPestGear; // Update tracked state
+                trackedIsPestGear = !swappingToFarmingGear; // Update tracked state
+                isSwappingEquipment = false; // FINALLY clear flag
                 equipmentInteractionStage = 3; // Done
 
             }

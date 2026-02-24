@@ -21,6 +21,7 @@ public class MacroConfig {
     public static boolean autoWardrobe = false;
     public static boolean autoVisitor = true;
     public static boolean autoEquipment = true;
+    public static boolean autoRodSwap = false;
 
     // Dynamic Rest (Minutes)
     public static int restScriptingTime = 30;
@@ -44,7 +45,7 @@ public class MacroConfig {
         data.autoWardrobe = autoWardrobe;
         data.autoVisitor = autoVisitor;
         data.autoEquipment = autoEquipment;
-        data.autoEquipment = autoEquipment;
+        data.autoRodSwap = autoRodSwap;
         data.rotationSpeed = rotationSpeed;
 
         data.restScriptingTime = restScriptingTime;
@@ -85,7 +86,7 @@ public class MacroConfig {
                 visitorThreshold = data.visitorThreshold;
                 autoWardrobe = data.autoWardrobe;
                 autoEquipment = data.autoEquipment;
-                autoEquipment = data.autoEquipment;
+                autoRodSwap = data.autoRodSwap;
                 rotationSpeed = data.rotationSpeed;
 
                 restScriptingTime = data.restScriptingTime;
@@ -108,6 +109,7 @@ public class MacroConfig {
         boolean autoWardrobe = false;
         boolean autoVisitor = true;
         boolean autoEquipment = true;
+        boolean autoRodSwap = false;
         int rotationSpeed = 200;
 
         int restScriptingTime = 30;
