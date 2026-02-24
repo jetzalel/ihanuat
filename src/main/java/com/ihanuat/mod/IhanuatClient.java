@@ -172,6 +172,8 @@ public class IhanuatClient implements ClientModInitializer {
 
     private static volatile boolean prepSwappedForCurrentPestCycle = false;
 
+    private static volatile boolean isReturningFromPestVisitor = false;
+
     private static volatile boolean isProactiveReturnPending = false;
 
     private static volatile int currentPestSessionId = 0;
@@ -2890,6 +2892,7 @@ public class IhanuatClient implements ClientModInitializer {
 
                 Thread.sleep(375);
 
+                isReturningFromPestVisitor = true;
                 finalizeReturnToFarm(client);
 
             } catch (Exception e) {
@@ -2917,6 +2920,7 @@ public class IhanuatClient implements ClientModInitializer {
 
                 Thread.sleep(750);
 
+                isReturningFromPestVisitor = true;
                 finalizeReturnToFarm(client);
 
             } catch (Exception e) {
@@ -3048,6 +3052,22 @@ public class IhanuatClient implements ClientModInitializer {
 
             try {
                 shouldRestartFarmingAfterSwap = false; // Prevent tick handler from sending duplicate startscript
+
+                if (isReturningFromPestVisitor) {
+                    // Simple return from pest/visitor finish
+                    isReturningFromPestVisitor = false;
+                    isCleaningInProgress = false;
+
+                    // Delay before restart
+                    Thread.sleep(1200); // 1.2s cushion
+
+                    client.execute(() -> {
+                        swapToFarmingTool(client);
+                        sendCommand(client, ".ez-startscript netherwart:1");
+                        currentState = MacroState.FARMING;
+                    });
+                    return;
+                }
 
                 if (MacroConfig.autoWardrobe && prepSwappedForCurrentPestCycle && trackedWardrobeSlot != 1) {
 
