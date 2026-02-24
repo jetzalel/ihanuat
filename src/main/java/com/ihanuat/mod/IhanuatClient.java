@@ -3597,12 +3597,13 @@ public class IhanuatClient implements ClientModInitializer {
 
             if (itemName.contains("Slot " + targetWardrobeSlot + ":")) {
                 targetSlotObj = slot;
+                // Check if already equipped (green 'Equipped' in name or lore-like string)
                 if (itemName.contains("Equipped")) {
                     trackedWardrobeSlot = targetWardrobeSlot;
                     isSwappingWardrobe = false;
                     targetWardrobeSlot = -1;
                     wardrobeInteractionStage = 0;
-                    wardrobeCleanupTicks = 10;
+                    wardrobeCleanupTicks = 20;
                     if (client.screen != null)
                         client.setScreen(null);
                     return;
@@ -3627,12 +3628,7 @@ public class IhanuatClient implements ClientModInitializer {
                 wardrobeInteractionTime = System.currentTimeMillis();
                 wardrobeInteractionStage = 2;
             } else if (wardrobeInteractionStage == 2) {
-                wardrobeInteractionTime = System.currentTimeMillis();
-                wardrobeInteractionStage = 3;
-                wardrobeCleanupTicks = 20;
-                if (client.screen != null)
-                    client.setScreen(null);
-            } else if (wardrobeInteractionStage == 3) {
+                // Protocol-level reset and CLEANUP FINISH
                 int containerId = screen.getMenu().containerId;
                 client.gameMode.handleInventoryMouseClick(containerId, -999, 0, ClickType.PICKUP, client.player);
                 client.gameMode.handleInventoryMouseClick(0, -999, 0, ClickType.PICKUP, client.player);
@@ -3642,14 +3638,18 @@ public class IhanuatClient implements ClientModInitializer {
                     if (client.player.inventoryMenu != null)
                         client.player.inventoryMenu.setCarried(net.minecraft.world.item.ItemStack.EMPTY);
                 }
+
                 trackedWardrobeSlot = targetWardrobeSlot;
                 targetWardrobeSlot = -1;
-                isSwappingWardrobe = false;
-                wardrobeInteractionStage = 0;
+                isSwappingWardrobe = false; // FINALLY clear the flag here
+                wardrobeInteractionStage = 3; // Done
+                wardrobeCleanupTicks = 20;
                 if (client.screen != null)
                     client.setScreen(null);
-                if (client.mouseHandler != null)
+
+                if (client.mouseHandler != null) {
                     client.mouseHandler.releaseMouse();
+                }
             }
         }
     }
