@@ -28,6 +28,21 @@ public class MacroConfig {
     public static boolean autoEquipment = true;
     public static boolean autoStashManager = false;
 
+    // Wardrobe Slots
+    public static int wardrobeSlotFarming = 1;
+    public static int wardrobeSlotPest = 2;
+    public static int wardrobeSlotVisitor = 3;
+    public static boolean armorSwapVisitor = false;
+
+    // GUI Click Delay (ms)
+    public static int guiClickDelay = 500;
+
+    // Restart Time (Minutes before expected server restart to stop macro)
+    public static int restartTime = 5;
+
+    // Restart Script Command (sent to restart farming)
+    public static String restartScript = ".ez-startscript netherwart:1";
+
     // Dynamic Rest (Minutes)
     public static int restScriptingTime = 30;
     public static int restScriptingTimeOffset = 3;
@@ -52,6 +67,14 @@ public class MacroConfig {
         data.autoEquipment = autoEquipment;
         data.autoStashManager = autoStashManager;
         data.rotationSpeed = rotationSpeed;
+
+        data.wardrobeSlotFarming = wardrobeSlotFarming;
+        data.wardrobeSlotPest = wardrobeSlotPest;
+        data.wardrobeSlotVisitor = wardrobeSlotVisitor;
+        data.armorSwapVisitor = armorSwapVisitor;
+        data.guiClickDelay = guiClickDelay;
+        data.restartTime = restartTime;
+        data.restartScript = restartScript;
 
         data.restScriptingTime = restScriptingTime;
         data.restScriptingTimeOffset = restScriptingTimeOffset;
@@ -90,6 +113,15 @@ public class MacroConfig {
                 autoStashManager = data.autoStashManager;
                 rotationSpeed = data.rotationSpeed;
 
+                wardrobeSlotFarming = data.wardrobeSlotFarming > 0 ? data.wardrobeSlotFarming : 1;
+                wardrobeSlotPest = data.wardrobeSlotPest > 0 ? data.wardrobeSlotPest : 2;
+                wardrobeSlotVisitor = data.wardrobeSlotVisitor > 0 ? data.wardrobeSlotVisitor : 3;
+                armorSwapVisitor = data.armorSwapVisitor;
+                guiClickDelay = data.guiClickDelay > 0 ? data.guiClickDelay : 500;
+                restartTime = data.restartTime > 0 ? data.restartTime : 5;
+                if (data.restartScript != null && !data.restartScript.isBlank())
+                    restartScript = data.restartScript;
+
                 restScriptingTime = data.restScriptingTime;
                 restScriptingTimeOffset = data.restScriptingTimeOffset;
                 restBreakTime = data.restBreakTime;
@@ -112,6 +144,14 @@ public class MacroConfig {
         boolean autoEquipment = true;
         boolean autoStashManager = false;
         int rotationSpeed = 200;
+
+        int wardrobeSlotFarming = 1;
+        int wardrobeSlotPest = 2;
+        int wardrobeSlotVisitor = 3;
+        boolean armorSwapVisitor = false;
+        int guiClickDelay = 500;
+        int restartTime = 5;
+        String restartScript = ".ez-startscript netherwart:1";
 
         int restScriptingTime = 30;
         int restScriptingTimeOffset = 3;

@@ -837,18 +837,18 @@ public class IhanuatClient implements ClientModInitializer {
 
                                 if (MacroConfig.gearSwapMode == MacroConfig.GearSwapMode.WARDROBE
                                         && prepSwappedForCurrentPestCycle
-                                        && trackedWardrobeSlot != 1) {
+                                        && trackedWardrobeSlot != MacroConfig.wardrobeSlotFarming) {
 
-                                    client.execute(() -> ensureWardrobeSlot(client, 1));
+                                    client.execute(() -> ensureWardrobeSlot(client, MacroConfig.wardrobeSlotFarming));
 
-                                    Thread.sleep(1250); // Wait for swap
+                                    Thread.sleep(800); // Wait for swap
 
                                 }
 
                                 client.execute(() -> {
 
                                     swapToFarmingTool(client);
-                                    sendCommand(client, ".ez-startscript netherwart:1");
+                                    sendCommand(client, MacroConfig.restartScript);
 
                                 });
 
@@ -1148,8 +1148,8 @@ public class IhanuatClient implements ClientModInitializer {
 
                         swapToFarmingTool(client);
                         client.player.displayClientMessage(
-                                Component.literal("\u00A7d[DEBUG] Netherwart:1 from RecoveryHandler"), false);
-                        sendCommand(client, ".ez-startscript netherwart:1");
+                                Component.literal("\u00A7d[Ihanuat] Resuming via RecoveryHandler"), false);
+                        sendCommand(client, MacroConfig.restartScript);
 
                         break;
 
@@ -1248,7 +1248,9 @@ public class IhanuatClient implements ClientModInitializer {
 
                         } else {
 
-                            sendCommand(client, ".ez-startscript netherwart:1");
+                            swapToFarmingTool(client);
+
+                            sendCommand(client, MacroConfig.restartScript);
 
                             currentState = MacroState.FARMING;
 
@@ -2035,10 +2037,11 @@ public class IhanuatClient implements ClientModInitializer {
 
                     if (MacroConfig.gearSwapMode == MacroConfig.GearSwapMode.WARDROBE) {
                         client.player.displayClientMessage(
-                                Component.literal("\u00A7eStarting cleaning sequence. Ensuring Wardrobe Slot 1..."),
+                                Component.literal("\u00A7eStarting cleaning sequence. Ensuring Wardrobe Slot "
+                                        + MacroConfig.wardrobeSlotFarming + "..."),
                                 true);
                         prepSwappedForCurrentPestCycle = true; // Mark for return sync
-                        ensureWardrobeSlot(client, 1);
+                        ensureWardrobeSlot(client, MacroConfig.wardrobeSlotFarming);
                         Thread.sleep(375); // Base wait for menu opening
                         long wardrobeStart = System.currentTimeMillis();
                         while (isSwappingWardrobe && currentState == MacroState.CLEANING
@@ -2828,8 +2831,7 @@ public class IhanuatClient implements ClientModInitializer {
                     Thread.sleep(50);
 
                 // Wait for sync before checking visitors
-
-                Thread.sleep(500);
+                Thread.sleep(100);
 
                 int visitors = getVisitorCount(client);
 
@@ -2855,21 +2857,18 @@ public class IhanuatClient implements ClientModInitializer {
 
                 }
 
-                Thread.sleep(600); // 600ms delay before warp
+                Thread.sleep(150); // Small delay before warp
 
                 sendCommand(client, "/warp garden");
 
-                Thread.sleep(375);
+                Thread.sleep(150);
 
                 isReturningFromPestVisitor = true;
                 finalizeReturnToFarm(client);
 
             } catch (Exception e) {
-
                 e.printStackTrace();
-
             }
-
         }).start();
 
     }
@@ -2884,10 +2883,26 @@ public class IhanuatClient implements ClientModInitializer {
 
             try {
 
-                Thread.sleep(600); // 600ms delay before return as requested
+                // Swap back to farming wardrobe after visitor if armor swap was done
+                if (MacroConfig.armorSwapVisitor && MacroConfig.gearSwapMode == MacroConfig.GearSwapMode.WARDROBE
+                        && trackedWardrobeSlot != MacroConfig.wardrobeSlotFarming) {
+                    client.player.displayClientMessage(
+                            Component.literal("\u00A7eRestoring Farming Wardrobe (Slot "
+                                    + MacroConfig.wardrobeSlotFarming + ")..."),
+                            true);
+                    client.execute(() -> ensureWardrobeSlot(client, MacroConfig.wardrobeSlotFarming));
+                    Thread.sleep(375);
+                    while (isSwappingWardrobe)
+                        Thread.sleep(50);
+                    while (wardrobeCleanupTicks > 0)
+                        Thread.sleep(50);
+                    Thread.sleep(250);
+                }
+
+                Thread.sleep(150); // Delay before return
                 sendCommand(client, "/warp garden");
 
-                Thread.sleep(750);
+                Thread.sleep(150);
 
                 isReturningFromPestVisitor = true;
                 finalizeReturnToFarm(client);
@@ -2909,13 +2924,9 @@ public class IhanuatClient implements ClientModInitializer {
             return;
 
         // Visitor Sync Gap
-
         try {
-
-            Thread.sleep(500);
-
+            Thread.sleep(150);
         } catch (InterruptedException ignored) {
-
         }
 
         int visitors = getVisitorCount(client);
@@ -2928,6 +2939,25 @@ public class IhanuatClient implements ClientModInitializer {
                     true);
 
             swapToFarmingTool(client);
+
+            // Swap to visitor wardrobe if configured
+            if (MacroConfig.armorSwapVisitor && MacroConfig.gearSwapMode == MacroConfig.GearSwapMode.WARDROBE
+                    && trackedWardrobeSlot != MacroConfig.wardrobeSlotVisitor) {
+                client.player.displayClientMessage(
+                        Component.literal("\u00A7eSwapping to Visitor Wardrobe (Slot " + MacroConfig.wardrobeSlotVisitor
+                                + ")..."),
+                        true);
+                client.execute(() -> ensureWardrobeSlot(client, MacroConfig.wardrobeSlotVisitor));
+                try {
+                    Thread.sleep(375);
+                    while (isSwappingWardrobe)
+                        Thread.sleep(50);
+                    while (wardrobeCleanupTicks > 0)
+                        Thread.sleep(50);
+                    Thread.sleep(250);
+                } catch (InterruptedException ignored) {
+                }
+            }
 
             sendCommand(client, ".ez-startscript misc:visitor");
 
@@ -3029,22 +3059,23 @@ public class IhanuatClient implements ClientModInitializer {
                     isCleaningInProgress = false;
 
                     // Delay before restart
-                    Thread.sleep(1200); // 1.2s cushion
+                    Thread.sleep(450); // Reduced from 1.2s cushion
 
                     client.execute(() -> {
                         swapToFarmingTool(client);
-                        sendCommand(client, ".ez-startscript netherwart:1");
+                        sendCommand(client, MacroConfig.restartScript);
                         currentState = MacroState.FARMING;
                     });
                     return;
                 }
 
                 if (MacroConfig.gearSwapMode == MacroConfig.GearSwapMode.WARDROBE && prepSwappedForCurrentPestCycle
-                        && trackedWardrobeSlot != 1) {
+                        && trackedWardrobeSlot != MacroConfig.wardrobeSlotFarming) {
                     client.player.displayClientMessage(
-                            Component.literal("\u00A7eRestoring Farming Wardrobe (Slot 1)..."),
+                            Component.literal("\u00A7eRestoring Farming Wardrobe (Slot "
+                                    + MacroConfig.wardrobeSlotFarming + ")..."),
                             true);
-                    ensureWardrobeSlot(client, 1);
+                    ensureWardrobeSlot(client, MacroConfig.wardrobeSlotFarming);
                     Thread.sleep(375);
                     while (isSwappingWardrobe && currentState != MacroState.OFF)
                         Thread.sleep(50);
@@ -3080,13 +3111,13 @@ public class IhanuatClient implements ClientModInitializer {
                 long menuWaitStart = System.currentTimeMillis();
                 while (client.screen != null && System.currentTimeMillis() - menuWaitStart < 5000)
                     Thread.sleep(50);
-                Thread.sleep(350);
+                Thread.sleep(100);
 
                 prepSwappedForCurrentPestCycle = false;
                 isCleaningInProgress = false;
                 swapToFarmingTool(client);
                 currentState = MacroState.FARMING;
-                sendCommand(client, ".ez-startscript netherwart:1");
+                sendCommand(client, MacroConfig.restartScript);
 
             } catch (Exception e) {
 
@@ -3303,6 +3334,42 @@ public class IhanuatClient implements ClientModInitializer {
 
                 .build());
 
+        // GUI Click Delay
+
+        general.addEntry(builder.getEntryBuilder()
+
+                .startIntSlider(Component.literal("GUI Click Delay (ms)"), MacroConfig.guiClickDelay, 100, 2000)
+
+                .setDefaultValue(500)
+
+                .setSaveConsumer(newValue -> MacroConfig.guiClickDelay = newValue)
+
+                .build());
+
+        // Restart Time
+
+        general.addEntry(builder.getEntryBuilder()
+
+                .startIntField(Component.literal("Restart Time (Minutes)"), MacroConfig.restartTime)
+
+                .setDefaultValue(5)
+
+                .setSaveConsumer(newValue -> MacroConfig.restartTime = newValue)
+
+                .build());
+
+        // Restart Script
+
+        general.addEntry(builder.getEntryBuilder()
+
+                .startStrField(Component.literal("Restart Script Command"), MacroConfig.restartScript)
+
+                .setDefaultValue(".ez-startscript netherwart:1")
+
+                .setSaveConsumer(newValue -> MacroConfig.restartScript = newValue)
+
+                .build());
+
         // Auto-Visitor Toggle
 
         general.addEntry(builder.getEntryBuilder()
@@ -3324,6 +3391,54 @@ public class IhanuatClient implements ClientModInitializer {
                 .setDefaultValue(true)
 
                 .setSaveConsumer(newValue -> MacroConfig.autoEquipment = newValue)
+
+                .build());
+
+        // Armor Swap for Visitor
+
+        general.addEntry(builder.getEntryBuilder()
+
+                .startBooleanToggle(Component.literal("Armor Swap for Visitor"), MacroConfig.armorSwapVisitor)
+
+                .setDefaultValue(false)
+
+                .setSaveConsumer(newValue -> MacroConfig.armorSwapVisitor = newValue)
+
+                .build());
+
+        // Wardrobe Slot - Farming
+
+        general.addEntry(builder.getEntryBuilder()
+
+                .startIntSlider(Component.literal("Wardrobe Slot: Farming"), MacroConfig.wardrobeSlotFarming, 1, 9)
+
+                .setDefaultValue(1)
+
+                .setSaveConsumer(newValue -> MacroConfig.wardrobeSlotFarming = newValue)
+
+                .build());
+
+        // Wardrobe Slot - Pest
+
+        general.addEntry(builder.getEntryBuilder()
+
+                .startIntSlider(Component.literal("Wardrobe Slot: Pest"), MacroConfig.wardrobeSlotPest, 1, 9)
+
+                .setDefaultValue(2)
+
+                .setSaveConsumer(newValue -> MacroConfig.wardrobeSlotPest = newValue)
+
+                .build());
+
+        // Wardrobe Slot - Visitor
+
+        general.addEntry(builder.getEntryBuilder()
+
+                .startIntSlider(Component.literal("Wardrobe Slot: Visitor"), MacroConfig.wardrobeSlotVisitor, 1, 9)
+
+                .setDefaultValue(3)
+
+                .setSaveConsumer(newValue -> MacroConfig.wardrobeSlotVisitor = newValue)
 
                 .build());
 
@@ -3564,11 +3679,11 @@ public class IhanuatClient implements ClientModInitializer {
             return;
         }
 
-        long currentDelay = 500;
+        long currentDelay = MacroConfig.guiClickDelay;
         if (wardrobeInteractionStage == 1)
-            currentDelay = 500;
+            currentDelay = MacroConfig.guiClickDelay;
         else if (wardrobeInteractionStage == 2)
-            currentDelay = 500;
+            currentDelay = MacroConfig.guiClickDelay;
 
         if (System.currentTimeMillis() - wardrobeInteractionTime < currentDelay) {
             return;
@@ -3685,9 +3800,9 @@ public class IhanuatClient implements ClientModInitializer {
 
         }
 
-        // 500ms delay between clicks
+        // Configurable delay between clicks
 
-        if (System.currentTimeMillis() - equipmentInteractionTime < 500) {
+        if (System.currentTimeMillis() - equipmentInteractionTime < MacroConfig.guiClickDelay) {
 
             return;
 
@@ -4160,7 +4275,7 @@ public class IhanuatClient implements ClientModInitializer {
     }
 
     private void triggerWardrobeSwap(Minecraft client) {
-        targetWardrobeSlot = 2;
+        targetWardrobeSlot = MacroConfig.wardrobeSlotPest;
         isSwappingWardrobe = true;
         wardrobeInteractionTime = 0;
         wardrobeInteractionStage = 0;
@@ -4171,7 +4286,7 @@ public class IhanuatClient implements ClientModInitializer {
     private void resumeAfterPrepSwap(Minecraft client) {
         swapToFarmingTool(client);
         currentState = MacroState.FARMING;
-        sendCommand(client, ".ez-startscript netherwart:1");
+        sendCommand(client, MacroConfig.restartScript);
     }
 
 }
