@@ -15,6 +15,6 @@ oh also wardrobe swap as of now only works on slots 1 and 2, 1 being the farming
 only runs on s shape crop/netherwart as of now as well  
 change the auto direction and should work on most crops until i add choosing what script to run  
 
-<img width="1273" height="716" alt="image" src="https://github.com/user-attachments/assets/7dd88694-b0bc-48ad-8ff0-20478ebf19ea" />
+<img width="1273" height="716" alt="image" src="https://raw.githubusercontent.com/mizly/ihanuat/refs/heads/main/screenshot.png" />
 dynamic rest works by setting the scripting time and break time, with the offset offsetting that scripting/break time by plus or minus the offset minutes  
 dynamic rest is always on, can disable by setting scripting time very high  
