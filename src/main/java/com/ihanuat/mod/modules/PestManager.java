@@ -3,7 +3,6 @@ package com.ihanuat.mod.modules;
 import com.ihanuat.mod.MacroConfig;
 import com.ihanuat.mod.MacroState;
 import com.ihanuat.mod.util.ClientUtils;
-import com.ihanuat.mod.util.MovementUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.PlayerInfo;
 import net.minecraft.network.chat.Component;
@@ -78,7 +77,7 @@ public class PestManager {
                         prepSwappedForCurrentPestCycle = false;
                     }
                 } else {
-                    if (cooldownSeconds > 8 && prepSwappedForCurrentPestCycle && !isCleaningInProgress) {
+                    if (cooldownSeconds > 3 && prepSwappedForCurrentPestCycle && !isCleaningInProgress) {
                         prepSwappedForCurrentPestCycle = false;
                     }
                 }
@@ -90,7 +89,7 @@ public class PestManager {
                     if (MacroConfig.autoEquipment) {
                         if (cooldownSeconds <= 170)
                             triggerPrepSwap(client);
-                    } else if (cooldownSeconds <= 8) {
+                    } else if (cooldownSeconds <= 3) {
                         triggerPrepSwap(client);
                     }
                 }
