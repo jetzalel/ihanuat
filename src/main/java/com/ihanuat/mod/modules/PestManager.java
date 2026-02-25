@@ -52,6 +52,8 @@ public class PestManager {
             Matcher aliveMatcher = PESTS_ALIVE_PATTERN.matcher(clean);
             if (aliveMatcher.find()) {
                 aliveCount = Integer.parseInt(aliveMatcher.group(1));
+            } else if (clean.contains("Alive: MAX PESTS") || clean.contains("Pests: MAX PESTS")) {
+                aliveCount = 99; // Explicitly high count to ensure threshold is met
             }
 
             Matcher cooldownMatcher = COOLDOWN_PATTERN.matcher(clean);
