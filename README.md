@@ -13,6 +13,6 @@ with 1 being start of farm is fine
 
 change the auto direction and should work on most farms, use .ez-listfarms to find the right command.
 
-<img width="1273" height="716" alt="image" src="https://github.com/user-attachments/assets/7dd88694-b0bc-48ad-8ff0-20478ebf19ea" />
+<img width="1273" height="716" alt="image" src="https://raw.githubusercontent.com/mizly/ihanuat/refs/heads/main/screenshot.png" />
 dynamic rest works by setting the scripting time and break time, with the offset offsetting that scripting/break time by plus or minus the offset minutes  
 dynamic rest is always on, can disable by setting scripting time very high  
