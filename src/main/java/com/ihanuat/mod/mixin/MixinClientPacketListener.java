@@ -15,7 +15,8 @@ public class MixinClientPacketListener {
     @Inject(method = "onDisconnect", at = @At("HEAD"))
     private void onDisconnect(DisconnectionDetails details, CallbackInfo ci) {
         // Only act if the macro considers it a non-intentional disconnect
-        if (IhanuatClient.isMacroRunning() && !IhanuatClient.isIntentionalDisconnect()) {
+        if (com.ihanuat.mod.MacroStateManager.isMacroRunning()
+                && !com.ihanuat.mod.MacroStateManager.isIntentionalDisconnect()) {
             // Unexpected kick — reconnect after short delay (30-60s)
             long delay = 30 + (long) (Math.random() * 30);
             ReconnectScheduler.scheduleReconnect(delay, true);
