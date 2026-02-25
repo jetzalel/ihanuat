@@ -29,14 +29,44 @@ public class GearManager {
     public static volatile boolean shouldRestartFarmingAfterSwap = false;
     public static volatile long wardrobeOpenPendingTime = 0;
 
+    public static void reset() {
+        isSwappingWardrobe = false;
+        isSwappingEquipment = false;
+        shouldRestartFarmingAfterSwap = false;
+        wardrobeCleanupTicks = 0;
+        trackedWardrobeSlot = -1;
+        trackedIsPestGear = null;
+    }
+
     public static void triggerWardrobeSwap(Minecraft client, int slot) {
+        if (trackedWardrobeSlot == slot) {
+            ClientUtils.sendCommand(client, ".ez-stopscript");
+            new Thread(() -> {
+                try {
+                    Thread.sleep(400);
+                    client.execute(() -> {
+                        GearManager.swapToFarmingTool(client);
+                        ClientUtils.sendCommand(client, MacroConfig.restartScript);
+                    });
+                } catch (Exception ignored) {
+                }
+            }).start();
+            return;
+        }
+
         targetWardrobeSlot = slot;
         isSwappingWardrobe = true;
         wardrobeInteractionTime = 0;
         wardrobeInteractionStage = 0;
         shouldRestartFarmingAfterSwap = true;
         ClientUtils.sendCommand(client, ".ez-stopscript");
-        wardrobeOpenPendingTime = System.currentTimeMillis();
+        new Thread(() -> {
+            try {
+                Thread.sleep(375);
+                client.execute(() -> ClientUtils.sendCommand(client, "/wardrobe"));
+            } catch (Exception ignored) {
+            }
+        }).start();
     }
 
     public static void ensureWardrobeSlot(Minecraft client, int slot) {
@@ -67,6 +97,19 @@ public class GearManager {
                 return;
 
             Slot slot = screen.getMenu().slots.get(slotIdx);
+            ItemStack stack = slot.getItem();
+            String itemName = stack.getItem().toString().toLowerCase();
+
+            if (itemName.contains("lime_dye")) {
+                client.player.displayClientMessage(
+                        Component.literal("§aWardrobe Slot " + targetWardrobeSlot + " is already active."), true);
+                trackedWardrobeSlot = targetWardrobeSlot;
+                isSwappingWardrobe = false;
+                client.player.closeContainer();
+                handleWardrobeCompletion(client);
+                return;
+            }
+
             client.gameMode.handleInventoryMouseClick(screen.getMenu().containerId, slot.index, 0, ClickType.PICKUP,
                     client.player);
             wardrobeInteractionTime = now;
@@ -74,9 +117,27 @@ public class GearManager {
         } else if (wardrobeInteractionStage == 1) {
             trackedWardrobeSlot = targetWardrobeSlot;
             isSwappingWardrobe = false;
-            wardrobeInteractionTime = now;
             client.player.closeContainer();
-            wardrobeCleanupTicks = 10;
+            handleWardrobeCompletion(client);
+        }
+    }
+
+    private static void handleWardrobeCompletion(Minecraft client) {
+        if (shouldRestartFarmingAfterSwap) {
+            shouldRestartFarmingAfterSwap = false;
+            client.player.displayClientMessage(Component.literal("§aWardrobe swap finished. Restarting farming..."),
+                    true);
+            new Thread(() -> {
+                try {
+                    Thread.sleep(600);
+                    client.execute(() -> {
+                        GearManager.swapToFarmingTool(client);
+                        ClientUtils.sendCommand(client, MacroConfig.restartScript);
+                    });
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }).start();
         }
     }
 
@@ -94,7 +155,7 @@ public class GearManager {
             return;
 
         long now = System.currentTimeMillis();
-        if (now - equipmentInteractionTime < MacroConfig.guiClickDelay)
+        if (now - equipmentInteractionTime < MacroConfig.equipmentSwapDelay)
             return;
 
         String title = screen.getTitle().getString();

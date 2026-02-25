@@ -18,11 +18,12 @@ import net.minecraft.resources.Identifier;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.Random;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class IhanuatClient implements ClientModInitializer {
     private static KeyMapping configKey;
     private static KeyMapping startScriptKey;
-    private static KeyMapping returnKey;
 
     private static boolean isHandlingMessage = false;
     private static boolean hasCheckedPersistenceOnJoin = false;
@@ -72,8 +73,6 @@ public class IhanuatClient implements ClientModInitializer {
                 .registerKeyBinding(new KeyMapping("key.ihanuat.config", GLFW.GLFW_KEY_O, category));
         startScriptKey = KeyBindingHelper
                 .registerKeyBinding(new KeyMapping("key.ihanuat.start_script", GLFW.GLFW_KEY_K, category));
-        returnKey = KeyBindingHelper
-                .registerKeyBinding(new KeyMapping("key.ihanuat.return_to_start", GLFW.GLFW_KEY_R, category));
 
         ClientReceiveMessageEvents.GAME.register((message, overlay) -> {
             if (isHandlingMessage)
@@ -109,15 +108,20 @@ public class IhanuatClient implements ClientModInitializer {
                     }
                 }
 
+                if (lowerText.contains("yuck!") && lowerText.contains("spawned in plot")) {
+                    if (MacroStateManager.getCurrentState() == MacroState.State.FARMING) {
+                        Pattern p = Pattern.compile("Plot\\s*(?:-|#)\\s*(\\d+)", Pattern.CASE_INSENSITIVE);
+                        Matcher m = p.matcher(text);
+                        if (m.find()) {
+                            String plot = m.group(1);
+                            PestManager.startCleaningSequence(Minecraft.getInstance(), plot);
+                        }
+                    }
+                }
+
                 if (MacroStateManager.getCurrentState() == MacroState.State.CLEANING && lowerText.contains("visitor")
                         && lowerText.contains("finished") && !text.contains("sequence complete")) {
                     VisitorManager.handleVisitorScriptFinished(Minecraft.getInstance());
-                }
-
-                if (MacroStateManager.getReturnState() != MacroState.ReturnState.OFF
-                        && lowerText.contains("fell into the void")) {
-                    MacroStateManager.setReturnState(MacroState.ReturnState.TP_START);
-                    ClientUtils.forceReleaseKeys(Minecraft.getInstance());
                 }
             } finally {
                 isHandlingMessage = false;
@@ -129,12 +133,10 @@ public class IhanuatClient implements ClientModInitializer {
                 return;
             while (configKey.consumeClick())
                 client.setScreen(ConfigScreenFactory.createConfigScreen(client.screen));
-            while (returnKey.consumeClick()) {
-                MacroStateManager.setReturnState(MacroState.ReturnState.TP_START);
-                MacroStateManager.setCurrentState(MacroState.State.OFF);
-            }
             while (startScriptKey.consumeClick()) {
                 if (MacroStateManager.getCurrentState() == MacroState.State.OFF) {
+                    PestManager.reset();
+                    GearManager.reset();
                     MacroStateManager.setCurrentState(MacroState.State.FARMING);
                     if (nextRestTriggerMs == 0) {
                         int base = MacroConfig.restScriptingTime;
@@ -168,8 +170,7 @@ public class IhanuatClient implements ClientModInitializer {
             if (client.player == null)
                 return;
             if (client.screen instanceof PauseScreen || client.screen instanceof ChatScreen) {
-                if (MacroStateManager.isMacroRunning()
-                        || MacroStateManager.getReturnState() != MacroState.ReturnState.OFF) {
+                if (MacroStateManager.isMacroRunning()) {
                     MacroStateManager.stopMacro(client);
                 }
             }
@@ -182,21 +183,15 @@ public class IhanuatClient implements ClientModInitializer {
             com.ihanuat.mod.modules.RestartManager.update(client);
             com.ihanuat.mod.modules.PestManager.update(client);
             com.ihanuat.mod.modules.GearManager.cleanupTick(client);
-            RotationManager.update(client, MacroStateManager.getReturnState());
+            RotationManager.update(client);
 
             if (MacroStateManager.getCurrentState() == MacroState.State.RECOVERING) {
                 RecoveryManager.update(client);
                 return;
             }
 
-            if (MacroStateManager.getCurrentState() == MacroState.State.FARMING
-                    && MacroStateManager.getReturnState() == MacroState.ReturnState.OFF) {
-                PestManager.checkTabListForPests(client, MacroStateManager.getCurrentState(),
-                        MacroStateManager.getReturnState());
-            }
-
-            if (MacroStateManager.getReturnState() != MacroState.ReturnState.OFF) {
-                ReturnManager.handleReturnSequence(client);
+            if (MacroStateManager.getCurrentState() == MacroState.State.FARMING) {
+                PestManager.checkTabListForPests(client, MacroStateManager.getCurrentState());
             }
 
             // Stash Pickup Logic
@@ -213,11 +208,11 @@ public class IhanuatClient implements ClientModInitializer {
     public static void updateRotation() {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player != null) {
-            RotationManager.update(mc, MacroStateManager.getReturnState());
+            RotationManager.update(mc);
         }
     }
 
     public static boolean shouldSuppressMouseRotation() {
-        return RotationManager.isRotating() || MacroStateManager.getReturnState() != MacroState.ReturnState.OFF;
+        return RotationManager.isRotating();
     }
 }

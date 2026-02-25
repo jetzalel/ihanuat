@@ -4,7 +4,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.Vec3;
-import com.ihanuat.mod.MacroConfig;
 
 public class MovementUtils {
 
@@ -71,14 +70,5 @@ public class MovementUtils {
             }
         }
         return target;
-    }
-
-    public static boolean isInEndRow(Minecraft client) {
-        if (client.player == null || MacroConfig.endPos == null)
-            return false;
-        BlockPos playerPos = client.player.blockPosition();
-        int dx = Math.abs(playerPos.getX() - MacroConfig.endPos.getX());
-        int dz = Math.abs(playerPos.getZ() - MacroConfig.endPos.getZ());
-        return dx <= 2 || dz <= 2;
     }
 }

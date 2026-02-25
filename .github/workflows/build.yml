@@ -1,0 +1,56 @@
+name: Build and Release
+
+on:
+  push:
+    branches:
+      - master
+      - main
+    paths-ignore:
+      - 'README.md'
+      - '.gitignore'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'gradle'
+
+      - name: Validate Gradle Wrapper
+        uses: gradle/wrapper-validation-action@v2
+
+      - name: Make Gradle Executable
+        run: chmod +x gradlew
+
+      - name: Build with Gradle
+        run: ./gradlew build
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        if: github.event_name == 'push'
+        with:
+          tag_name: latest
+          name: Latest Build
+          body: |
+            ## Automated Build
+            This release is automatically updated on every push to the master/main branch.
+            
+            **Last Commit:** ${{ github.sha }}
+            **Branch:** ${{ github.ref_name }}
+          files: build/libs/*.jar
+          draft: false
+          prerelease: false
+          make_latest: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

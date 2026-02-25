@@ -28,7 +28,7 @@ public class VisitorManager {
                     } else if (info.getProfile() != null) {
                         name = String.valueOf(info.getProfile());
                     }
-                    String clean = name.replaceAll("\u00A7[0-9a-fk-or]", "").trim();
+                    String clean = name.replaceAll("(?i)\u00A7[0-9a-fk-or]", "").trim();
                     Matcher m = VISITORS_PATTERN.matcher(clean);
                     if (m.find()) {
                         return Integer.parseInt(m.group(1));
@@ -46,24 +46,9 @@ public class VisitorManager {
                 true);
         new Thread(() -> {
             try {
-                if (MacroConfig.armorSwapVisitor && MacroConfig.gearSwapMode == MacroConfig.GearSwapMode.WARDROBE
-                        && GearManager.trackedWardrobeSlot != MacroConfig.wardrobeSlotFarming) {
-                    client.player.displayClientMessage(Component.literal(
-                            "\u00A7eRestoring Farming Wardrobe (Slot " + MacroConfig.wardrobeSlotFarming + ")..."),
-                            true);
-                    client.execute(() -> GearManager.ensureWardrobeSlot(client, MacroConfig.wardrobeSlotFarming));
-                    Thread.sleep(375);
-                    while (GearManager.isSwappingWardrobe)
-                        Thread.sleep(50);
-                    while (GearManager.wardrobeCleanupTicks > 0)
-                        Thread.sleep(50);
-                    Thread.sleep(250);
-                }
-
-                Thread.sleep(150);
+                Thread.sleep(250);
                 ClientUtils.sendCommand(client, "/warp garden");
-                Thread.sleep(150);
-
+                Thread.sleep(1000); // 1s wait for warp load
                 PestManager.isReturningFromPestVisitor = true;
                 finalizeReturnToFarm(client);
             } catch (Exception e) {
@@ -76,8 +61,12 @@ public class VisitorManager {
         if (MacroStateManager.getCurrentState() == MacroState.State.OFF)
             return;
 
+        if (client.options != null) {
+            client.options.keyShift.setDown(true);
+        }
+
         try {
-            Thread.sleep(150);
+            Thread.sleep(200);
         } catch (InterruptedException ignored) {
         }
 
@@ -88,13 +77,13 @@ public class VisitorManager {
                     true);
             GearManager.swapToFarmingTool(client);
 
-            if (MacroConfig.armorSwapVisitor && MacroConfig.gearSwapMode == MacroConfig.GearSwapMode.WARDROBE
+            if (MacroConfig.armorSwapVisitor && MacroConfig.wardrobeSlotVisitor > 0
                     && GearManager.trackedWardrobeSlot != MacroConfig.wardrobeSlotVisitor) {
                 client.player.displayClientMessage(Component.literal(
                         "\u00A7eSwapping to Visitor Wardrobe (Slot " + MacroConfig.wardrobeSlotVisitor + ")..."), true);
                 client.execute(() -> GearManager.ensureWardrobeSlot(client, MacroConfig.wardrobeSlotVisitor));
                 try {
-                    Thread.sleep(375);
+                    Thread.sleep(400);
                     while (GearManager.isSwappingWardrobe)
                         Thread.sleep(50);
                     while (GearManager.wardrobeCleanupTicks > 0)
@@ -108,7 +97,38 @@ public class VisitorManager {
             return;
         }
 
-        // Check for server restart and other conditions...
-        // ... then call startFarmingWithGearCheck
+        GearManager.swapToFarmingTool(client);
+
+        if (MacroConfig.armorSwapVisitor && MacroConfig.wardrobeSlotFarming > 0
+                && GearManager.trackedWardrobeSlot != MacroConfig.wardrobeSlotFarming) {
+            client.player.displayClientMessage(Component.literal(
+                    "§eRestoring Farming Wardrobe (Slot " + MacroConfig.wardrobeSlotFarming + ")..."), true);
+            client.execute(() -> GearManager.ensureWardrobeSlot(client, MacroConfig.wardrobeSlotFarming));
+            try {
+                Thread.sleep(400);
+                while (GearManager.isSwappingWardrobe)
+                    Thread.sleep(50);
+                while (GearManager.wardrobeCleanupTicks > 0)
+                    Thread.sleep(50);
+                Thread.sleep(250);
+            } catch (InterruptedException ignored) {
+            }
+        }
+
+        if (MacroConfig.autoEquipment) {
+            GearManager.ensureEquipment(client, true); // Restore farming gear
+            try {
+                Thread.sleep(400);
+                while (GearManager.isSwappingEquipment)
+                    Thread.sleep(50);
+                Thread.sleep(250);
+            } catch (InterruptedException ignored) {
+            }
+        }
+
+        client.player.displayClientMessage(Component.literal("§aRestarting farming script..."), true);
+        com.ihanuat.mod.MacroStateManager.setCurrentState(com.ihanuat.mod.MacroState.State.FARMING);
+        ClientUtils.sendCommand(client, MacroConfig.restartScript);
+        PestManager.isCleaningInProgress = false;
     }
 }

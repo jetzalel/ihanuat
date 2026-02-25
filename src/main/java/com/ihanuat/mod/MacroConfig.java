@@ -3,19 +3,12 @@ package com.ihanuat.mod;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.core.BlockPos;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 
 public class MacroConfig {
-    public static BlockPos startPos = BlockPos.ZERO;
-    public static String startPlot = "None";
-
-    public static BlockPos endPos = BlockPos.ZERO;
-    public static String endPlot = "None";
-
     public static int pestThreshold = 1;
     public static int visitorThreshold = 5;
 
@@ -36,6 +29,7 @@ public class MacroConfig {
 
     // GUI Click Delay (ms)
     public static int guiClickDelay = 500;
+    public static int equipmentSwapDelay = 500;
 
     // Restart Time (Minutes before expected server restart to stop macro)
     public static int restartTime = 5;
@@ -56,10 +50,6 @@ public class MacroConfig {
 
     public static void save() {
         ConfigData data = new ConfigData();
-        data.startPos = startPos;
-        data.startPlot = startPlot;
-        data.endPos = endPos;
-        data.endPlot = endPlot;
         data.pestThreshold = pestThreshold;
         data.visitorThreshold = visitorThreshold;
         data.gearSwapMode = gearSwapMode;
@@ -73,6 +63,7 @@ public class MacroConfig {
         data.wardrobeSlotVisitor = wardrobeSlotVisitor;
         data.armorSwapVisitor = armorSwapVisitor;
         data.guiClickDelay = guiClickDelay;
+        data.equipmentSwapDelay = equipmentSwapDelay;
         data.restartTime = restartTime;
         data.restartScript = restartScript;
 
@@ -97,14 +88,6 @@ public class MacroConfig {
         try (FileReader reader = new FileReader(CONFIG_FILE)) {
             ConfigData data = GSON.fromJson(reader, ConfigData.class);
             if (data != null) {
-                if (data.startPos != null)
-                    startPos = data.startPos;
-                if (data.startPlot != null)
-                    startPlot = data.startPlot;
-                if (data.endPos != null)
-                    endPos = data.endPos;
-                if (data.endPlot != null)
-                    endPlot = data.endPlot;
                 pestThreshold = data.pestThreshold;
                 visitorThreshold = data.visitorThreshold;
                 gearSwapMode = data.gearSwapMode != null ? data.gearSwapMode : GearSwapMode.NONE;
@@ -118,6 +101,7 @@ public class MacroConfig {
                 wardrobeSlotVisitor = data.wardrobeSlotVisitor > 0 ? data.wardrobeSlotVisitor : 3;
                 armorSwapVisitor = data.armorSwapVisitor;
                 guiClickDelay = data.guiClickDelay > 0 ? data.guiClickDelay : 500;
+                equipmentSwapDelay = data.equipmentSwapDelay > 0 ? data.equipmentSwapDelay : 500;
                 restartTime = data.restartTime > 0 ? data.restartTime : 5;
                 if (data.restartScript != null && !data.restartScript.isBlank())
                     restartScript = data.restartScript;
@@ -133,10 +117,6 @@ public class MacroConfig {
     }
 
     private static class ConfigData {
-        BlockPos startPos = BlockPos.ZERO;
-        String startPlot = "None";
-        BlockPos endPos = BlockPos.ZERO;
-        String endPlot = "None";
         int pestThreshold = 1;
         int visitorThreshold = 5;
         GearSwapMode gearSwapMode = GearSwapMode.NONE;
@@ -150,6 +130,7 @@ public class MacroConfig {
         int wardrobeSlotVisitor = 3;
         boolean armorSwapVisitor = false;
         int guiClickDelay = 500;
+        int equipmentSwapDelay = 500;
         int restartTime = 5;
         String restartScript = ".ez-startscript netherwart:1";
 
