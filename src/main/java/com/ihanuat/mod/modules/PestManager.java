@@ -198,8 +198,24 @@ public class PestManager {
     }
 
     static void performUnfly(Minecraft client) throws InterruptedException {
-        if (client.player == null || !client.player.getAbilities().flying)
+        if (client.player == null)
             return;
+
+        // Poll for up to 0.5s to confirm the player is actually flying after the warp.
+        // This mirrors the old tick-loop which checked getAbilities().flying every tick
+        // and self-aborted if not flying before any key press happened.
+        long deadline = System.currentTimeMillis() + 500;
+        boolean isFlying = false;
+        while (System.currentTimeMillis() < deadline) {
+            if (client.player != null && client.player.getAbilities().flying) {
+                isFlying = true;
+                break;
+            }
+            Thread.sleep(50);
+        }
+
+        if (!isFlying)
+            return; // Player never entered flight after warp — skip unfly entirely
 
         if (MacroConfig.unflyMode == MacroConfig.UnflyMode.DOUBLE_TAP_SPACE) {
             // Stage 0: Press space (~2 ticks = 100ms)
