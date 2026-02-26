@@ -39,16 +39,18 @@ jobs:
             gradle build
           fi
 
-      - name: Shorten Commit SHA
+      - name: Extract Variables
         id: vars
-        run: echo "sha_short=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_OUTPUT
+        run: |
+          echo "sha_short=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_OUTPUT
+          echo "mod_version=$(grep 'mod_version' gradle.properties | cut -d'=' -f2 | tr -d '\r')" >> $GITHUB_OUTPUT
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         if: github.event_name == 'push'
         with:
           tag_name: "build-${{ steps.vars.outputs.sha_short }}"
-          name: "Automated Build - ${{ steps.vars.outputs.sha_short }}"
+          name: "${{ steps.vars.outputs.mod_version }} Automated Build"
           body: |
             ## Automated Build
             Commit: ${{ github.sha }}
