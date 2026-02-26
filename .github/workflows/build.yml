@@ -39,6 +39,13 @@ jobs:
             gradle build
           fi
 
+      - name: Delete existing 'latest' tag
+        run: |
+          git tag -d latest || true
+          git push origin :refs/tags/latest || true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         if: github.event_name == 'push'
