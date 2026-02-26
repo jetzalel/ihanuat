@@ -75,7 +75,14 @@ public class VisitorManager {
             client.player.displayClientMessage(
                     Component.literal("\u00A7dVisitor Threshold Met (" + visitors + "). Redirecting to Visitors..."),
                     true);
-            GearManager.swapToFarmingTool(client);
+            client.execute(() -> {
+                GearManager.swapToFarmingTool(client);
+                ClientUtils.sendCommand(client, "/setspawn");
+            });
+            try {
+                Thread.sleep(250);
+            } catch (InterruptedException ignored) {
+            }
 
             if (MacroConfig.armorSwapVisitor && MacroConfig.wardrobeSlotVisitor > 0
                     && GearManager.trackedWardrobeSlot != MacroConfig.wardrobeSlotVisitor) {
@@ -92,17 +99,22 @@ public class VisitorManager {
                 } catch (InterruptedException ignored) {
                 }
             }
-            ClientUtils.sendCommand(client, "/setspawn");
-            try {
-                Thread.sleep(100);
-            } catch (InterruptedException ignored) {
-            }
-            ClientUtils.sendCommand(client, ".ez-startscript misc:visitor");
+            client.execute(() -> {
+                ClientUtils.sendCommand(client, ".ez-stopscript");
+                ClientUtils.sendCommand(client, ".ez-startscript misc:visitor");
+            });
             PestManager.isCleaningInProgress = false;
             return;
         }
 
-        GearManager.swapToFarmingTool(client);
+        client.execute(() -> {
+            GearManager.swapToFarmingTool(client);
+            ClientUtils.sendCommand(client, "/setspawn");
+        });
+        try {
+            Thread.sleep(250);
+        } catch (InterruptedException ignored) {
+        }
 
         if (MacroConfig.armorSwapVisitor && MacroConfig.wardrobeSlotFarming > 0
                 && GearManager.trackedWardrobeSlot != MacroConfig.wardrobeSlotFarming) {
@@ -133,13 +145,15 @@ public class VisitorManager {
 
         client.player.displayClientMessage(Component.literal("\u00A7aSetting spawn and restarting farming script..."),
                 true);
-        ClientUtils.sendCommand(client, "/setspawn");
+        com.ihanuat.mod.MacroStateManager.setCurrentState(com.ihanuat.mod.MacroState.State.FARMING);
         try {
             Thread.sleep(100);
         } catch (InterruptedException ignored) {
         }
-        com.ihanuat.mod.MacroStateManager.setCurrentState(com.ihanuat.mod.MacroState.State.FARMING);
-        ClientUtils.sendCommand(client, MacroConfig.restartScript);
+        client.execute(() -> {
+            ClientUtils.sendCommand(client, ".ez-stopscript");
+            ClientUtils.sendCommand(client, MacroConfig.restartScript);
+        });
         PestManager.isCleaningInProgress = false;
     }
 }
