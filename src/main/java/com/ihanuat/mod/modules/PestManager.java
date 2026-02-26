@@ -156,7 +156,11 @@ public class PestManager {
                             true);
                     ClientUtils.sendCommand(client, "/warp garden");
                     Thread.sleep(1000);
-                    GearManager.swapToFarmingTool(client);
+                    client.execute(() -> {
+                        GearManager.swapToFarmingTool(client);
+                        ClientUtils.sendCommand(client, "/setspawn");
+                    });
+                    Thread.sleep(250);
 
                     if (MacroConfig.armorSwapVisitor && MacroConfig.wardrobeSlotVisitor > 0
                             && GearManager.trackedWardrobeSlot != MacroConfig.wardrobeSlotVisitor) {
@@ -173,9 +177,10 @@ public class PestManager {
                         Thread.sleep(250);
                     }
 
-                    ClientUtils.sendCommand(client, "/setspawn");
-                    Thread.sleep(100);
-                    ClientUtils.sendCommand(client, ".ez-startscript misc:visitor");
+                    client.execute(() -> {
+                        ClientUtils.sendCommand(client, ".ez-stopscript");
+                        ClientUtils.sendCommand(client, ".ez-startscript misc:visitor");
+                    });
                     isCleaningInProgress = false;
                     return;
                 }
@@ -203,7 +208,11 @@ public class PestManager {
             Thread.sleep(150);
             int visitors = VisitorManager.getVisitorCount(client);
             if (visitors >= MacroConfig.visitorThreshold) {
-                GearManager.swapToFarmingTool(client);
+                client.execute(() -> {
+                    GearManager.swapToFarmingTool(client);
+                    ClientUtils.sendCommand(client, "/setspawn");
+                });
+                Thread.sleep(250);
 
                 if (MacroConfig.armorSwapVisitor && MacroConfig.wardrobeSlotVisitor > 0
                         && GearManager.trackedWardrobeSlot != MacroConfig.wardrobeSlotVisitor) {
@@ -219,14 +228,19 @@ public class PestManager {
                     Thread.sleep(250);
                 }
 
-                ClientUtils.sendCommand(client, "/setspawn");
-                Thread.sleep(100);
-                ClientUtils.sendCommand(client, ".ez-startscript misc:visitor");
+                client.execute(() -> {
+                    ClientUtils.sendCommand(client, ".ez-stopscript");
+                    ClientUtils.sendCommand(client, ".ez-startscript misc:visitor");
+                });
                 isCleaningInProgress = false;
                 return;
             }
 
-            GearManager.swapToFarmingTool(client);
+            client.execute(() -> {
+                GearManager.swapToFarmingTool(client);
+                ClientUtils.sendCommand(client, "/setspawn");
+            });
+            Thread.sleep(250);
 
             if (MacroConfig.armorSwapVisitor && MacroConfig.wardrobeSlotFarming > 0
                     && GearManager.trackedWardrobeSlot != MacroConfig.wardrobeSlotFarming) {
@@ -251,9 +265,11 @@ public class PestManager {
 
             com.ihanuat.mod.MacroStateManager.setCurrentState(com.ihanuat.mod.MacroState.State.FARMING);
             prepSwappedForCurrentPestCycle = false; // Ensure flag is reset when returning
-            ClientUtils.sendCommand(client, "/setspawn");
             Thread.sleep(100);
-            ClientUtils.sendCommand(client, MacroConfig.restartScript);
+            client.execute(() -> {
+                ClientUtils.sendCommand(client, ".ez-stopscript");
+                ClientUtils.sendCommand(client, MacroConfig.restartScript);
+            });
             isCleaningInProgress = false;
         } catch (InterruptedException ignored) {
         }
@@ -303,11 +319,13 @@ public class PestManager {
     }
 
     private static void resumeAfterPrepSwap(Minecraft client) {
-        GearManager.swapToFarmingTool(client);
-        if (isCleaningInProgress)
-            return;
-        com.ihanuat.mod.MacroStateManager.setCurrentState(com.ihanuat.mod.MacroState.State.FARMING);
-        ClientUtils.sendCommand(client, MacroConfig.restartScript);
+        client.execute(() -> {
+            GearManager.swapToFarmingTool(client);
+            if (isCleaningInProgress)
+                return;
+            com.ihanuat.mod.MacroStateManager.setCurrentState(com.ihanuat.mod.MacroState.State.FARMING);
+            ClientUtils.sendCommand(client, MacroConfig.restartScript);
+        });
     }
 
     public static void startCleaningSequence(Minecraft client, String plot) {
@@ -380,7 +398,9 @@ public class PestManager {
     }
 
     public static void resumeAfterPrepSwapLogic(Minecraft client) {
-        GearManager.swapToFarmingTool(client);
-        ClientUtils.sendCommand(client, MacroConfig.restartScript);
+        client.execute(() -> {
+            GearManager.swapToFarmingTool(client);
+            ClientUtils.sendCommand(client, MacroConfig.restartScript);
+        });
     }
 }
