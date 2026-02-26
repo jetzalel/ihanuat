@@ -208,7 +208,8 @@ public class GearManager {
             Slot equipmentSlot = screen.getMenu().getSlot(guiSlots[equipmentTargetIndex]);
             if (equipmentSlot != null && equipmentSlot.hasItem()) {
                 String itemName = equipmentSlot.getItem().getHoverName().getString().toLowerCase();
-                boolean isFarming = itemName.contains("lotus") || itemName.contains("blossom") || itemName.contains("zorro");
+                boolean isFarming = itemName.contains("lotus") || itemName.contains("blossom")
+                        || itemName.contains("zorro");
                 boolean isPest = itemName.contains("pest");
                 boolean matches = swappingToFarmingGear ? isFarming : isPest;
 
@@ -226,7 +227,8 @@ public class GearManager {
                 Slot invSlot = screen.getMenu().slots.get(i);
                 if (invSlot.hasItem()) {
                     String invItemName = invSlot.getItem().getHoverName().getString().toLowerCase();
-                    boolean invIsFarming = invItemName.contains("lotus") || invItemName.contains("blossom");
+                    boolean invIsFarming = invItemName.contains("lotus") || invItemName.contains("blossom")
+                            || invItemName.contains("zorro");
                     boolean invIsPest = invItemName.contains("pest");
                     boolean matchesTarget = swappingToFarmingGear ? invIsFarming : invIsPest;
 
