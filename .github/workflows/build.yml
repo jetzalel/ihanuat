@@ -39,16 +39,18 @@ jobs:
             gradle build
           fi
 
-      - name: Shorten Commit SHA
+      - name: Extract Variables
         id: vars
-        run: echo "sha_short=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_OUTPUT
+        run: |
+          echo "sha_short=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_OUTPUT
+          echo "mod_version=$(grep 'mod_version' gradle.properties | cut -d'=' -f2 | tr -d '\r')" >> $GITHUB_OUTPUT
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         if: github.event_name == 'push'
         with:
           tag_name: "build-${{ steps.vars.outputs.sha_short }}"
-          name: "Automated Build - ${{ steps.vars.outputs.sha_short }}"
+          name: "${{ steps.vars.outputs.mod_version }} Automated Build"
           body: |
             ## Automated Build
             Commit: ${{ github.sha }}
@@ -60,3 +62,50 @@ jobs:
           make_latest: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Send Discord Webhook
+        if: github.event_name == 'push'
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          RELEASE_URL="https://github.com/${{ github.repository }}/releases/tag/build-${{ steps.vars.outputs.sha_short }}"
+          VERSION="${{ steps.vars.outputs.mod_version }}"
+          COMMIT_MSG="${{ github.event.head_commit.message }}"
+          JAR_FILE=$(basename $(ls build/libs/*.jar | grep -v 'sources' | grep -v 'dev' | head -n 1))
+          JAR_URL="https://github.com/${{ github.repository }}/releases/download/build-${{ steps.vars.outputs.sha_short }}/$JAR_FILE"
+          
+          printf -v DESC_VAR "A new build has been released! :rocket:\n\n**Commit Message:**\n%s" "$COMMIT_MSG"
+          
+          jq -n \
+            --arg title "New Release: $VERSION Automated Build" \
+            --arg desc "$DESC_VAR" \
+            --arg url "$RELEASE_URL" \
+            --arg rel_url "$RELEASE_URL" \
+            --arg jar_file "$JAR_FILE" \
+            --arg jar_url "$JAR_URL" \
+            '{
+              embeds: [{
+                title: $title,
+                description: $desc,
+                url: $url,
+                color: 5814783,
+                fields: [
+                  {
+                    name: "Release Page",
+                    value: "[View Release](\($rel_url))",
+                    inline: true
+                  },
+                  {
+                    name: "Download JAR",
+                    value: "[Download \($jar_file)](\($jar_url))",
+                    inline: true
+                  }
+                ]
+              }]
+            }' > payload.json
+            
+          if [ -n "$DISCORD_WEBHOOK_URL" ]; then
+            curl -H "Content-Type: application/json" -d @payload.json $DISCORD_WEBHOOK_URL
+          else
+            echo "Skipping Discord Webhook: DISCORD_WEBHOOK_URL secret is not set"
+          fi

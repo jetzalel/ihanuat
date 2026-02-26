@@ -10,12 +10,14 @@ import net.minecraft.world.item.ItemStack;
 
 public class GeorgeManager {
     public static volatile boolean isSelling = false;
+    public static volatile boolean isPreparingToSell = false;
     public static volatile int interactionStage = 0;
     public static volatile long interactionTime = 0;
     public static volatile int confirmationCount = 0;
 
     public static void reset() {
         isSelling = false;
+        isPreparingToSell = false;
         interactionStage = 0;
         interactionTime = 0;
         confirmationCount = 0;
@@ -43,8 +45,6 @@ public class GeorgeManager {
 
         // Stage 0: Initial George GUI or Pet Selection
         if (interactionStage == 0) {
-            // Log title to help debug
-            client.player.displayClientMessage(Component.literal("§7[Debug] George Title: " + title), false);
 
             if (!title.toLowerCase().contains("george") && !title.toLowerCase().contains("sell pets")
                     && !title.toLowerCase().contains("pet collector") && !title.toLowerCase().contains("offer pets"))
@@ -58,12 +58,6 @@ public class GeorgeManager {
 
                 String rawName = slot.getItem().getHoverName().getString();
                 String name = rawName.replaceAll("(?i)§.", "").toLowerCase();
-
-                // Debug log every item in GUI
-                if (name.contains("rat") || name.contains("slug")) {
-                    client.player.displayClientMessage(Component.literal("§7[Debug] GUI Slot " + i + ": " + name),
-                            false);
-                }
 
                 // Detailed debug for found items if requested, but for now let's just broaden
                 // match
@@ -138,6 +132,17 @@ public class GeorgeManager {
     public static void update(Minecraft client) {
         if (!MacroConfig.autoGeorgeSell || client.player == null)
             return;
+
+        if (isPreparingToSell) {
+            if (com.ihanuat.mod.MacroStateManager.getCurrentState() != com.ihanuat.mod.MacroState.State.FARMING ||
+                    PestManager.isCleaningInProgress || PestManager.prepSwappedForCurrentPestCycle ||
+                    VisitorManager.getVisitorCount(client) >= MacroConfig.visitorThreshold) {
+                isPreparingToSell = false;
+                client.player.displayClientMessage(
+                        Component.literal("§c[Ihanuat] Aborting George prep due to priority event."), false);
+            }
+            return;
+        }
 
         if (isSelling) {
             // Abort if no longer farming or if a priority event occurs
@@ -221,12 +226,6 @@ public class GeorgeManager {
                 String rawName = stack.getHoverName().getString();
                 String name = rawName.replaceAll("(?i)§.", "").toLowerCase();
 
-                // Debug log every item to console/chat to find why detection fails
-                if (name.contains("rat") || name.contains("slug")) {
-                    client.player.displayClientMessage(Component.literal("§7[Debug] Inv Slot " + i + ": " + name),
-                            false);
-                }
-
                 if ((name.contains("rat") || name.contains("slug")) && name.contains("[lvl 1]")) {
                     count++;
                 }
@@ -243,16 +242,37 @@ public class GeorgeManager {
         // finish
         com.ihanuat.mod.util.ClientUtils.forceReleaseKeys(client);
 
-        isSelling = true;
-        interactionStage = 0;
-        interactionTime = System.currentTimeMillis();
-        confirmationCount = 0;
+        isPreparingToSell = true;
+        isSelling = false;
 
         new Thread(() -> {
             try {
                 com.ihanuat.mod.util.ClientUtils.sendCommand(client, ".ez-stopscript");
-                Thread.sleep(3000); // Wait 3 seconds to allow user to abort if needed
-                com.ihanuat.mod.util.ClientUtils.sendCommand(client, "/call george");
+
+                boolean success = true;
+                for (int i = 0; i < 50; i++) {
+                    Thread.sleep(100);
+                    if (!isPreparingToSell) {
+                        success = false;
+                        break;
+                    }
+                    if (com.ihanuat.mod.MacroStateManager
+                            .getCurrentState() != com.ihanuat.mod.MacroState.State.FARMING) {
+                        success = false;
+                        break;
+                    }
+                }
+
+                if (success && isPreparingToSell) {
+                    isPreparingToSell = false;
+                    isSelling = true;
+                    interactionStage = 0;
+                    interactionTime = System.currentTimeMillis();
+                    confirmationCount = 0;
+                    com.ihanuat.mod.util.ClientUtils.sendCommand(client, "/call george");
+                } else {
+                    isPreparingToSell = false;
+                }
             } catch (Exception e) {
                 e.printStackTrace();
             }

@@ -126,6 +126,14 @@ public class IhanuatClient implements ClientModInitializer {
                         && lowerText.contains("finished") && !text.contains("sequence complete")) {
                     VisitorManager.handleVisitorScriptFinished(Minecraft.getInstance());
                 }
+
+                if (text.contains("Return To Location")) {
+                    if (lowerText.contains("activated")) {
+                        PestManager.isReturnToLocationActive = true;
+                    } else if (lowerText.contains("stopped")) {
+                        PestManager.isReturnToLocationActive = false;
+                    }
+                }
             } finally {
                 isHandlingMessage = false;
             }
