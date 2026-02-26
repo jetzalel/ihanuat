@@ -200,6 +200,42 @@ public class IhanuatClient implements ClientModInitializer {
             com.ihanuat.mod.modules.GearManager.cleanupTick(client);
             RotationManager.update(client);
 
+            // Double-tap Space Flight Toggle
+            if (PestManager.isStoppingFlight) {
+                PestManager.flightStopTicks++;
+                switch (PestManager.flightStopStage) {
+                    case 0: // Press
+                        if (client.options.keyJump != null)
+                            net.minecraft.client.KeyMapping.set(client.options.keyJump.getDefaultKey(), true);
+                        if (PestManager.flightStopTicks >= 2) {
+                            PestManager.flightStopStage = 1;
+                            PestManager.flightStopTicks = 0;
+                        }
+                        break;
+                    case 1: // Release
+                        if (client.options.keyJump != null)
+                            net.minecraft.client.KeyMapping.set(client.options.keyJump.getDefaultKey(), false);
+                        if (PestManager.flightStopTicks >= 3) {
+                            PestManager.flightStopStage = 2;
+                            PestManager.flightStopTicks = 0;
+                        }
+                        break;
+                    case 2: // Press
+                        if (client.options.keyJump != null)
+                            net.minecraft.client.KeyMapping.set(client.options.keyJump.getDefaultKey(), true);
+                        if (PestManager.flightStopTicks >= 2) {
+                            PestManager.flightStopStage = 3;
+                            PestManager.flightStopTicks = 0;
+                        }
+                        break;
+                    case 3: // Done
+                        if (client.options.keyJump != null)
+                            net.minecraft.client.KeyMapping.set(client.options.keyJump.getDefaultKey(), false);
+                        PestManager.isStoppingFlight = false;
+                        break;
+                }
+            }
+
             if (MacroStateManager.getCurrentState() == MacroState.State.RECOVERING) {
                 RecoveryManager.update(client);
                 return;

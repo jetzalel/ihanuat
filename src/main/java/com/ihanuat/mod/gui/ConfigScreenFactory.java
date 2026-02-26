@@ -38,7 +38,7 @@ public class ConfigScreenFactory {
                                 .startEnumSelector(Component.literal("Unfly Mode (after /warp garden)"),
                                                 MacroConfig.UnflyMode.class,
                                                 MacroConfig.unflyMode)
-                                .setDefaultValue(MacroConfig.UnflyMode.SNEAK)
+                                .setDefaultValue(MacroConfig.UnflyMode.DOUBLE_TAP_SPACE)
                                 .setSaveConsumer(newValue -> MacroConfig.unflyMode = newValue)
                                 .build());
 

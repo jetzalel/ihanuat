@@ -23,12 +23,18 @@ public class PestManager {
     public static volatile boolean prepSwappedForCurrentPestCycle = false;
     public static volatile int currentPestSessionId = 0;
     public static volatile boolean isReturningFromPestVisitor = false;
+    public static volatile boolean isStoppingFlight = false;
+    public static int flightStopStage = 0;
+    public static int flightStopTicks = 0;
 
     public static void reset() {
         isCleaningInProgress = false;
         prepSwappedForCurrentPestCycle = false;
         currentInfestedPlot = null;
         isReturningFromPestVisitor = false;
+        isStoppingFlight = false;
+        flightStopStage = 0;
+        flightStopTicks = 0;
         currentPestSessionId++;
     }
 
@@ -149,6 +155,11 @@ public class PestManager {
         client.player.displayClientMessage(Component.literal("§aPest cleaning finished detected."), true);
         new Thread(() -> {
             try {
+                if (MacroConfig.unflyMode == MacroConfig.UnflyMode.DOUBLE_TAP_SPACE) {
+                    performUnfly(client);
+                    Thread.sleep(150);
+                }
+
                 int visitors = VisitorManager.getVisitorCount(client);
                 if (visitors >= MacroConfig.visitorThreshold) {
                     client.player.displayClientMessage(
@@ -201,49 +212,15 @@ public class PestManager {
         if (client.player == null)
             return;
 
-        // Poll for up to 500ms to confirm the player is actually airborne after the
-        // warp.
-        // abilities.flying is always true in SkyBlock Garden (it's a permission flag,
-        // not
-        // an airborne state), so we must also require !onGround() to confirm the player
-        // is actually floating and needs to be brought down.
-        long deadline = System.currentTimeMillis() + 500;
-        boolean isFlying = false;
-        while (System.currentTimeMillis() < deadline) {
-            if (client.player != null && client.player.getAbilities().flying && !client.player.onGround()) {
-                isFlying = true;
-                break;
-            }
-            Thread.sleep(50);
-        }
-
-        if (!isFlying)
-            return; // Player is on the ground already — skip unfly entirely
-
         if (MacroConfig.unflyMode == MacroConfig.UnflyMode.DOUBLE_TAP_SPACE) {
-            // Stage 0: Press space (~2 ticks = 100ms)
-            client.execute(() -> {
-                if (client.options != null && client.options.keyJump != null)
-                    net.minecraft.client.KeyMapping.set(client.options.keyJump.getDefaultKey(), true);
-            });
-            Thread.sleep(100);
-            // Stage 1: Release space (~3 ticks = 150ms)
-            client.execute(() -> {
-                if (client.options != null && client.options.keyJump != null)
-                    net.minecraft.client.KeyMapping.set(client.options.keyJump.getDefaultKey(), false);
-            });
-            Thread.sleep(150);
-            // Stage 2: Press space (~2 ticks = 100ms)
-            client.execute(() -> {
-                if (client.options != null && client.options.keyJump != null)
-                    net.minecraft.client.KeyMapping.set(client.options.keyJump.getDefaultKey(), true);
-            });
-            Thread.sleep(100);
-            // Stage 3: Release space and finish
-            client.execute(() -> {
-                if (client.options != null && client.options.keyJump != null)
-                    net.minecraft.client.KeyMapping.set(client.options.keyJump.getDefaultKey(), false);
-            });
+            isStoppingFlight = true;
+            flightStopStage = 0;
+            flightStopTicks = 0;
+
+            long deadline = System.currentTimeMillis() + 3000;
+            while (isStoppingFlight && System.currentTimeMillis() < deadline) {
+                Thread.sleep(50);
+            }
         } else {
             // SNEAK mode
             client.execute(() -> {
@@ -263,8 +240,11 @@ public class PestManager {
             return;
 
         try {
-            performUnfly(client);
-            Thread.sleep(150);
+            if (MacroConfig.unflyMode == MacroConfig.UnflyMode.SNEAK) {
+                performUnfly(client);
+                Thread.sleep(150);
+            }
+
             int visitors = VisitorManager.getVisitorCount(client);
             if (visitors >= MacroConfig.visitorThreshold) {
                 client.execute(() -> {
