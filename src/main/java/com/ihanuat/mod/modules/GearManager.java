@@ -127,11 +127,20 @@ public class GearManager {
     private static void handleWardrobeCompletion(Minecraft client) {
         if (shouldRestartFarmingAfterSwap) {
             shouldRestartFarmingAfterSwap = false;
+
+            if (PestManager.isCleaningInProgress) {
+                client.player.displayClientMessage(
+                        Component.literal("§aWardrobe swap finished. Cleaning in progress, skipping restart."), true);
+                return;
+            }
+
             client.player.displayClientMessage(Component.literal("§aWardrobe swap finished. Restarting farming..."),
                     true);
             new Thread(() -> {
                 try {
                     Thread.sleep(600);
+                    if (PestManager.isCleaningInProgress)
+                        return;
                     client.execute(() -> {
                         GearManager.swapToFarmingTool(client);
                         ClientUtils.sendCommand(client, MacroConfig.restartScript);

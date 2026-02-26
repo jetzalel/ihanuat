@@ -89,11 +89,14 @@ public class PestManager {
                 if (currentState == MacroState.State.FARMING && cooldownSeconds != -1 && cooldownSeconds >= 0
                         && !prepSwappedForCurrentPestCycle && !isCleaningInProgress) {
 
-                    if (MacroConfig.autoEquipment) {
-                        if (cooldownSeconds <= MacroConfig.autoEquipmentFarmingTime)
+                    boolean thresholdMet = (aliveCount >= MacroConfig.pestThreshold);
+                    if (!thresholdMet) {
+                        if (MacroConfig.autoEquipment) {
+                            if (cooldownSeconds <= MacroConfig.autoEquipmentFarmingTime)
+                                triggerPrepSwap(client);
+                        } else if (cooldownSeconds <= 3) {
                             triggerPrepSwap(client);
-                    } else if (cooldownSeconds <= 3) {
-                        triggerPrepSwap(client);
+                        }
                     }
                 }
             }
@@ -216,6 +219,7 @@ public class PestManager {
     }
 
     public static void update(Minecraft client) {
+        checkTabListForPests(client, com.ihanuat.mod.MacroStateManager.getCurrentState());
     }
 
     private static void triggerPrepSwap(Minecraft client) {
@@ -226,8 +230,10 @@ public class PestManager {
             try {
                 ClientUtils.sendCommand(client, ".ez-stopscript");
                 Thread.sleep(375);
-                if (isCleaningInProgress)
+                if (isCleaningInProgress) {
+                    prepSwappedForCurrentPestCycle = false;
                     return;
+                }
 
                 if (MacroConfig.autoEquipment) {
                     GearManager.ensureEquipment(client, false);
@@ -237,8 +243,10 @@ public class PestManager {
                     Thread.sleep(250);
                 }
 
-                if (isCleaningInProgress)
+                if (isCleaningInProgress) {
+                    prepSwappedForCurrentPestCycle = false;
                     return;
+                }
 
                 if (MacroConfig.gearSwapMode == MacroConfig.GearSwapMode.ROD) {
                     GearManager.executeRodSequence(client);
@@ -255,6 +263,8 @@ public class PestManager {
 
     private static void resumeAfterPrepSwap(Minecraft client) {
         GearManager.swapToFarmingTool(client);
+        if (isCleaningInProgress)
+            return;
         com.ihanuat.mod.MacroStateManager.setCurrentState(com.ihanuat.mod.MacroState.State.FARMING);
         ClientUtils.sendCommand(client, MacroConfig.restartScript);
     }
@@ -263,12 +273,11 @@ public class PestManager {
         if (isCleaningInProgress || GearManager.isSwappingWardrobe || GearManager.isSwappingEquipment)
             return;
 
-        final boolean wasPrepSwapped = prepSwappedForCurrentPestCycle;
         ClientUtils.sendCommand(client, ".ez-stopscript");
         isCleaningInProgress = true;
+        GearManager.shouldRestartFarmingAfterSwap = false;
         com.ihanuat.mod.MacroStateManager.setCurrentState(com.ihanuat.mod.MacroState.State.CLEANING);
         currentInfestedPlot = plot;
-        prepSwappedForCurrentPestCycle = false;
         final int sessionId = ++currentPestSessionId;
 
         new Thread(() -> {
@@ -280,7 +289,7 @@ public class PestManager {
 
                 if (MacroConfig.gearSwapMode == MacroConfig.GearSwapMode.WARDROBE) {
                     int targetSlot = MacroConfig.wardrobeSlotFarming;
-                    boolean needsSwap = wasPrepSwapped || GearManager.trackedWardrobeSlot != targetSlot;
+                    boolean needsSwap = prepSwappedForCurrentPestCycle || GearManager.trackedWardrobeSlot != targetSlot;
 
                     if (needsSwap && targetSlot > 0) {
                         client.player.displayClientMessage(Component.literal(
@@ -306,6 +315,8 @@ public class PestManager {
                         Thread.sleep(50);
                     Thread.sleep(250);
                 }
+
+                prepSwappedForCurrentPestCycle = false;
 
                 client.execute(() -> {
                     GearManager.swapToFarmingTool(client); // Just in case, to have vacuum ready if needed

@@ -190,10 +190,6 @@ public class IhanuatClient implements ClientModInitializer {
                 return;
             }
 
-            if (MacroStateManager.getCurrentState() == MacroState.State.FARMING) {
-                PestManager.checkTabListForPests(client, MacroStateManager.getCurrentState());
-            }
-
             // Stash Pickup Logic
             if (MacroConfig.autoStashManager && client.player != null) {
                 long now = System.currentTimeMillis();
