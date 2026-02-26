@@ -33,6 +33,5 @@ public class MacroStateManager {
         ClientUtils.sendCommand(client, ".ez-stopscript");
         com.ihanuat.mod.modules.PestManager.reset();
         com.ihanuat.mod.modules.GearManager.reset();
-        com.ihanuat.mod.modules.GeorgeManager.reset();
     }
 }

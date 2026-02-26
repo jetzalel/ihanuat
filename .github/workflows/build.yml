@@ -56,7 +56,7 @@ jobs:
             ## Automated Build
             This release is automatically updated on every push to the master/main branch.
             
-            **Last Commit:** ${{ github.event.head_commit.message }} (${{ github.sha }})
+            **Last Commit:** ${{ github.sha }}
             **Branch:** ${{ github.ref_name }}
           files: build/libs/*.jar
           draft: false

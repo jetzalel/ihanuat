@@ -7,7 +7,6 @@ import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
-import net.fabricmc.fabric.api.client.message.v1.ClientSendMessageEvents;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.ChatScreen;
@@ -129,12 +128,6 @@ public class IhanuatClient implements ClientModInitializer {
             }
         });
 
-        ClientSendMessageEvents.COMMAND.register((command) -> {
-            if (command.equalsIgnoreCase("call george")) {
-                GeorgeManager.onCallGeorgeSent();
-            }
-        });
-
         ClientTickEvents.START_CLIENT_TICK.register(client -> {
             if (client.player == null)
                 return;
@@ -183,15 +176,9 @@ public class IhanuatClient implements ClientModInitializer {
             }
 
             if (client.screen instanceof AbstractContainerScreen) {
-                AbstractContainerScreen<?> currentScreen = (AbstractContainerScreen<?>) client.screen;
-                GearManager.handleWardrobeMenu(client, currentScreen);
-                if (client.screen == currentScreen)
-                    GearManager.handleEquipmentMenu(client, currentScreen);
-                if (client.screen == currentScreen)
-                    GeorgeManager.handleGeorgeMenu(client, currentScreen);
+                GearManager.handleWardrobeMenu(client, (AbstractContainerScreen<?>) client.screen);
+                GearManager.handleEquipmentMenu(client, (AbstractContainerScreen<?>) client.screen);
             }
-
-            GeorgeManager.update(client);
 
             com.ihanuat.mod.modules.RestartManager.update(client);
             com.ihanuat.mod.modules.PestManager.update(client);
