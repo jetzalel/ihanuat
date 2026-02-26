@@ -16,7 +16,7 @@ import java.util.regex.Pattern;
 public class PestManager {
     private static final Pattern PESTS_ALIVE_PATTERN = Pattern.compile("(?i)(?:Pests|Alive):?\\s*\\(?(\\d+)\\)?");
     private static final Pattern COOLDOWN_PATTERN = Pattern
-            .compile("(?i)Cooldown:\\s*\\(?(READY|(?:(\\d+)m)?\\s*(?:(\\d+)s)?)\\)?");
+            .compile("(?i)Cooldown:\\s*\\(?(READY|MAX\\s*PESTS?|(?:(\\d+)m)?\\s*(?:(\\d+)s)?)\\)?");
 
     public static volatile boolean isCleaningInProgress = false;
     public static volatile String currentInfestedPlot = null;
@@ -37,6 +37,9 @@ public class PestManager {
             return;
 
         if (isCleaningInProgress) {
+            // Only allow re-entry if we've been in CLEANING state for a long time without
+            // finishing
+            // This is a safety reset for 'stuck' conditions
             if (currentState == MacroState.State.FARMING) {
                 isCleaningInProgress = false;
             } else {
@@ -73,8 +76,13 @@ public class PestManager {
 
             Matcher cooldownMatcher = COOLDOWN_PATTERN.matcher(normalized);
             if (cooldownMatcher.find()) {
+                String cdVal = cooldownMatcher.group(1).toUpperCase();
                 int cooldownSeconds = -1;
-                if (cooldownMatcher.group(1).equalsIgnoreCase("READY")) {
+
+                if (cdVal.contains("MAX PEST")) {
+                    aliveCount = 99; // Treat as max threshold met
+                    cooldownSeconds = 999; // High cooldown value to avoid prep-swap during max state
+                } else if (cdVal.equalsIgnoreCase("READY")) {
                     cooldownSeconds = 0;
                 } else {
                     int m = 0;
@@ -104,7 +112,7 @@ public class PestManager {
                 if (currentState == MacroState.State.FARMING && cooldownSeconds != -1 && cooldownSeconds >= 0
                         && !prepSwappedForCurrentPestCycle && !isCleaningInProgress) {
 
-                    boolean thresholdMet = (aliveCount >= MacroConfig.pestThreshold);
+                    boolean thresholdMet = (aliveCount >= MacroConfig.pestThreshold || aliveCount >= 8);
                     if (!thresholdMet) {
                         if (MacroConfig.autoEquipment) {
                             if (cooldownSeconds <= MacroConfig.autoEquipmentFarmingTime)
@@ -112,6 +120,9 @@ public class PestManager {
                         } else if (cooldownSeconds <= 3) {
                             triggerPrepSwap(client);
                         }
+                    } else {
+                        // Threshold met, prep will be skipped and startCleaningSequence will be called
+                        // after loop
                     }
                 }
             }
@@ -124,7 +135,11 @@ public class PestManager {
             }
         }
 
-        if (aliveCount >= MacroConfig.pestThreshold) {
+        if (aliveCount >= MacroConfig.pestThreshold || aliveCount >= 8) {
+            if (aliveCount >= 8 && aliveCount < 99) {
+                client.player.displayClientMessage(Component.literal("§eMax Pests (8) reached. Starting cleaning..."),
+                        true);
+            }
             String targetPlot = infestedPlots.isEmpty() ? "0" : infestedPlots.iterator().next();
             startCleaningSequence(client, targetPlot);
         }
@@ -344,19 +359,24 @@ public class PestManager {
 
                 prepSwappedForCurrentPestCycle = false;
 
+                client.player.displayClientMessage(
+                        Component.literal("§6Starting Pest Cleaner script (" + currentInfestedPlot + ")..."), true);
+                ClientUtils.sendCommand(client, "/setspawn");
+                Thread.sleep(400); // Wait on thread, not main thread
+
                 client.execute(() -> {
-                    GearManager.swapToFarmingTool(client); // Just in case, to have vacuum ready if needed
-                    ClientUtils.sendCommand(client, "/setspawn");
-                    try {
-                        Thread.sleep(300);
-                    } catch (InterruptedException ignored) {
-                    }
+                    GearManager.swapToFarmingTool(client);
                     ClientUtils.sendCommand(client, ".ez-startscript misc:pestCleaner");
                 });
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }).start();
+    }
+
+    private static void triggerCleaningNow(Minecraft client, Set<String> infestedPlots) {
+        String targetPlot = infestedPlots.isEmpty() ? "0" : infestedPlots.iterator().next();
+        startCleaningSequence(client, targetPlot);
     }
 
     public static void resumeAfterPrepSwapLogic(Minecraft client) {
