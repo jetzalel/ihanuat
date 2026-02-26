@@ -23,12 +23,18 @@ public class PestManager {
     public static volatile boolean prepSwappedForCurrentPestCycle = false;
     public static volatile int currentPestSessionId = 0;
     public static volatile boolean isReturningFromPestVisitor = false;
+    public static volatile boolean isStoppingFlight = false;
+    public static int flightStopStage = 0;
+    public static int flightStopTicks = 0;
 
     public static void reset() {
         isCleaningInProgress = false;
         prepSwappedForCurrentPestCycle = false;
         currentInfestedPlot = null;
         isReturningFromPestVisitor = false;
+        isStoppingFlight = false;
+        flightStopStage = 0;
+        flightStopTicks = 0;
         currentPestSessionId++;
     }
 
@@ -149,6 +155,11 @@ public class PestManager {
         client.player.displayClientMessage(Component.literal("§aPest cleaning finished detected."), true);
         new Thread(() -> {
             try {
+                if (MacroConfig.unflyMode == MacroConfig.UnflyMode.DOUBLE_TAP_SPACE) {
+                    performUnfly(client);
+                    Thread.sleep(150);
+                }
+
                 int visitors = VisitorManager.getVisitorCount(client);
                 if (visitors >= MacroConfig.visitorThreshold) {
                     client.player.displayClientMessage(
@@ -197,15 +208,43 @@ public class PestManager {
 
     }
 
+    static void performUnfly(Minecraft client) throws InterruptedException {
+        if (client.player == null)
+            return;
+
+        if (MacroConfig.unflyMode == MacroConfig.UnflyMode.DOUBLE_TAP_SPACE) {
+            isStoppingFlight = true;
+            flightStopStage = 0;
+            flightStopTicks = 0;
+
+            long deadline = System.currentTimeMillis() + 3000;
+            while (isStoppingFlight && System.currentTimeMillis() < deadline) {
+                Thread.sleep(50);
+            }
+        } else {
+            // SNEAK mode
+            client.execute(() -> {
+                if (client.options != null)
+                    client.options.keyShift.setDown(true);
+            });
+            Thread.sleep(150);
+            client.execute(() -> {
+                if (client.options != null)
+                    client.options.keyShift.setDown(false);
+            });
+        }
+    }
+
     private static void finalizeReturnToFarm(Minecraft client) {
         if (!com.ihanuat.mod.MacroStateManager.isMacroRunning())
             return;
 
-        if (client.options != null) {
-            client.options.keyShift.setDown(true);
-        }
         try {
-            Thread.sleep(150);
+            if (MacroConfig.unflyMode == MacroConfig.UnflyMode.SNEAK) {
+                performUnfly(client);
+                Thread.sleep(150);
+            }
+
             int visitors = VisitorManager.getVisitorCount(client);
             if (visitors >= MacroConfig.visitorThreshold) {
                 client.execute(() -> {
@@ -251,14 +290,6 @@ public class PestManager {
                 while (GearManager.isSwappingWardrobe)
                     Thread.sleep(50);
                 while (GearManager.wardrobeCleanupTicks > 0)
-                    Thread.sleep(50);
-                Thread.sleep(250);
-            }
-
-            if (MacroConfig.autoEquipment) {
-                GearManager.ensureEquipment(client, true); // Restore farming gear
-                Thread.sleep(400);
-                while (GearManager.isSwappingEquipment)
                     Thread.sleep(50);
                 Thread.sleep(250);
             }

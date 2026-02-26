@@ -30,6 +30,8 @@ public class IhanuatClient implements ClientModInitializer {
     private static boolean hasCheckedPersistenceOnJoin = false;
     private static long lastStashPickupTime = 0;
     private static final long STASH_PICKUP_DELAY_MS = 3300;
+    private static long lastRewarpTime = 0;
+    private static final long REWARP_COOLDOWN_MS = 5000; // 5 seconds cooldown
 
     private static long nextRestTriggerMs = 0;
 
@@ -198,6 +200,42 @@ public class IhanuatClient implements ClientModInitializer {
             com.ihanuat.mod.modules.GearManager.cleanupTick(client);
             RotationManager.update(client);
 
+            // Double-tap Space Flight Toggle
+            if (PestManager.isStoppingFlight) {
+                PestManager.flightStopTicks++;
+                switch (PestManager.flightStopStage) {
+                    case 0: // Press
+                        if (client.options.keyJump != null)
+                            net.minecraft.client.KeyMapping.set(client.options.keyJump.getDefaultKey(), true);
+                        if (PestManager.flightStopTicks >= 2) {
+                            PestManager.flightStopStage = 1;
+                            PestManager.flightStopTicks = 0;
+                        }
+                        break;
+                    case 1: // Release
+                        if (client.options.keyJump != null)
+                            net.minecraft.client.KeyMapping.set(client.options.keyJump.getDefaultKey(), false);
+                        if (PestManager.flightStopTicks >= 3) {
+                            PestManager.flightStopStage = 2;
+                            PestManager.flightStopTicks = 0;
+                        }
+                        break;
+                    case 2: // Press
+                        if (client.options.keyJump != null)
+                            net.minecraft.client.KeyMapping.set(client.options.keyJump.getDefaultKey(), true);
+                        if (PestManager.flightStopTicks >= 2) {
+                            PestManager.flightStopStage = 3;
+                            PestManager.flightStopTicks = 0;
+                        }
+                        break;
+                    case 3: // Done
+                        if (client.options.keyJump != null)
+                            net.minecraft.client.KeyMapping.set(client.options.keyJump.getDefaultKey(), false);
+                        PestManager.isStoppingFlight = false;
+                        break;
+                }
+            }
+
             if (MacroStateManager.getCurrentState() == MacroState.State.RECOVERING) {
                 RecoveryManager.update(client);
                 return;
@@ -209,6 +247,36 @@ public class IhanuatClient implements ClientModInitializer {
                 if (now - lastStashPickupTime >= STASH_PICKUP_DELAY_MS) {
                     lastStashPickupTime = now;
                     client.player.connection.sendCommand("pickupstash");
+                }
+            }
+
+            // PlotTP Rewarp Logic (Coordinate-based)
+            if (MacroConfig.enablePlotTpRewarp && MacroConfig.rewarpEndPosSet
+                    && MacroStateManager.getCurrentState() == MacroState.State.FARMING) {
+                long now = System.currentTimeMillis();
+                if (now - lastRewarpTime >= REWARP_COOLDOWN_MS) {
+                    double dx = client.player.getX() - MacroConfig.rewarpEndX;
+                    double dy = client.player.getY() - MacroConfig.rewarpEndY;
+                    double dz = client.player.getZ() - MacroConfig.rewarpEndZ;
+                    double distanceSq = dx * dx + dy * dy + dz * dz;
+
+                    if (distanceSq <= 1.5 * 1.5) { // Within 1.5 blocks
+                        lastRewarpTime = now;
+                        client.player.displayClientMessage(Component.literal("§6Rewarp End Position reached!"), true);
+                        new Thread(() -> {
+                            try {
+                                client.execute(() -> ClientUtils.sendCommand(client, ".ez-stopscript"));
+                                Thread.sleep(300);
+                                client.execute(() -> MacroConfig.executePlotTpRewarp(client));
+                                Thread.sleep(1200); // Wait for warp
+                                if (MacroStateManager.getCurrentState() == MacroState.State.FARMING) {
+                                    client.execute(() -> ClientUtils.sendCommand(client, MacroConfig.restartScript));
+                                }
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        }).start();
+                    }
                 }
             }
         });

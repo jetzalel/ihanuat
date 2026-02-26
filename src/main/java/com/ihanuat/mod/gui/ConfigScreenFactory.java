@@ -35,6 +35,14 @@ public class ConfigScreenFactory {
                                 .build());
 
                 general.addEntry(builder.getEntryBuilder()
+                                .startEnumSelector(Component.literal("Unfly Mode (after /warp garden)"),
+                                                MacroConfig.UnflyMode.class,
+                                                MacroConfig.unflyMode)
+                                .setDefaultValue(MacroConfig.UnflyMode.DOUBLE_TAP_SPACE)
+                                .setSaveConsumer(newValue -> MacroConfig.unflyMode = newValue)
+                                .build());
+
+                general.addEntry(builder.getEntryBuilder()
                                 .startIntSlider(Component.literal("Pest Threshold"), MacroConfig.pestThreshold, 1, 8)
                                 .setDefaultValue(1)
                                 .setSaveConsumer(newValue -> MacroConfig.pestThreshold = newValue)
@@ -177,6 +185,35 @@ public class ConfigScreenFactory {
                                 .setDefaultValue(10)
                                 .setSaveConsumer(newValue -> MacroConfig.georgeSellThreshold = newValue)
                                 .build());
+
+                qol.addEntry(builder.getEntryBuilder()
+                                .startBooleanToggle(Component.literal("Enable PlotTP Rewarp (for hyper-optimized farms that have startpos as plottp rewarp)"),
+                                                MacroConfig.enablePlotTpRewarp)
+                                .setDefaultValue(false)
+                                .setSaveConsumer(newValue -> MacroConfig.enablePlotTpRewarp = newValue)
+                                .build());
+
+                qol.addEntry(builder.getEntryBuilder()
+                                .startStrField(Component.literal("PlotTP Number"), MacroConfig.plotTpNumber)
+                                .setDefaultValue("0")
+                                .setSaveConsumer(newValue -> MacroConfig.plotTpNumber = newValue)
+                                .build());
+
+                qol.addEntry(new ButtonEntry(
+                                Component.literal("Capture Rewarp End Position"),
+                                Component.literal("Captures your current position as the trigger for PlotTP Rewarp."),
+                                button -> {
+                                        Minecraft client = Minecraft.getInstance();
+                                        if (client.player != null) {
+                                                MacroConfig.rewarpEndX = client.player.getX();
+                                                MacroConfig.rewarpEndY = client.player.getY();
+                                                MacroConfig.rewarpEndZ = client.player.getZ();
+                                                MacroConfig.rewarpEndPosSet = true;
+                                                client.player.displayClientMessage(
+                                                                Component.literal("§aRewarp End Position captured!"),
+                                                                true);
+                                        }
+                                }));
 
                 return builder.build();
         }

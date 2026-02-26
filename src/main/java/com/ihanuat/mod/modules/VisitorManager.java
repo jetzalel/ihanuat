@@ -46,7 +46,10 @@ public class VisitorManager {
                 true);
         new Thread(() -> {
             try {
-                Thread.sleep(250);
+                if (MacroConfig.unflyMode == MacroConfig.UnflyMode.DOUBLE_TAP_SPACE) {
+                    PestManager.performUnfly(client);
+                    Thread.sleep(150);
+                }
                 ClientUtils.sendCommand(client, "/warp garden");
                 Thread.sleep(1000); // 1s wait for warp load
                 PestManager.isReturningFromPestVisitor = true;
@@ -61,12 +64,11 @@ public class VisitorManager {
         if (MacroStateManager.getCurrentState() == MacroState.State.OFF)
             return;
 
-        if (client.options != null) {
-            client.options.keyShift.setDown(true);
-        }
-
         try {
-            Thread.sleep(200);
+            if (MacroConfig.unflyMode == MacroConfig.UnflyMode.SNEAK) {
+                PestManager.performUnfly(client);
+                Thread.sleep(150);
+            }
         } catch (InterruptedException ignored) {
         }
 

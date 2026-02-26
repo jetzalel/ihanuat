@@ -189,9 +189,22 @@ public class GearManager {
         if (equipmentTargetIndex >= guiSlots.length) {
             trackedIsPestGear = !swappingToFarmingGear;
             isSwappingEquipment = false;
-            client.player.closeContainer();
+            // Close the screen client-side immediately (no server round-trip needed).
+            // Send the ServerboundContainerClosePacket asynchronously after 100ms.
+            int containerId = screen.getMenu().containerId;
+            client.setScreen(null);
             wardrobeCleanupTicks = 10;
             equipmentInteractionStage = 0;
+            new Thread(() -> {
+                try {
+                    Thread.sleep(100);
+                    client.execute(() -> {
+                        if (client.player != null && client.getConnection() != null)
+                            client.getConnection().send(new ServerboundContainerClosePacket(containerId));
+                    });
+                } catch (InterruptedException ignored) {
+                }
+            }).start();
             return;
         }
 
@@ -214,7 +227,6 @@ public class GearManager {
                 boolean matches = swappingToFarmingGear ? isFarming : isPest;
 
                 if (matches) {
-                    // Already equipped, skip to next
                     equipmentTargetIndex++;
                     equipmentInteractionTime = now;
                     return;
