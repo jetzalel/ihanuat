@@ -98,11 +98,20 @@ public class GearManager {
 
             Slot slot = screen.getMenu().slots.get(slotIdx);
             ItemStack stack = slot.getItem();
+
+            // Wait for item to load (not be air/empty or gray dye)
+            if (stack.isEmpty() || stack.getItem().toString().toLowerCase().contains("air")
+                    || stack.getItem().toString().toLowerCase().contains("gray_dye")
+                    || stack.getHoverName().getString().toLowerCase().contains("gray dye")) {
+                return;
+            }
+
             String itemName = stack.getItem().toString().toLowerCase();
             String hoverName = stack.getHoverName().getString().toLowerCase();
 
-            if (itemName.contains("lime_dye") || itemName.contains("green_dye")
-                    || hoverName.contains("lime dye") || hoverName.contains("green dye")) {
+            // Check if already active (Green Dye means equipped)
+            if (itemName.contains("green_dye") || hoverName.contains("green dye") || itemName.contains("lime_dye")
+                    || hoverName.contains("lime dye")) {
                 client.player.displayClientMessage(
                         Component.literal("§aWardrobe Slot " + targetWardrobeSlot + " is already active."), true);
                 trackedWardrobeSlot = targetWardrobeSlot;

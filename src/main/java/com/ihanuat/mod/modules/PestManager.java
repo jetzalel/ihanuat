@@ -33,7 +33,8 @@ public class PestManager {
     }
 
     public static void checkTabListForPests(Minecraft client, MacroState.State currentState) {
-        if (client.getConnection() == null || isCleaningInProgress)
+        if (client.getConnection() == null || isCleaningInProgress
+                || !com.ihanuat.mod.MacroStateManager.isMacroRunning())
             return;
 
         int aliveCount = -1;
