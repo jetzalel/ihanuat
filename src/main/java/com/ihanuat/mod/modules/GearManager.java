@@ -164,8 +164,9 @@ public class GearManager {
         if (!title.contains("Equipment"))
             return;
 
+        // Necklace, Cloak/Vest, Belt, Hand (Gloves/Bracelet/Gauntlet)
         int[] guiSlots = { 10, 19, 28, 37 };
-        String[] keywords = { "necklace", "cloak", "belt", "gloves" };
+        String[] keywords = { "necklace", "cloak|vest", "belt", "gloves|bracelet|gauntlet" };
 
         if (equipmentTargetIndex >= guiSlots.length) {
             trackedIsPestGear = !swappingToFarmingGear;
@@ -176,49 +177,33 @@ public class GearManager {
             return;
         }
 
-        Slot targetSlot = screen.getMenu().getSlot(guiSlots[equipmentTargetIndex]);
-        if (targetSlot == null) {
-            equipmentTargetIndex++;
-            return;
-        }
+        int totalSlots = screen.getMenu().slots.size();
+        int playerInvStart = totalSlots - 36;
+        ItemStack carried = client.player.containerMenu.getCarried();
 
-        String targetType = keywords[equipmentTargetIndex];
-
-        // Stage 0: Check if current item is correct or pick up old item to start swap
+        // Stage 0: Verify if swap is needed and search for desired item in inventory
         if (equipmentInteractionStage == 0) {
-            boolean hasItem = targetSlot.hasItem();
-            boolean isCorrect = false;
-            if (hasItem) {
-                String itemName = targetSlot.getItem().getHoverName().getString().toLowerCase();
-                boolean hasFarming = itemName.contains("lotus") || itemName.contains("blossom");
-                boolean hasPest = itemName.contains("pest");
-                isCorrect = swappingToFarmingGear ? hasFarming : hasPest;
+            if (!carried.isEmpty())
+                return; // Wait for cursor to be empty
+
+            // First, check if the slot already has the correct gear
+            Slot equipmentSlot = screen.getMenu().getSlot(guiSlots[equipmentTargetIndex]);
+            if (equipmentSlot != null && equipmentSlot.hasItem()) {
+                String itemName = equipmentSlot.getItem().getHoverName().getString().toLowerCase();
+                boolean isFarming = itemName.contains("lotus") || itemName.contains("blossom");
+                boolean isPest = itemName.contains("pest");
+                boolean matches = swappingToFarmingGear ? isFarming : isPest;
+
+                if (matches) {
+                    // Already equipped, skip to next
+                    equipmentTargetIndex++;
+                    equipmentInteractionTime = now;
+                    return;
+                }
             }
 
-            if (isCorrect) {
-                equipmentTargetIndex++;
-                equipmentInteractionTime = now;
-                return;
-            }
-
-            if (hasItem) {
-                // Pick up old item
-                client.gameMode.handleInventoryMouseClick(screen.getMenu().containerId, targetSlot.index, 0,
-                        ClickType.PICKUP, client.player);
-                equipmentInteractionTime = now;
-                equipmentInteractionStage = 1;
-            } else {
-                // Slot empty, just go find replacement
-                equipmentInteractionStage = 1;
-            }
-            return;
-        }
-
-        // Stage 1: Cursor might have old item. Find replacement and swap it.
-        if (equipmentInteractionStage == 1) {
-            int totalSlots = screen.getMenu().slots.size();
-            int playerInvStart = totalSlots - 36;
-
+            // Second, search inventory for the item
+            String targetTypePattern = keywords[equipmentTargetIndex];
             for (int i = playerInvStart; i < totalSlots; i++) {
                 Slot invSlot = screen.getMenu().slots.get(i);
                 if (invSlot.hasItem()) {
@@ -227,31 +212,71 @@ public class GearManager {
                     boolean invIsPest = invItemName.contains("pest");
                     boolean matchesTarget = swappingToFarmingGear ? invIsFarming : invIsPest;
 
-                    if (matchesTarget && invItemName.contains(targetType)) {
-                        // Click replacement (swaps with cursor if cursor has old item)
-                        client.gameMode.handleInventoryMouseClick(screen.getMenu().containerId, invSlot.index, 0,
-                                ClickType.PICKUP, client.player);
-                        equipmentInteractionTime = now;
-                        equipmentInteractionStage = 2;
-                        return;
+                    if (matchesTarget) {
+                        boolean typeMatch = false;
+                        for (String type : targetTypePattern.split("\\|")) {
+                            if (invItemName.contains(type)) {
+                                typeMatch = true;
+                                break;
+                            }
+                        }
+
+                        if (typeMatch) {
+                            client.gameMode.handleInventoryMouseClick(screen.getMenu().containerId, invSlot.index, 0,
+                                    ClickType.PICKUP, client.player);
+                            equipmentInteractionTime = now;
+                            equipmentInteractionStage = 1;
+                            return;
+                        }
                     }
                 }
             }
 
-            // If we didn't find a replacement, proceed to Stage 2 to put back what we have
-            // or just continue
+            // Not found in inventory? skip
+            equipmentTargetIndex++;
+            equipmentInteractionTime = now;
+            return;
+        }
+
+        // Stage 1: Cursor has new gear. Swap it directly with the equipment slot.
+        if (equipmentInteractionStage == 1) {
+            if (carried.isEmpty()) {
+                equipmentInteractionStage = 0; // Failed to pick up?
+                return;
+            }
+            int gearSlotIdx = guiSlots[equipmentTargetIndex];
+            client.gameMode.handleInventoryMouseClick(screen.getMenu().containerId, gearSlotIdx, 0,
+                    ClickType.PICKUP, client.player);
+            equipmentInteractionTime = now;
             equipmentInteractionStage = 2;
             return;
         }
 
-        // Stage 2: Cursor has new item (or old item if replace failed). Place in
-        // equipment slot.
+        // Stage 2: Cursor has old gear. Put it back in an empty inventory slot.
         if (equipmentInteractionStage == 2) {
-            client.gameMode.handleInventoryMouseClick(screen.getMenu().containerId, targetSlot.index, 0,
-                    ClickType.PICKUP, client.player);
-            equipmentInteractionTime = now;
+            if (carried.isEmpty()) {
+                // Done swapping (happens if old slot was empty)
+                equipmentInteractionStage = 0;
+                equipmentTargetIndex++;
+                equipmentInteractionTime = now;
+                return;
+            }
+            for (int i = playerInvStart; i < totalSlots; i++) {
+                Slot invSlot = screen.getMenu().slots.get(i);
+                if (!invSlot.hasItem()) {
+                    client.gameMode.handleInventoryMouseClick(screen.getMenu().containerId, invSlot.index, 0,
+                            ClickType.PICKUP, client.player);
+                    equipmentInteractionTime = now;
+                    equipmentInteractionStage = 0;
+                    equipmentTargetIndex++;
+                    return;
+                }
+            }
+            // No empty slot found? We're stuck with item in cursor.
+            // Just move to next and hope for the best, or log error.
             equipmentInteractionStage = 0;
             equipmentTargetIndex++;
+            equipmentInteractionTime = now;
         }
     }
 

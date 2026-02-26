@@ -75,7 +75,8 @@ public class PestManager {
                 }
 
                 if (MacroConfig.autoEquipment) {
-                    if (cooldownSeconds > 170 && prepSwappedForCurrentPestCycle && !isCleaningInProgress) {
+                    if (cooldownSeconds > MacroConfig.autoEquipmentFarmingTime && prepSwappedForCurrentPestCycle
+                            && !isCleaningInProgress) {
                         prepSwappedForCurrentPestCycle = false;
                     }
                 } else {
@@ -89,7 +90,7 @@ public class PestManager {
                         && !prepSwappedForCurrentPestCycle && !isCleaningInProgress) {
 
                     if (MacroConfig.autoEquipment) {
-                        if (cooldownSeconds <= 170)
+                        if (cooldownSeconds <= MacroConfig.autoEquipmentFarmingTime)
                             triggerPrepSwap(client);
                     } else if (cooldownSeconds <= 3) {
                         triggerPrepSwap(client);

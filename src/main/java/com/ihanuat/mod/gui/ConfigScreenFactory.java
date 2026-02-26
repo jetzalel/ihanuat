@@ -93,6 +93,14 @@ public class ConfigScreenFactory {
                                 .build());
 
                 general.addEntry(builder.getEntryBuilder()
+                                .startIntSlider(Component.literal(
+                                                "Auto-Equipment Timing (time left on pest cd to swap to  pest spawn equip) (sec)"),
+                                                MacroConfig.autoEquipmentFarmingTime, 1, 300)
+                                .setDefaultValue(200)
+                                .setSaveConsumer(newValue -> MacroConfig.autoEquipmentFarmingTime = newValue)
+                                .build());
+
+                general.addEntry(builder.getEntryBuilder()
                                 .startBooleanToggle(Component.literal("Armor Swap for Visitor"),
                                                 MacroConfig.armorSwapVisitor)
                                 .setDefaultValue(false)

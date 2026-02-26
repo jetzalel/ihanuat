@@ -20,6 +20,7 @@ public class MacroConfig {
     public static boolean autoVisitor = true;
     public static boolean autoEquipment = true;
     public static boolean autoStashManager = false;
+    public static int autoEquipmentFarmingTime = 200;
 
     // Wardrobe Slots
     public static int wardrobeSlotFarming = 1;
@@ -57,6 +58,7 @@ public class MacroConfig {
         data.autoEquipment = autoEquipment;
         data.autoStashManager = autoStashManager;
         data.rotationSpeed = rotationSpeed;
+        data.autoEquipmentFarmingTime = autoEquipmentFarmingTime;
 
         data.wardrobeSlotFarming = wardrobeSlotFarming;
         data.wardrobeSlotPest = wardrobeSlotPest;
@@ -95,6 +97,7 @@ public class MacroConfig {
                 autoEquipment = data.autoEquipment;
                 autoStashManager = data.autoStashManager;
                 rotationSpeed = data.rotationSpeed;
+                autoEquipmentFarmingTime = data.autoEquipmentFarmingTime > 0 ? data.autoEquipmentFarmingTime : 200;
 
                 wardrobeSlotFarming = data.wardrobeSlotFarming > 0 ? data.wardrobeSlotFarming : 1;
                 wardrobeSlotPest = data.wardrobeSlotPest > 0 ? data.wardrobeSlotPest : 2;
@@ -124,6 +127,7 @@ public class MacroConfig {
         boolean autoEquipment = true;
         boolean autoStashManager = false;
         int rotationSpeed = 200;
+        int autoEquipmentFarmingTime = 200;
 
         int wardrobeSlotFarming = 1;
         int wardrobeSlotPest = 2;
