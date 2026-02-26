@@ -23,6 +23,7 @@ public class PestManager {
     public static volatile boolean prepSwappedForCurrentPestCycle = false;
     public static volatile int currentPestSessionId = 0;
     public static volatile boolean isReturningFromPestVisitor = false;
+    public static volatile boolean isReturnToLocationActive = false;
     public static volatile boolean isStoppingFlight = false;
     public static int flightStopStage = 0;
     public static int flightStopTicks = 0;
@@ -32,6 +33,7 @@ public class PestManager {
         prepSwappedForCurrentPestCycle = false;
         currentInfestedPlot = null;
         isReturningFromPestVisitor = false;
+        isReturnToLocationActive = false;
         isStoppingFlight = false;
         flightStopStage = 0;
         flightStopTicks = 0;
@@ -116,7 +118,7 @@ public class PestManager {
 
                 // Prep swap logic
                 if (currentState == MacroState.State.FARMING && cooldownSeconds != -1 && cooldownSeconds >= 0
-                        && !prepSwappedForCurrentPestCycle && !isCleaningInProgress) {
+                        && !prepSwappedForCurrentPestCycle && !isCleaningInProgress && !isReturnToLocationActive) {
 
                     boolean thresholdMet = (aliveCount >= MacroConfig.pestThreshold || aliveCount >= 8);
                     if (!thresholdMet) {

@@ -45,8 +45,6 @@ public class GeorgeManager {
 
         // Stage 0: Initial George GUI or Pet Selection
         if (interactionStage == 0) {
-            // Log title to help debug
-            client.player.displayClientMessage(Component.literal("§7[Debug] George Title: " + title), false);
 
             if (!title.toLowerCase().contains("george") && !title.toLowerCase().contains("sell pets")
                     && !title.toLowerCase().contains("pet collector") && !title.toLowerCase().contains("offer pets"))
@@ -60,12 +58,6 @@ public class GeorgeManager {
 
                 String rawName = slot.getItem().getHoverName().getString();
                 String name = rawName.replaceAll("(?i)§.", "").toLowerCase();
-
-                // Debug log every item in GUI
-                if (name.contains("rat") || name.contains("slug")) {
-                    client.player.displayClientMessage(Component.literal("§7[Debug] GUI Slot " + i + ": " + name),
-                            false);
-                }
 
                 // Detailed debug for found items if requested, but for now let's just broaden
                 // match
@@ -257,14 +249,6 @@ public class GeorgeManager {
             try {
                 com.ihanuat.mod.util.ClientUtils.sendCommand(client, ".ez-stopscript");
 
-                if (client.player != null) {
-                    client.execute(() -> client.player.displayClientMessage(
-                            Component.literal("§7[Debug] Initial George detection, state: "
-                                    + com.ihanuat.mod.MacroStateManager.getCurrentState().name()
-                                    + ". Waiting up to 5s..."),
-                            false));
-                }
-
                 boolean success = true;
                 for (int i = 0; i < 50; i++) {
                     Thread.sleep(100);
@@ -280,10 +264,6 @@ public class GeorgeManager {
                 }
 
                 if (success && isPreparingToSell) {
-                    if (client.player != null) {
-                        client.execute(() -> client.player.displayClientMessage(
-                                Component.literal("§7[Debug] Success, state still FARMING. Calling George."), false));
-                    }
                     isPreparingToSell = false;
                     isSelling = true;
                     interactionStage = 0;
@@ -292,12 +272,6 @@ public class GeorgeManager {
                     com.ihanuat.mod.util.ClientUtils.sendCommand(client, "/call george");
                 } else {
                     isPreparingToSell = false;
-                    if (client.player != null) {
-                        client.execute(() -> client.player.displayClientMessage(
-                                Component.literal(
-                                        "§7[Debug] Aborted George prep. State changed or priority event occurred."),
-                                false));
-                    }
                 }
             } catch (Exception e) {
                 e.printStackTrace();
