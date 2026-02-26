@@ -167,9 +167,9 @@ public class PestManager {
                             true);
                     ClientUtils.sendCommand(client, "/warp garden");
                     Thread.sleep(1000);
+
                     client.execute(() -> {
                         GearManager.swapToFarmingTool(client);
-                        ClientUtils.sendCommand(client, "/setspawn");
                     });
                     Thread.sleep(250);
 
@@ -181,15 +181,15 @@ public class PestManager {
                                 true);
                         client.execute(() -> GearManager.ensureWardrobeSlot(client, MacroConfig.wardrobeSlotVisitor));
                         Thread.sleep(400);
-                        while (GearManager.isSwappingWardrobe)
-                            Thread.sleep(50);
-                        Thread.sleep(500); // Wait for container close and server sync
                     }
 
-                    client.execute(() -> {
+                    ClientUtils.waitForGearAndGui(client);
+                    try {
                         ClientUtils.sendCommand(client, ".ez-stopscript");
+                        Thread.sleep(250);
                         ClientUtils.sendCommand(client, ".ez-startscript misc:visitor");
-                    });
+                    } catch (InterruptedException ignored) {
+                    }
                     isCleaningInProgress = false;
                     return;
                 }
@@ -247,7 +247,6 @@ public class PestManager {
             if (visitors >= MacroConfig.visitorThreshold) {
                 client.execute(() -> {
                     GearManager.swapToFarmingTool(client);
-                    ClientUtils.sendCommand(client, "/setspawn");
                 });
                 Thread.sleep(250);
 
@@ -258,22 +257,21 @@ public class PestManager {
                             true);
                     client.execute(() -> GearManager.ensureWardrobeSlot(client, MacroConfig.wardrobeSlotVisitor));
                     Thread.sleep(400);
-                    while (GearManager.isSwappingWardrobe)
-                        Thread.sleep(50);
-                    Thread.sleep(500); // Wait for container close and server sync
                 }
 
-                client.execute(() -> {
+                ClientUtils.waitForGearAndGui(client);
+                try {
                     ClientUtils.sendCommand(client, ".ez-stopscript");
+                    Thread.sleep(250);
                     ClientUtils.sendCommand(client, ".ez-startscript misc:visitor");
-                });
+                } catch (InterruptedException ignored) {
+                }
                 isCleaningInProgress = false;
                 return;
             }
 
             client.execute(() -> {
                 GearManager.swapToFarmingTool(client);
-                ClientUtils.sendCommand(client, "/setspawn");
             });
             Thread.sleep(250);
 
@@ -283,18 +281,17 @@ public class PestManager {
                         "§eRestoring Farming Wardrobe (Slot " + MacroConfig.wardrobeSlotFarming + ")..."), true);
                 client.execute(() -> GearManager.ensureWardrobeSlot(client, MacroConfig.wardrobeSlotFarming));
                 Thread.sleep(400);
-                while (GearManager.isSwappingWardrobe)
-                    Thread.sleep(50);
-                Thread.sleep(500); // Wait for container close and server sync
             }
 
+            ClientUtils.waitForGearAndGui(client);
             com.ihanuat.mod.MacroStateManager.setCurrentState(com.ihanuat.mod.MacroState.State.FARMING);
             prepSwappedForCurrentPestCycle = false; // Ensure flag is reset when returning
-            Thread.sleep(100);
-            client.execute(() -> {
+            try {
                 ClientUtils.sendCommand(client, ".ez-stopscript");
+                Thread.sleep(250);
                 ClientUtils.sendCommand(client, MacroConfig.restartScript);
-            });
+            } catch (InterruptedException ignored) {
+            }
             isCleaningInProgress = false;
         } catch (InterruptedException ignored) {
         }
@@ -407,10 +404,14 @@ public class PestManager {
                 ClientUtils.sendCommand(client, "/setspawn");
                 Thread.sleep(400); // Wait on thread, not main thread
 
-                client.execute(() -> {
-                    GearManager.swapToFarmingTool(client);
+                try {
+                    ClientUtils.sendCommand(client, ".ez-stopscript");
+                    Thread.sleep(250);
+                    client.execute(() -> GearManager.swapToFarmingTool(client));
+                    Thread.sleep(250);
                     ClientUtils.sendCommand(client, ".ez-startscript misc:pestCleaner");
-                });
+                } catch (InterruptedException ignored) {
+                }
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -423,9 +424,15 @@ public class PestManager {
     }
 
     public static void resumeAfterPrepSwapLogic(Minecraft client) {
-        client.execute(() -> {
-            GearManager.swapToFarmingTool(client);
-            ClientUtils.sendCommand(client, MacroConfig.restartScript);
-        });
+        new Thread(() -> {
+            try {
+                client.execute(() -> GearManager.swapToFarmingTool(client));
+                Thread.sleep(250);
+                ClientUtils.sendCommand(client, ".ez-stopscript");
+                Thread.sleep(250);
+                ClientUtils.sendCommand(client, MacroConfig.restartScript);
+            } catch (InterruptedException ignored) {
+            }
+        }).start();
     }
 }
