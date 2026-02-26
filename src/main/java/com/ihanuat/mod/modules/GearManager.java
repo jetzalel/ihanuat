@@ -44,10 +44,9 @@ public class GearManager {
             new Thread(() -> {
                 try {
                     Thread.sleep(400);
-                    client.execute(() -> {
-                        GearManager.swapToFarmingTool(client);
-                        ClientUtils.sendCommand(client, MacroConfig.restartScript);
-                    });
+                    client.execute(() -> GearManager.swapToFarmingTool(client));
+                    Thread.sleep(250);
+                    ClientUtils.sendCommand(client, MacroConfig.restartScript);
                 } catch (Exception ignored) {
                 }
             }).start();
@@ -126,6 +125,10 @@ public class GearManager {
             wardrobeInteractionTime = now;
             wardrobeInteractionStage = 1;
         } else if (wardrobeInteractionStage == 1) {
+            long lastClickElapsed = now - wardrobeInteractionTime;
+            if (lastClickElapsed < 150)
+                return;
+
             trackedWardrobeSlot = targetWardrobeSlot;
             isSwappingWardrobe = false;
             client.player.closeContainer();
@@ -150,10 +153,11 @@ public class GearManager {
                     Thread.sleep(600);
                     if (PestManager.isCleaningInProgress)
                         return;
-                    client.execute(() -> {
-                        GearManager.swapToFarmingTool(client);
-                        ClientUtils.sendCommand(client, MacroConfig.restartScript);
-                    });
+                    client.execute(() -> GearManager.swapToFarmingTool(client));
+                    Thread.sleep(250);
+                    ClientUtils.sendCommand(client, ".ez-stopscript");
+                    Thread.sleep(250);
+                    ClientUtils.sendCommand(client, MacroConfig.restartScript);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }

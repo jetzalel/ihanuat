@@ -184,4 +184,26 @@ public class ClientUtils {
         long sleepTime = min + (long) (Math.random() * (max - min + 1));
         Thread.sleep(sleepTime);
     }
+
+    public static void waitForGearAndGui(Minecraft client) {
+        try {
+            // Wait for Wardrobe swap
+            while (com.ihanuat.mod.modules.GearManager.isSwappingWardrobe)
+                Thread.sleep(50);
+
+            // Wait for Equipment swap
+            while (com.ihanuat.mod.modules.GearManager.isSwappingEquipment)
+                Thread.sleep(50);
+
+            // Final check for any open GUI (wardrobe, equipment, or any other menu)
+            long startTime = System.currentTimeMillis();
+            while (client.screen != null && System.currentTimeMillis() - startTime < 5000) {
+                Thread.sleep(100);
+            }
+
+            // Small safety delay after GUI is gone
+            Thread.sleep(400);
+        } catch (InterruptedException ignored) {
+        }
+    }
 }

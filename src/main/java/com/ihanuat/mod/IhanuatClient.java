@@ -161,10 +161,12 @@ public class IhanuatClient implements ClientModInitializer {
                                         () -> GearManager.ensureWardrobeSlot(client, MacroConfig.wardrobeSlotFarming));
                                 Thread.sleep(800);
                             }
-                            client.execute(() -> {
-                                GearManager.swapToFarmingTool(client);
-                                ClientUtils.sendCommand(client, MacroConfig.restartScript);
-                            });
+                            ClientUtils.waitForGearAndGui(client);
+                            client.execute(() -> GearManager.swapToFarmingTool(client));
+                            Thread.sleep(250);
+                            ClientUtils.sendCommand(client, ".ez-stopscript");
+                            Thread.sleep(250);
+                            ClientUtils.sendCommand(client, MacroConfig.restartScript);
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
