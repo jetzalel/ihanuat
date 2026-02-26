@@ -74,9 +74,11 @@ jobs:
           JAR_FILE=$(basename $(ls build/libs/*.jar | grep -v 'sources' | grep -v 'dev' | head -n 1))
           JAR_URL="https://github.com/${{ github.repository }}/releases/download/build-${{ steps.vars.outputs.sha_short }}/$JAR_FILE"
           
+          printf -v DESC_VAR "A new build has been released! :rocket:\n\n**Commit Message:**\n%s" "$COMMIT_MSG"
+          
           jq -n \
             --arg title "New Release: $VERSION Automated Build" \
-            --arg desc "A new build has been released! :rocket:\n\n**Commit Message:**\n$COMMIT_MSG" \
+            --arg desc "$DESC_VAR" \
             --arg url "$RELEASE_URL" \
             --arg rel_url "$RELEASE_URL" \
             --arg jar_file "$JAR_FILE" \
