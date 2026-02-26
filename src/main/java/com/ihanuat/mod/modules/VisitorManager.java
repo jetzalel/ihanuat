@@ -95,9 +95,7 @@ public class VisitorManager {
                     Thread.sleep(400);
                     while (GearManager.isSwappingWardrobe)
                         Thread.sleep(50);
-                    while (GearManager.wardrobeCleanupTicks > 0)
-                        Thread.sleep(50);
-                    Thread.sleep(250);
+                    Thread.sleep(500); // Wait for container close and server sync
                 } catch (InterruptedException ignored) {
                 }
             }
@@ -127,9 +125,7 @@ public class VisitorManager {
                 Thread.sleep(400);
                 while (GearManager.isSwappingWardrobe)
                     Thread.sleep(50);
-                while (GearManager.wardrobeCleanupTicks > 0)
-                    Thread.sleep(50);
-                Thread.sleep(250);
+                Thread.sleep(500); // Wait for container close and server sync
             } catch (InterruptedException ignored) {
             }
         }

@@ -183,9 +183,7 @@ public class PestManager {
                         Thread.sleep(400);
                         while (GearManager.isSwappingWardrobe)
                             Thread.sleep(50);
-                        while (GearManager.wardrobeCleanupTicks > 0)
-                            Thread.sleep(50);
-                        Thread.sleep(250);
+                        Thread.sleep(500); // Wait for container close and server sync
                     }
 
                     client.execute(() -> {
@@ -262,9 +260,7 @@ public class PestManager {
                     Thread.sleep(400);
                     while (GearManager.isSwappingWardrobe)
                         Thread.sleep(50);
-                    while (GearManager.wardrobeCleanupTicks > 0)
-                        Thread.sleep(50);
-                    Thread.sleep(250);
+                    Thread.sleep(500); // Wait for container close and server sync
                 }
 
                 client.execute(() -> {
@@ -289,9 +285,7 @@ public class PestManager {
                 Thread.sleep(400);
                 while (GearManager.isSwappingWardrobe)
                     Thread.sleep(50);
-                while (GearManager.wardrobeCleanupTicks > 0)
-                    Thread.sleep(50);
-                Thread.sleep(250);
+                Thread.sleep(500); // Wait for container close and server sync
             }
 
             com.ihanuat.mod.MacroStateManager.setCurrentState(com.ihanuat.mod.MacroState.State.FARMING);

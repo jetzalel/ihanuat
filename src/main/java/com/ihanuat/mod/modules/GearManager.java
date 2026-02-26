@@ -126,6 +126,10 @@ public class GearManager {
             wardrobeInteractionTime = now;
             wardrobeInteractionStage = 1;
         } else if (wardrobeInteractionStage == 1) {
+            long lastClickElapsed = now - wardrobeInteractionTime;
+            if (lastClickElapsed < 150)
+                return;
+
             trackedWardrobeSlot = targetWardrobeSlot;
             isSwappingWardrobe = false;
             client.player.closeContainer();

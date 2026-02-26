@@ -160,6 +160,9 @@ public class IhanuatClient implements ClientModInitializer {
                                 client.execute(
                                         () -> GearManager.ensureWardrobeSlot(client, MacroConfig.wardrobeSlotFarming));
                                 Thread.sleep(800);
+                                while (GearManager.isSwappingWardrobe)
+                                    Thread.sleep(50);
+                                Thread.sleep(500);
                             }
                             client.execute(() -> {
                                 GearManager.swapToFarmingTool(client);
