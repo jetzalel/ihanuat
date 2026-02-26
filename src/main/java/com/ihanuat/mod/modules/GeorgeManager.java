@@ -10,12 +10,14 @@ import net.minecraft.world.item.ItemStack;
 
 public class GeorgeManager {
     public static volatile boolean isSelling = false;
+    public static volatile boolean isPreparingToSell = false;
     public static volatile int interactionStage = 0;
     public static volatile long interactionTime = 0;
     public static volatile int confirmationCount = 0;
 
     public static void reset() {
         isSelling = false;
+        isPreparingToSell = false;
         interactionStage = 0;
         interactionTime = 0;
         confirmationCount = 0;
@@ -139,6 +141,17 @@ public class GeorgeManager {
         if (!MacroConfig.autoGeorgeSell || client.player == null)
             return;
 
+        if (isPreparingToSell) {
+            if (com.ihanuat.mod.MacroStateManager.getCurrentState() != com.ihanuat.mod.MacroState.State.FARMING ||
+                    PestManager.isCleaningInProgress || PestManager.prepSwappedForCurrentPestCycle ||
+                    VisitorManager.getVisitorCount(client) >= MacroConfig.visitorThreshold) {
+                isPreparingToSell = false;
+                client.player.displayClientMessage(
+                        Component.literal("§c[Ihanuat] Aborting George prep due to priority event."), false);
+            }
+            return;
+        }
+
         if (isSelling) {
             // Abort if no longer farming or if a priority event occurs
             if (com.ihanuat.mod.MacroStateManager.getCurrentState() != com.ihanuat.mod.MacroState.State.FARMING ||
@@ -221,12 +234,6 @@ public class GeorgeManager {
                 String rawName = stack.getHoverName().getString();
                 String name = rawName.replaceAll("(?i)§.", "").toLowerCase();
 
-                // Debug log every item to console/chat to find why detection fails
-                if (name.contains("rat") || name.contains("slug")) {
-                    client.player.displayClientMessage(Component.literal("§7[Debug] Inv Slot " + i + ": " + name),
-                            false);
-                }
-
                 if ((name.contains("rat") || name.contains("slug")) && name.contains("[lvl 1]")) {
                     count++;
                 }
@@ -243,16 +250,55 @@ public class GeorgeManager {
         // finish
         com.ihanuat.mod.util.ClientUtils.forceReleaseKeys(client);
 
-        isSelling = true;
-        interactionStage = 0;
-        interactionTime = System.currentTimeMillis();
-        confirmationCount = 0;
+        isPreparingToSell = true;
+        isSelling = false;
 
         new Thread(() -> {
             try {
                 com.ihanuat.mod.util.ClientUtils.sendCommand(client, ".ez-stopscript");
-                Thread.sleep(3000); // Wait 3 seconds to allow user to abort if needed
-                com.ihanuat.mod.util.ClientUtils.sendCommand(client, "/call george");
+
+                if (client.player != null) {
+                    client.execute(() -> client.player.displayClientMessage(
+                            Component.literal("§7[Debug] Initial George detection, state: "
+                                    + com.ihanuat.mod.MacroStateManager.getCurrentState().name()
+                                    + ". Waiting up to 5s..."),
+                            false));
+                }
+
+                boolean success = true;
+                for (int i = 0; i < 50; i++) {
+                    Thread.sleep(100);
+                    if (!isPreparingToSell) {
+                        success = false;
+                        break;
+                    }
+                    if (com.ihanuat.mod.MacroStateManager
+                            .getCurrentState() != com.ihanuat.mod.MacroState.State.FARMING) {
+                        success = false;
+                        break;
+                    }
+                }
+
+                if (success && isPreparingToSell) {
+                    if (client.player != null) {
+                        client.execute(() -> client.player.displayClientMessage(
+                                Component.literal("§7[Debug] Success, state still FARMING. Calling George."), false));
+                    }
+                    isPreparingToSell = false;
+                    isSelling = true;
+                    interactionStage = 0;
+                    interactionTime = System.currentTimeMillis();
+                    confirmationCount = 0;
+                    com.ihanuat.mod.util.ClientUtils.sendCommand(client, "/call george");
+                } else {
+                    isPreparingToSell = false;
+                    if (client.player != null) {
+                        client.execute(() -> client.player.displayClientMessage(
+                                Component.literal(
+                                        "§7[Debug] Aborted George prep. State changed or priority event occurred."),
+                                false));
+                    }
+                }
             } catch (Exception e) {
                 e.printStackTrace();
             }
