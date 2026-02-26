@@ -110,8 +110,9 @@ public class PestManager {
             }
         }
 
-        if (aliveCount >= MacroConfig.pestThreshold && !infestedPlots.isEmpty()) {
-            startCleaningSequence(client, infestedPlots.iterator().next());
+        if (aliveCount >= MacroConfig.pestThreshold) {
+            String targetPlot = infestedPlots.isEmpty() ? "0" : infestedPlots.iterator().next();
+            startCleaningSequence(client, targetPlot);
         }
     }
 
