@@ -184,7 +184,7 @@ public class GearManager {
 
         // Necklace, Cloak/Vest, Belt, Hand (Gloves/Bracelet/Gauntlet)
         int[] guiSlots = { 10, 19, 28, 37 };
-        String[] keywords = { "necklace", "cloak|vest", "belt", "gloves|bracelet|gauntlet" };
+        String[] keywords = { "necklace", "cloak|vest|cape", "belt", "gloves|bracelet|gauntlet" };
 
         if (equipmentTargetIndex >= guiSlots.length) {
             trackedIsPestGear = !swappingToFarmingGear;
@@ -208,7 +208,7 @@ public class GearManager {
             Slot equipmentSlot = screen.getMenu().getSlot(guiSlots[equipmentTargetIndex]);
             if (equipmentSlot != null && equipmentSlot.hasItem()) {
                 String itemName = equipmentSlot.getItem().getHoverName().getString().toLowerCase();
-                boolean isFarming = itemName.contains("lotus") || itemName.contains("blossom");
+                boolean isFarming = itemName.contains("lotus") || itemName.contains("blossom") || itemName.contains("zorro");
                 boolean isPest = itemName.contains("pest");
                 boolean matches = swappingToFarmingGear ? isFarming : isPest;
 
