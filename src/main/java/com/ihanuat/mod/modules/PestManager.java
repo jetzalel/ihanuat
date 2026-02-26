@@ -405,6 +405,10 @@ public class PestManager {
                 Thread.sleep(400); // Wait on thread, not main thread
 
                 try {
+                    if (currentInfestedPlot != null && !currentInfestedPlot.equals("0")) {
+                        ClientUtils.sendCommand(client, "/plottp " + currentInfestedPlot);
+                        Thread.sleep(300); // Wait for warp to plot
+                    }
                     ClientUtils.sendCommand(client, ".ez-stopscript");
                     Thread.sleep(250);
                     client.execute(() -> GearManager.swapToFarmingTool(client));
