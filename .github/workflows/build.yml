@@ -39,28 +39,24 @@ jobs:
             gradle build
           fi
 
-      - name: Delete existing 'latest' tag
-        run: |
-          git tag -d latest || true
-          git push origin :refs/tags/latest || true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Shorten Commit SHA
+        id: vars
+        run: echo "sha_short=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_OUTPUT
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         if: github.event_name == 'push'
         with:
-          tag_name: latest
-          name: Latest Build
+          tag_name: "build-${{ steps.vars.outputs.sha_short }}"
+          name: "Automated Build - ${{ steps.vars.outputs.sha_short }}"
           body: |
             ## Automated Build
-            This release is automatically updated on every push to the master/main branch.
-            
-            **Last Commit:** ${{ github.event.head_commit.message }} (${{ github.sha }})
-            **Branch:** ${{ github.ref_name }}
+            Commit: ${{ github.sha }}
+            Branch: ${{ github.ref_name }}
+            Message: ${{ github.event.head_commit.message }}
           files: build/libs/*.jar
           draft: false
           prerelease: false
-          make_latest: true
+          make_latest: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
