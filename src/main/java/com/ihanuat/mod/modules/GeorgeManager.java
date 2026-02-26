@@ -139,22 +139,14 @@ public class GeorgeManager {
         if (!MacroConfig.autoGeorgeSell || client.player == null)
             return;
 
-    public static volatile long lastAbortTime = 0;
-
-    public static void update(Minecraft client) {
-        if (!MacroConfig.autoGeorgeSell || client.player == null)
-            return;
-
         if (isSelling) {
             // Abort if no longer farming or if a priority event occurs
             if (com.ihanuat.mod.MacroStateManager.getCurrentState() != com.ihanuat.mod.MacroState.State.FARMING ||
                     PestManager.isCleaningInProgress || PestManager.prepSwappedForCurrentPestCycle ||
                     VisitorManager.getVisitorCount(client) >= MacroConfig.visitorThreshold) {
                 isSelling = false;
-                lastAbortTime = System.currentTimeMillis();
                 client.player.displayClientMessage(
-                        Component.literal("§c[Ihanuat] Aborting George sell due to priority event or manual stop."),
-                        false);
+                        Component.literal("§c[Ihanuat] Aborting George sell due to priority event."), false);
                 return;
             }
 
@@ -177,11 +169,6 @@ public class GeorgeManager {
                     }
                 }
             }
-            return;
-        }
-
-        // Don't sell if we've recently aborted (15 second cooldown)
-        if (System.currentTimeMillis() - lastAbortTime < 15000) {
             return;
         }
 
@@ -265,11 +252,6 @@ public class GeorgeManager {
             try {
                 com.ihanuat.mod.util.ClientUtils.sendCommand(client, ".ez-stopscript");
                 Thread.sleep(3000); // Wait 3 seconds to allow user to abort if needed
-
-                // If the user aborted during the 3 seconds, do not execute the call
-                if (!isSelling)
-                    return;
-
                 com.ihanuat.mod.util.ClientUtils.sendCommand(client, "/call george");
             } catch (Exception e) {
                 e.printStackTrace();
