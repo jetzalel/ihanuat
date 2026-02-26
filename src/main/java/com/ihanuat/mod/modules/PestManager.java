@@ -201,13 +201,16 @@ public class PestManager {
         if (client.player == null)
             return;
 
-        // Poll for up to 0.5s to confirm the player is actually flying after the warp.
-        // This mirrors the old tick-loop which checked getAbilities().flying every tick
-        // and self-aborted if not flying before any key press happened.
+        // Poll for up to 500ms to confirm the player is actually airborne after the
+        // warp.
+        // abilities.flying is always true in SkyBlock Garden (it's a permission flag,
+        // not
+        // an airborne state), so we must also require !onGround() to confirm the player
+        // is actually floating and needs to be brought down.
         long deadline = System.currentTimeMillis() + 500;
         boolean isFlying = false;
         while (System.currentTimeMillis() < deadline) {
-            if (client.player != null && client.player.getAbilities().flying) {
+            if (client.player != null && client.player.getAbilities().flying && !client.player.onGround()) {
                 isFlying = true;
                 break;
             }
@@ -215,7 +218,7 @@ public class PestManager {
         }
 
         if (!isFlying)
-            return; // Player never entered flight after warp — skip unfly entirely
+            return; // Player is on the ground already — skip unfly entirely
 
         if (MacroConfig.unflyMode == MacroConfig.UnflyMode.DOUBLE_TAP_SPACE) {
             // Stage 0: Press space (~2 ticks = 100ms)

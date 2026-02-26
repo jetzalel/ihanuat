@@ -30,6 +30,8 @@ public class IhanuatClient implements ClientModInitializer {
     private static boolean hasCheckedPersistenceOnJoin = false;
     private static long lastStashPickupTime = 0;
     private static final long STASH_PICKUP_DELAY_MS = 3300;
+    private static long lastRewarpTime = 0;
+    private static final long REWARP_COOLDOWN_MS = 5000; // 5 seconds cooldown
 
     private static long nextRestTriggerMs = 0;
 
@@ -209,6 +211,36 @@ public class IhanuatClient implements ClientModInitializer {
                 if (now - lastStashPickupTime >= STASH_PICKUP_DELAY_MS) {
                     lastStashPickupTime = now;
                     client.player.connection.sendCommand("pickupstash");
+                }
+            }
+
+            // PlotTP Rewarp Logic (Coordinate-based)
+            if (MacroConfig.enablePlotTpRewarp && MacroConfig.rewarpEndPosSet
+                    && MacroStateManager.getCurrentState() == MacroState.State.FARMING) {
+                long now = System.currentTimeMillis();
+                if (now - lastRewarpTime >= REWARP_COOLDOWN_MS) {
+                    double dx = client.player.getX() - MacroConfig.rewarpEndX;
+                    double dy = client.player.getY() - MacroConfig.rewarpEndY;
+                    double dz = client.player.getZ() - MacroConfig.rewarpEndZ;
+                    double distanceSq = dx * dx + dy * dy + dz * dz;
+
+                    if (distanceSq <= 1.5 * 1.5) { // Within 1.5 blocks
+                        lastRewarpTime = now;
+                        client.player.displayClientMessage(Component.literal("§6Rewarp End Position reached!"), true);
+                        new Thread(() -> {
+                            try {
+                                client.execute(() -> ClientUtils.sendCommand(client, ".ez-stopscript"));
+                                Thread.sleep(300);
+                                client.execute(() -> MacroConfig.executePlotTpRewarp(client));
+                                Thread.sleep(1200); // Wait for warp
+                                if (MacroStateManager.getCurrentState() == MacroState.State.FARMING) {
+                                    client.execute(() -> ClientUtils.sendCommand(client, MacroConfig.restartScript));
+                                }
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        }).start();
+                    }
                 }
             }
         });

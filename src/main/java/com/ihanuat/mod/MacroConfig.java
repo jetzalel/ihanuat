@@ -52,6 +52,21 @@ public class MacroConfig {
     public static int restBreakTimeOffset = 3;
     public static int rotationSpeed = 200;
 
+    public static boolean enablePlotTpRewarp = false;
+    public static String plotTpNumber = "0";
+
+    // Rewarp coordinates
+    public static double rewarpEndX = 0;
+    public static double rewarpEndY = 0;
+    public static double rewarpEndZ = 0;
+    public static boolean rewarpEndPosSet = false;
+
+    public static void executePlotTpRewarp(net.minecraft.client.Minecraft client) {
+        if (enablePlotTpRewarp) {
+            com.ihanuat.mod.util.ClientUtils.sendCommand(client, "/plottp " + plotTpNumber);
+        }
+    }
+
     private static final File CONFIG_FILE = FabricLoader.getInstance().getConfigDir().resolve("pest_macro_config.json")
             .toFile();
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
@@ -83,6 +98,13 @@ public class MacroConfig {
         data.restScriptingTimeOffset = restScriptingTimeOffset;
         data.restBreakTime = restBreakTime;
         data.restBreakTimeOffset = restBreakTimeOffset;
+
+        data.enablePlotTpRewarp = enablePlotTpRewarp;
+        data.plotTpNumber = plotTpNumber;
+        data.rewarpEndX = rewarpEndX;
+        data.rewarpEndY = rewarpEndY;
+        data.rewarpEndZ = rewarpEndZ;
+        data.rewarpEndPosSet = rewarpEndPosSet;
 
         try (FileWriter writer = new FileWriter(CONFIG_FILE)) {
             GSON.toJson(data, writer);
@@ -126,6 +148,14 @@ public class MacroConfig {
                 restScriptingTimeOffset = data.restScriptingTimeOffset;
                 restBreakTime = data.restBreakTime;
                 restBreakTimeOffset = data.restBreakTimeOffset;
+
+                enablePlotTpRewarp = data.enablePlotTpRewarp;
+                if (data.plotTpNumber != null)
+                    plotTpNumber = data.plotTpNumber;
+                rewarpEndX = data.rewarpEndX;
+                rewarpEndY = data.rewarpEndY;
+                rewarpEndZ = data.rewarpEndZ;
+                rewarpEndPosSet = data.rewarpEndPosSet;
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -158,5 +188,12 @@ public class MacroConfig {
         int restScriptingTimeOffset = 3;
         int restBreakTime = 20;
         int restBreakTimeOffset = 3;
+
+        boolean enablePlotTpRewarp = false;
+        String plotTpNumber = "0";
+        double rewarpEndX = 0;
+        double rewarpEndY = 0;
+        double rewarpEndZ = 0;
+        boolean rewarpEndPosSet = false;
     }
 }
