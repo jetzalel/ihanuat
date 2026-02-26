@@ -20,6 +20,8 @@ public class MacroConfig {
     public static boolean autoVisitor = true;
     public static boolean autoEquipment = true;
     public static boolean autoStashManager = false;
+    public static boolean autoGeorgeSell = false;
+    public static int georgeSellThreshold = 10;
     public static int autoEquipmentFarmingTime = 200;
 
     // Wardrobe Slots
@@ -57,6 +59,8 @@ public class MacroConfig {
         data.autoVisitor = autoVisitor;
         data.autoEquipment = autoEquipment;
         data.autoStashManager = autoStashManager;
+        data.autoGeorgeSell = autoGeorgeSell;
+        data.georgeSellThreshold = georgeSellThreshold;
         data.rotationSpeed = rotationSpeed;
         data.autoEquipmentFarmingTime = autoEquipmentFarmingTime;
 
@@ -96,6 +100,8 @@ public class MacroConfig {
                 autoVisitor = data.autoVisitor;
                 autoEquipment = data.autoEquipment;
                 autoStashManager = data.autoStashManager;
+                autoGeorgeSell = data.autoGeorgeSell;
+                georgeSellThreshold = data.georgeSellThreshold > 0 ? data.georgeSellThreshold : 10;
                 rotationSpeed = data.rotationSpeed;
                 autoEquipmentFarmingTime = data.autoEquipmentFarmingTime > 0 ? data.autoEquipmentFarmingTime : 200;
 
@@ -126,6 +132,8 @@ public class MacroConfig {
         boolean autoVisitor = true;
         boolean autoEquipment = true;
         boolean autoStashManager = false;
+        boolean autoGeorgeSell = false;
+        int georgeSellThreshold = 10;
         int rotationSpeed = 200;
         int autoEquipmentFarmingTime = 200;
 

@@ -160,10 +160,22 @@ public class ConfigScreenFactory {
                 qol.addEntry(builder.getEntryBuilder()
                                 .startBooleanToggle(Component.literal("Stash Manager"), MacroConfig.autoStashManager)
                                 .setDefaultValue(false)
-                                .setSaveConsumer(newValue -> {
-                                        MacroConfig.autoStashManager = newValue;
-                                        // Note: Deactivation logic handled in main loop
-                                })
+                                .setSaveConsumer(newValue -> MacroConfig.autoStashManager = newValue)
+                                .build());
+
+                qol.addEntry(builder.getEntryBuilder()
+                                .startBooleanToggle(Component
+                                                .literal("Auto George Sell (requires abiphone with George contact)"),
+                                                MacroConfig.autoGeorgeSell)
+                                .setDefaultValue(false)
+                                .setSaveConsumer(newValue -> MacroConfig.autoGeorgeSell = newValue)
+                                .build());
+
+                qol.addEntry(builder.getEntryBuilder()
+                                .startIntSlider(Component.literal("George Sell Threshold (Pets)"),
+                                                MacroConfig.georgeSellThreshold, 1, 35)
+                                .setDefaultValue(10)
+                                .setSaveConsumer(newValue -> MacroConfig.georgeSellThreshold = newValue)
                                 .build());
 
                 return builder.build();
