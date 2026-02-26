@@ -14,9 +14,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class PestManager {
-    private static final Pattern PESTS_ALIVE_PATTERN = Pattern.compile("(?:Pests|Alive):?\\s*\\(?(\\d+)\\)?");
+    private static final Pattern PESTS_ALIVE_PATTERN = Pattern.compile("(?i)(?:Pests|Alive):?\\s*\\(?(\\d+)\\)?");
     private static final Pattern COOLDOWN_PATTERN = Pattern
-            .compile("Cooldown:\\s*\\(?(READY|(?:(\\d+)m)?\\s*(?:(\\d+)s)?)\\)?");
+            .compile("(?i)Cooldown:\\s*\\(?(READY|(?:(\\d+)m)?\\s*(?:(\\d+)s)?)\\)?");
 
     public static volatile boolean isCleaningInProgress = false;
     public static volatile String currentInfestedPlot = null;
@@ -33,9 +33,16 @@ public class PestManager {
     }
 
     public static void checkTabListForPests(Minecraft client, MacroState.State currentState) {
-        if (client.getConnection() == null || isCleaningInProgress
-                || !com.ihanuat.mod.MacroStateManager.isMacroRunning())
+        if (client.getConnection() == null || !com.ihanuat.mod.MacroStateManager.isMacroRunning())
             return;
+
+        if (isCleaningInProgress) {
+            if (currentState == MacroState.State.FARMING) {
+                isCleaningInProgress = false;
+            } else {
+                return;
+            }
+        }
 
         int aliveCount = -1;
         Set<String> infestedPlots = new HashSet<>();
@@ -50,14 +57,21 @@ public class PestManager {
             }
 
             String clean = name.replaceAll("(?i)\u00A7[0-9a-fk-or]", "").trim();
-            Matcher aliveMatcher = PESTS_ALIVE_PATTERN.matcher(clean);
+            // Replace non-breaking spaces with normal spaces for easier matching
+            String normalized = clean.replace('\u00A0', ' ');
+
+            Matcher aliveMatcher = PESTS_ALIVE_PATTERN.matcher(normalized);
             if (aliveMatcher.find()) {
-                aliveCount = Integer.parseInt(aliveMatcher.group(1));
-            } else if (clean.contains("Alive: MAX PESTS") || clean.contains("Pests: MAX PESTS")) {
+                int found = Integer.parseInt(aliveMatcher.group(1));
+                if (found > aliveCount)
+                    aliveCount = found;
+            }
+
+            if (normalized.toUpperCase().contains("MAX PESTS")) {
                 aliveCount = 99; // Explicitly high count to ensure threshold is met
             }
 
-            Matcher cooldownMatcher = COOLDOWN_PATTERN.matcher(clean);
+            Matcher cooldownMatcher = COOLDOWN_PATTERN.matcher(normalized);
             if (cooldownMatcher.find()) {
                 int cooldownSeconds = -1;
                 if (cooldownMatcher.group(1).equalsIgnoreCase("READY")) {
@@ -102,8 +116,8 @@ public class PestManager {
                 }
             }
 
-            if (clean.contains("Plot")) {
-                Matcher m = Pattern.compile("(\\d+)").matcher(clean);
+            if (normalized.contains("Plot")) {
+                Matcher m = Pattern.compile("(\\d+)").matcher(normalized);
                 while (m.find()) {
                     infestedPlots.add(m.group(1).trim());
                 }
@@ -123,15 +137,17 @@ public class PestManager {
                 int visitors = VisitorManager.getVisitorCount(client);
                 if (visitors >= MacroConfig.visitorThreshold) {
                     client.player.displayClientMessage(
-                            Component.literal("§dVisitor Threshold Met (" + visitors + "). Direct Transition in 1s..."),
+                            Component.literal("\u00A7dVisitor Threshold Met (" + visitors + "). Warping to Garden..."),
                             true);
+                    ClientUtils.sendCommand(client, "/warp garden");
                     Thread.sleep(1000);
                     GearManager.swapToFarmingTool(client);
 
                     if (MacroConfig.armorSwapVisitor && MacroConfig.wardrobeSlotVisitor > 0
                             && GearManager.trackedWardrobeSlot != MacroConfig.wardrobeSlotVisitor) {
                         client.player.displayClientMessage(Component.literal(
-                                "§eSwapping to Visitor Wardrobe (Slot " + MacroConfig.wardrobeSlotVisitor + ")..."),
+                                "\u00A7eSwapping to Visitor Wardrobe (Slot " + MacroConfig.wardrobeSlotVisitor
+                                        + ")..."),
                                 true);
                         client.execute(() -> GearManager.ensureWardrobeSlot(client, MacroConfig.wardrobeSlotVisitor));
                         Thread.sleep(400);
@@ -142,6 +158,8 @@ public class PestManager {
                         Thread.sleep(250);
                     }
 
+                    ClientUtils.sendCommand(client, "/setspawn");
+                    Thread.sleep(100);
                     ClientUtils.sendCommand(client, ".ez-startscript misc:visitor");
                     isCleaningInProgress = false;
                     return;
@@ -156,6 +174,7 @@ public class PestManager {
                 e.printStackTrace();
             }
         }).start();
+
     }
 
     private static void finalizeReturnToFarm(Minecraft client) {
@@ -174,7 +193,8 @@ public class PestManager {
                 if (MacroConfig.armorSwapVisitor && MacroConfig.wardrobeSlotVisitor > 0
                         && GearManager.trackedWardrobeSlot != MacroConfig.wardrobeSlotVisitor) {
                     client.player.displayClientMessage(Component.literal(
-                            "§eSwapping to Visitor Wardrobe (Slot " + MacroConfig.wardrobeSlotVisitor + ")..."), true);
+                            "\u00A7eSwapping to Visitor Wardrobe (Slot " + MacroConfig.wardrobeSlotVisitor + ")..."),
+                            true);
                     client.execute(() -> GearManager.ensureWardrobeSlot(client, MacroConfig.wardrobeSlotVisitor));
                     Thread.sleep(400);
                     while (GearManager.isSwappingWardrobe)
@@ -184,6 +204,8 @@ public class PestManager {
                     Thread.sleep(250);
                 }
 
+                ClientUtils.sendCommand(client, "/setspawn");
+                Thread.sleep(100);
                 ClientUtils.sendCommand(client, ".ez-startscript misc:visitor");
                 isCleaningInProgress = false;
                 return;
@@ -214,6 +236,8 @@ public class PestManager {
 
             com.ihanuat.mod.MacroStateManager.setCurrentState(com.ihanuat.mod.MacroState.State.FARMING);
             prepSwappedForCurrentPestCycle = false; // Ensure flag is reset when returning
+            ClientUtils.sendCommand(client, "/setspawn");
+            Thread.sleep(100);
             ClientUtils.sendCommand(client, MacroConfig.restartScript);
             isCleaningInProgress = false;
         } catch (InterruptedException ignored) {

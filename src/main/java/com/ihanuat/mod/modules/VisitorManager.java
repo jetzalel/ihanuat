@@ -92,6 +92,11 @@ public class VisitorManager {
                 } catch (InterruptedException ignored) {
                 }
             }
+            ClientUtils.sendCommand(client, "/setspawn");
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException ignored) {
+            }
             ClientUtils.sendCommand(client, ".ez-startscript misc:visitor");
             PestManager.isCleaningInProgress = false;
             return;
@@ -126,7 +131,13 @@ public class VisitorManager {
             }
         }
 
-        client.player.displayClientMessage(Component.literal("§aRestarting farming script..."), true);
+        client.player.displayClientMessage(Component.literal("\u00A7aSetting spawn and restarting farming script..."),
+                true);
+        ClientUtils.sendCommand(client, "/setspawn");
+        try {
+            Thread.sleep(100);
+        } catch (InterruptedException ignored) {
+        }
         com.ihanuat.mod.MacroStateManager.setCurrentState(com.ihanuat.mod.MacroState.State.FARMING);
         ClientUtils.sendCommand(client, MacroConfig.restartScript);
         PestManager.isCleaningInProgress = false;
