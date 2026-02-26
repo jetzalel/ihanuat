@@ -34,6 +34,7 @@ public class IhanuatClient implements ClientModInitializer {
     private static final long REWARP_COOLDOWN_MS = 5000; // 5 seconds cooldown
 
     private static long nextRestTriggerMs = 0;
+    private static boolean isPickingUpStash = false;
 
     @Override
     public void onInitializeClient() {
@@ -133,6 +134,14 @@ public class IhanuatClient implements ClientModInitializer {
                     } else if (lowerText.contains("stopped")) {
                         PestManager.isReturnToLocationActive = false;
                     }
+                }
+
+                if (lowerText.contains("stashed away!")) {
+                    isPickingUpStash = true;
+                }
+
+                if (lowerText.contains("your stash isn't holding any items or materials!")) {
+                    isPickingUpStash = false;
                 }
             } finally {
                 isHandlingMessage = false;
@@ -252,7 +261,7 @@ public class IhanuatClient implements ClientModInitializer {
             }
 
             // Stash Pickup Logic
-            if (MacroConfig.autoStashManager && client.player != null) {
+            if (MacroConfig.autoStashManager && isPickingUpStash && client.player != null) {
                 long now = System.currentTimeMillis();
                 if (now - lastStashPickupTime >= STASH_PICKUP_DELAY_MS) {
                     lastStashPickupTime = now;
