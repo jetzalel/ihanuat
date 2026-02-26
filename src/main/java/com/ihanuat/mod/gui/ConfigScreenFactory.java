@@ -35,6 +35,14 @@ public class ConfigScreenFactory {
                                 .build());
 
                 general.addEntry(builder.getEntryBuilder()
+                                .startEnumSelector(Component.literal("Unfly Mode (after /warp garden)"),
+                                                MacroConfig.UnflyMode.class,
+                                                MacroConfig.unflyMode)
+                                .setDefaultValue(MacroConfig.UnflyMode.SNEAK)
+                                .setSaveConsumer(newValue -> MacroConfig.unflyMode = newValue)
+                                .build());
+
+                general.addEntry(builder.getEntryBuilder()
                                 .startIntSlider(Component.literal("Pest Threshold"), MacroConfig.pestThreshold, 1, 8)
                                 .setDefaultValue(1)
                                 .setSaveConsumer(newValue -> MacroConfig.pestThreshold = newValue)

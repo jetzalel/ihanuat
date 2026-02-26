@@ -61,12 +61,9 @@ public class VisitorManager {
         if (MacroStateManager.getCurrentState() == MacroState.State.OFF)
             return;
 
-        if (client.options != null) {
-            client.options.keyShift.setDown(true);
-        }
-
         try {
-            Thread.sleep(200);
+            PestManager.performUnfly(client);
+            Thread.sleep(150);
         } catch (InterruptedException ignored) {
         }
 

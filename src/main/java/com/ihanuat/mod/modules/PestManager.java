@@ -197,14 +197,54 @@ public class PestManager {
 
     }
 
+    static void performUnfly(Minecraft client) throws InterruptedException {
+        if (client.player == null || !client.player.getAbilities().flying)
+            return;
+
+        if (MacroConfig.unflyMode == MacroConfig.UnflyMode.DOUBLE_TAP_SPACE) {
+            // Stage 0: Press space (~2 ticks = 100ms)
+            client.execute(() -> {
+                if (client.options != null && client.options.keyJump != null)
+                    net.minecraft.client.KeyMapping.set(client.options.keyJump.getDefaultKey(), true);
+            });
+            Thread.sleep(100);
+            // Stage 1: Release space (~3 ticks = 150ms)
+            client.execute(() -> {
+                if (client.options != null && client.options.keyJump != null)
+                    net.minecraft.client.KeyMapping.set(client.options.keyJump.getDefaultKey(), false);
+            });
+            Thread.sleep(150);
+            // Stage 2: Press space (~2 ticks = 100ms)
+            client.execute(() -> {
+                if (client.options != null && client.options.keyJump != null)
+                    net.minecraft.client.KeyMapping.set(client.options.keyJump.getDefaultKey(), true);
+            });
+            Thread.sleep(100);
+            // Stage 3: Release space and finish
+            client.execute(() -> {
+                if (client.options != null && client.options.keyJump != null)
+                    net.minecraft.client.KeyMapping.set(client.options.keyJump.getDefaultKey(), false);
+            });
+        } else {
+            // SNEAK mode
+            client.execute(() -> {
+                if (client.options != null)
+                    client.options.keyShift.setDown(true);
+            });
+            Thread.sleep(150);
+            client.execute(() -> {
+                if (client.options != null)
+                    client.options.keyShift.setDown(false);
+            });
+        }
+    }
+
     private static void finalizeReturnToFarm(Minecraft client) {
         if (!com.ihanuat.mod.MacroStateManager.isMacroRunning())
             return;
 
-        if (client.options != null) {
-            client.options.keyShift.setDown(true);
-        }
         try {
+            performUnfly(client);
             Thread.sleep(150);
             int visitors = VisitorManager.getVisitorCount(client);
             if (visitors >= MacroConfig.visitorThreshold) {
@@ -251,14 +291,6 @@ public class PestManager {
                 while (GearManager.isSwappingWardrobe)
                     Thread.sleep(50);
                 while (GearManager.wardrobeCleanupTicks > 0)
-                    Thread.sleep(50);
-                Thread.sleep(250);
-            }
-
-            if (MacroConfig.autoEquipment) {
-                GearManager.ensureEquipment(client, true); // Restore farming gear
-                Thread.sleep(400);
-                while (GearManager.isSwappingEquipment)
                     Thread.sleep(50);
                 Thread.sleep(250);
             }

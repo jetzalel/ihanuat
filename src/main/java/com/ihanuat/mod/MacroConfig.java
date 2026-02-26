@@ -16,7 +16,12 @@ public class MacroConfig {
         NONE, WARDROBE, ROD
     }
 
+    public enum UnflyMode {
+        SNEAK, DOUBLE_TAP_SPACE
+    }
+
     public static GearSwapMode gearSwapMode = GearSwapMode.NONE;
+    public static UnflyMode unflyMode = UnflyMode.SNEAK;
     public static boolean autoVisitor = true;
     public static boolean autoEquipment = true;
     public static boolean autoStashManager = false;
@@ -56,6 +61,7 @@ public class MacroConfig {
         data.pestThreshold = pestThreshold;
         data.visitorThreshold = visitorThreshold;
         data.gearSwapMode = gearSwapMode;
+        data.unflyMode = unflyMode;
         data.autoVisitor = autoVisitor;
         data.autoEquipment = autoEquipment;
         data.autoStashManager = autoStashManager;
@@ -97,6 +103,7 @@ public class MacroConfig {
                 pestThreshold = data.pestThreshold;
                 visitorThreshold = data.visitorThreshold;
                 gearSwapMode = data.gearSwapMode != null ? data.gearSwapMode : GearSwapMode.NONE;
+                unflyMode = data.unflyMode != null ? data.unflyMode : UnflyMode.SNEAK;
                 autoVisitor = data.autoVisitor;
                 autoEquipment = data.autoEquipment;
                 autoStashManager = data.autoStashManager;
@@ -129,6 +136,7 @@ public class MacroConfig {
         int pestThreshold = 1;
         int visitorThreshold = 5;
         GearSwapMode gearSwapMode = GearSwapMode.NONE;
+        UnflyMode unflyMode = UnflyMode.SNEAK;
         boolean autoVisitor = true;
         boolean autoEquipment = true;
         boolean autoStashManager = false;
