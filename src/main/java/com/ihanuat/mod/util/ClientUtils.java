@@ -231,21 +231,15 @@ public class ClientUtils {
         // Set sneak key down
         client.options.keyShift.setDown(true);
         
-        // Perform right click interaction while holding shift
+        // Hold shift for 50ms then right click right away
         try {
-            // Create a fake interaction context that includes the shift key state
-            net.minecraft.world.phys.BlockHitResult result = new net.minecraft.world.phys.BlockHitResult(
-                client.player.getEyePosition(),
-                net.minecraft.core.Direction.UP,
-                net.minecraft.core.BlockPos.containing(client.player.getEyePosition()),
-                false
-            );
+            Thread.sleep(50);
             
             // Perform the interaction with the shift key held down
-            client.gameMode.useItemOn(client.player, net.minecraft.world.InteractionHand.MAIN_HAND, result);
+            client.gameMode.useItemOn(client.player, net.minecraft.world.InteractionHand.MAIN_HAND, null);
             
             // Small delay to ensure the interaction registers
-            Thread.sleep(100);
+            Thread.sleep(50);
         } catch (InterruptedException ignored) {
         }
         

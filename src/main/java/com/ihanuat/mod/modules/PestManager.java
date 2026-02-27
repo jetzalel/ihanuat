@@ -417,10 +417,10 @@ public class PestManager {
                         // Use the proper rotation method that respects rotation time
                         // Create a target position to look at that achieves -90 pitch
                         Vec3 eyePos = client.player.getEyePosition();
-                        Vec3 targetPos = new Vec3(eyePos.x, eyePos.y - 100, eyePos.z); // Look straight up
+                        Vec3 targetPos = new Vec3(eyePos.x, eyePos.y + 100, eyePos.z); // Look straight up
                         RotationManager.initiateRotation(client, targetPos, MacroConfig.rotationTime);
                         
-                        // Wait for rotation to complete
+                        // Wait for rotation to complete with minimal delay
                         ClientUtils.waitForRotationToComplete(client, targetPitch, MacroConfig.rotationTime);
                         
                         // Find Aspect of the Void in inventory
@@ -449,21 +449,22 @@ public class PestManager {
                             if (aotvSlot < 9) {
                                 // Perform shift+right click
                                 ClientUtils.performShiftRightClick(client);
-                                Thread.sleep(250);
+                                Thread.sleep(50); // Minimal delay after AOTV action
                             }
                         }
                     } else {
                         // Normal plottp sequence
                         if (currentInfestedPlot != null && !currentInfestedPlot.equals("0")) {
                             ClientUtils.sendCommand(client, "/plottp " + currentInfestedPlot);
-                            Thread.sleep(300); // Wait for warp to plot
+                            Thread.sleep(100); // Reduced delay for warp to plot
                         }
                     }
                     
+                    // Trigger pest cleaning sequence immediately
                     ClientUtils.sendCommand(client, ".ez-stopscript");
-                    Thread.sleep(250);
+                    Thread.sleep(50); // Minimal delay
                     client.execute(() -> GearManager.swapToFarmingTool(client));
-                    Thread.sleep(250);
+                    Thread.sleep(50); // Minimal delay
                     ClientUtils.sendCommand(client, ".ez-startscript misc:pestCleaner");
                 } catch (InterruptedException ignored) {
                 }
