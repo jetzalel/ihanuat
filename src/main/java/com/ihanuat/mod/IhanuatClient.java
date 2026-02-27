@@ -143,14 +143,6 @@ public class IhanuatClient implements ClientModInitializer {
                 if (lowerText.contains("your stash isn't holding any items or materials!")) {
                     isPickingUpStash = false;
                 }
-
-                if (text.contains("AutoSell") && text.contains("script stopped") && text.contains("Taunahi")) {
-                    if (MacroStateManager.getCurrentState() == MacroState.State.FARMING || 
-                        MacroStateManager.getCurrentState() == MacroState.State.CLEANING) {
-                        Minecraft.getInstance().player.displayClientMessage(Component.literal("§6[Ihanuat] AutoSell detected, triggering sequence..."), false);
-                        AutoSellManager.onAutoSellDetected(Minecraft.getInstance());
-                    }
-                }
             } finally {
                 isHandlingMessage = false;
             }

@@ -187,13 +187,6 @@ public class ConfigScreenFactory {
                                 .build());
 
                 qol.addEntry(builder.getEntryBuilder()
-                                .startStrField(Component.literal("Custom AutoSell Items (| separated)"), MacroConfig.autoSellCustomItems)
-                                .setDefaultValue("Atmospheric Filter|Squeaky Toy|Beady Eyes|Clipped Wings|Overclocker|Mantid Claw|Flowering Bouquet|Bookworm|Chirping Stereo|Firefly|Capsule|Vinyl")
-                                .setSaveConsumer(newValue -> MacroConfig.autoSellCustomItems = newValue)
-                                .setTooltip(Component.literal("Enter item names separated by | (pipe) character. Example: Item1|Item2|Item3"))
-                                .build());
-
-                qol.addEntry(builder.getEntryBuilder()
                                 .startBooleanToggle(Component.literal("Enable PlotTP Rewarp (for hyper-optimized farms that have startpos as plottp rewarp)"),
                                                 MacroConfig.enablePlotTpRewarp)
                                 .setDefaultValue(false)
