@@ -207,4 +207,71 @@ public class ClientUtils {
         } catch (InterruptedException ignored) {
         }
     }
+
+    public static int findAspectOfTheVoidSlot(Minecraft client) {
+        if (client.player == null)
+            return -1;
+
+        for (int i = 0; i < 36; i++) {
+            net.minecraft.world.item.ItemStack stack = client.player.getInventory().getItem(i);
+            if (stack != null && !stack.isEmpty()) {
+                String itemName = stack.getHoverName().getString().replaceAll("\u00A7[0-9a-fk-or]", "").trim();
+                if (itemName.equalsIgnoreCase("Aspect of the Void")) {
+                    return i;
+                }
+            }
+        }
+        return -1;
+    }
+
+    public static void performShiftRightClick(Minecraft client) {
+        if (client.player == null || client.options == null)
+            return;
+
+        // Set sneak key down
+        client.options.keyShift.setDown(true);
+        
+        // Perform right click interaction while holding shift
+        try {
+            // Create a fake interaction context that includes the shift key state
+            net.minecraft.world.phys.BlockHitResult result = new net.minecraft.world.phys.BlockHitResult(
+                client.player.getEyePosition(),
+                net.minecraft.core.Direction.UP,
+                net.minecraft.core.BlockPos.containing(client.player.getEyePosition()),
+                false
+            );
+            
+            // Perform the interaction with the shift key held down
+            client.gameMode.useItemOn(client.player, net.minecraft.world.InteractionHand.MAIN_HAND, result);
+            
+            // Small delay to ensure the interaction registers
+            Thread.sleep(100);
+        } catch (InterruptedException ignored) {
+        }
+        
+        // Release sneak key
+        client.options.keyShift.setDown(false);
+    }
+
+    public static void waitForRotationToComplete(Minecraft client, float targetPitch, int rotationTime) {
+        if (client.player == null)
+            return;
+
+        long startTime = System.currentTimeMillis();
+        long timeout = 5000; // 5 second timeout
+
+        while (System.currentTimeMillis() - startTime < timeout) {
+            float currentPitch = client.player.getXRot();
+            float pitchDiff = Math.abs(currentPitch - targetPitch);
+            
+            if (pitchDiff < 1.0f) {
+                break; // Rotation complete
+            }
+            
+            try {
+                Thread.sleep(50);
+            } catch (InterruptedException ignored) {
+            }
+        }
+    }
 }

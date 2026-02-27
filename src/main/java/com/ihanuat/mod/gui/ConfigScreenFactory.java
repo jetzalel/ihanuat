@@ -43,6 +43,19 @@ public class ConfigScreenFactory {
                                 .build());
 
                 general.addEntry(builder.getEntryBuilder()
+                                .startBooleanToggle(Component.literal("AOTV to Roof"), MacroConfig.aotvToRoof)
+                                .setDefaultValue(false)
+                                .setSaveConsumer(newValue -> MacroConfig.aotvToRoof = newValue)
+                                .build());
+
+                general.addEntry(builder.getEntryBuilder()
+                                .startIntSlider(Component.literal("Rotation Time (ms)"), MacroConfig.rotationTime,
+                                                100, 3000)
+                                .setDefaultValue(500)
+                                .setSaveConsumer(newValue -> MacroConfig.rotationTime = newValue)
+                                .build());
+
+                general.addEntry(builder.getEntryBuilder()
                                 .startIntSlider(Component.literal("Pest Threshold"), MacroConfig.pestThreshold, 1, 8)
                                 .setDefaultValue(1)
                                 .setSaveConsumer(newValue -> MacroConfig.pestThreshold = newValue)
@@ -53,13 +66,6 @@ public class ConfigScreenFactory {
                                                 5)
                                 .setDefaultValue(5)
                                 .setSaveConsumer(newValue -> MacroConfig.visitorThreshold = newValue)
-                                .build());
-
-                general.addEntry(builder.getEntryBuilder()
-                                .startIntSlider(Component.literal("Rotation Speed (deg/s)"), MacroConfig.rotationSpeed,
-                                                10, 2000)
-                                .setDefaultValue(200)
-                                .setSaveConsumer(newValue -> MacroConfig.rotationSpeed = newValue)
                                 .build());
 
                 general.addEntry(builder.getEntryBuilder()

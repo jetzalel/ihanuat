@@ -2,10 +2,12 @@ package com.ihanuat.mod.modules;
 
 import com.ihanuat.mod.MacroConfig;
 import com.ihanuat.mod.MacroState;
+import com.ihanuat.mod.mixin.AccessorInventory;
 import com.ihanuat.mod.util.ClientUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.PlayerInfo;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.phys.Vec3;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -404,10 +406,60 @@ public class PestManager {
                 Thread.sleep(400); // Wait on thread, not main thread
 
                 try {
-                    if (currentInfestedPlot != null && !currentInfestedPlot.equals("0")) {
-                        ClientUtils.sendCommand(client, "/plottp " + currentInfestedPlot);
-                        Thread.sleep(300); // Wait for warp to plot
+                    if (MacroConfig.aotvToRoof) {
+                        // AOTV to Roof sequence
+                        client.player.displayClientMessage(Component.literal("§6Using AOTV to Roof sequence..."), true);
+                        
+                        // Set pitch to -90 degrees using rotation speed
+                        float targetPitch = -90.0f;
+                        float currentPitch = client.player.getXRot();
+                        
+                        // Use the proper rotation method that respects rotation time
+                        // Create a target position to look at that achieves -90 pitch
+                        Vec3 eyePos = client.player.getEyePosition();
+                        Vec3 targetPos = new Vec3(eyePos.x, eyePos.y - 100, eyePos.z); // Look straight up
+                        RotationManager.initiateRotation(client, targetPos, MacroConfig.rotationTime);
+                        
+                        // Wait for rotation to complete
+                        ClientUtils.waitForRotationToComplete(client, targetPitch, MacroConfig.rotationTime);
+                        
+                        // Find Aspect of the Void in inventory
+                        int aotvSlot = ClientUtils.findAspectOfTheVoidSlot(client);
+                        if (aotvSlot == -1) {
+                            client.player.displayClientMessage(Component.literal("§cAspect of the Void not found in inventory!"), true);
+                            // Fall back to normal plottp
+                            if (currentInfestedPlot != null && !currentInfestedPlot.equals("0")) {
+                                ClientUtils.sendCommand(client, "/plottp " + currentInfestedPlot);
+                                Thread.sleep(300);
+                            }
+                        } else {
+                            // Swap to Aspect of the Void
+                            if (aotvSlot < 9) {
+                                // Use the proper method to change selected slot
+                                ((AccessorInventory) client.player.getInventory()).setSelected(aotvSlot);
+                            } else {
+                                // Item is in main inventory, not hotbar - use fallback
+                                client.player.displayClientMessage(Component.literal("§cAspect of the Void not in hotbar, using fallback..."), true);
+                                if (currentInfestedPlot != null && !currentInfestedPlot.equals("0")) {
+                                    ClientUtils.sendCommand(client, "/plottp " + currentInfestedPlot);
+                                    Thread.sleep(300);
+                                }
+                            }
+                            
+                            if (aotvSlot < 9) {
+                                // Perform shift+right click
+                                ClientUtils.performShiftRightClick(client);
+                                Thread.sleep(250);
+                            }
+                        }
+                    } else {
+                        // Normal plottp sequence
+                        if (currentInfestedPlot != null && !currentInfestedPlot.equals("0")) {
+                            ClientUtils.sendCommand(client, "/plottp " + currentInfestedPlot);
+                            Thread.sleep(300); // Wait for warp to plot
+                        }
                     }
+                    
                     ClientUtils.sendCommand(client, ".ez-stopscript");
                     Thread.sleep(250);
                     client.execute(() -> GearManager.swapToFarmingTool(client));
