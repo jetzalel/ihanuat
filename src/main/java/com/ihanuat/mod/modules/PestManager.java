@@ -331,6 +331,7 @@ public class PestManager {
 
                 if (MacroConfig.gearSwapMode == MacroConfig.GearSwapMode.ROD) {
                     GearManager.executeRodSequence(client);
+                    resumeAfterPrepSwap(client);
                 } else if (MacroConfig.gearSwapMode == MacroConfig.GearSwapMode.WARDROBE) {
                     GearManager.triggerWardrobeSwap(client, MacroConfig.wardrobeSlotPest);
                 } else {
@@ -343,6 +344,7 @@ public class PestManager {
     }
 
     private static void resumeAfterPrepSwap(Minecraft client) {
+        ClientUtils.waitForGearAndGui(client);
         client.execute(() -> {
             GearManager.swapToFarmingTool(client);
             if (isCleaningInProgress)
@@ -432,12 +434,13 @@ public class PestManager {
     public static void resumeAfterPrepSwapLogic(Minecraft client) {
         new Thread(() -> {
             try {
+                ClientUtils.waitForGearAndGui(client);
                 client.execute(() -> GearManager.swapToFarmingTool(client));
                 Thread.sleep(250);
                 ClientUtils.sendCommand(client, ".ez-stopscript");
                 Thread.sleep(250);
                 ClientUtils.sendCommand(client, MacroConfig.restartScript);
-            } catch (InterruptedException ignored) {
+            } catch (Exception ignored) {
             }
         }).start();
     }

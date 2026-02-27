@@ -150,7 +150,7 @@ public class GearManager {
                     true);
             new Thread(() -> {
                 try {
-                    Thread.sleep(600);
+                    ClientUtils.waitForGearAndGui(client);
                     if (PestManager.isCleaningInProgress)
                         return;
                     client.execute(() -> GearManager.swapToFarmingTool(client));
