@@ -26,6 +26,8 @@ public class MacroConfig {
     public static boolean autoEquipment = true;
     public static boolean autoStashManager = false;
     public static boolean autoGeorgeSell = false;
+    public static boolean autoSell = false;
+    public static String autoSellCustomItems = "Atmospheric Filter|Squeaky Toy|Beady Eyes|Clipped Wings|Overclocker|Mantid Claw|Flowering Bouquet|Bookworm|Chirping Stereo|Firefly|Capsule|Vinyl";
     public static int georgeSellThreshold = 10;
     public static int autoEquipmentFarmingTime = 200;
 
