@@ -196,7 +196,8 @@ public class PestManager {
 
                 Thread.sleep(150);
                 ClientUtils.sendCommand(client, "/warp garden");
-                Thread.sleep(1000); // 1s wait for garden load
+                Thread.sleep(MacroConfig.gardenWarpDelay);
+                
                 isReturningFromPestVisitor = true;
                 finalizeReturnToFarm(client);
             } catch (Exception e) {
