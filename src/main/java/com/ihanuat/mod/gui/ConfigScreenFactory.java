@@ -180,6 +180,12 @@ public class ConfigScreenFactory {
                                 .build());
 
                 qol.addEntry(builder.getEntryBuilder()
+                                .startBooleanToggle(Component.literal("Auto Sell"), MacroConfig.autoSell)
+                                .setDefaultValue(false)
+                                .setSaveConsumer(newValue -> MacroConfig.autoSell = newValue)
+                                .build());
+
+                qol.addEntry(builder.getEntryBuilder()
                                 .startIntSlider(Component.literal("George Sell Threshold (Pets)"),
                                                 MacroConfig.georgeSellThreshold, 1, 35)
                                 .setDefaultValue(10)

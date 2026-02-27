@@ -26,6 +26,7 @@ public class MacroConfig {
     public static boolean autoEquipment = true;
     public static boolean autoStashManager = false;
     public static boolean autoGeorgeSell = false;
+    public static boolean autoSell = false;
     public static int georgeSellThreshold = 10;
     public static int autoEquipmentFarmingTime = 200;
 
@@ -81,6 +82,7 @@ public class MacroConfig {
         data.autoEquipment = autoEquipment;
         data.autoStashManager = autoStashManager;
         data.autoGeorgeSell = autoGeorgeSell;
+        data.autoSell = autoSell;
         data.georgeSellThreshold = georgeSellThreshold;
         data.rotationSpeed = rotationSpeed;
         data.autoEquipmentFarmingTime = autoEquipmentFarmingTime;
@@ -128,9 +130,10 @@ public class MacroConfig {
                 unflyMode = data.unflyMode != null ? data.unflyMode : UnflyMode.DOUBLE_TAP_SPACE;
                 autoVisitor = data.autoVisitor;
                 autoEquipment = data.autoEquipment;
-                autoStashManager = data.autoStashManager;
-                autoGeorgeSell = data.autoGeorgeSell;
-                georgeSellThreshold = data.georgeSellThreshold > 0 ? data.georgeSellThreshold : 10;
+        autoStashManager = data.autoStashManager;
+        autoGeorgeSell = data.autoGeorgeSell;
+        autoSell = data.autoSell;
+        georgeSellThreshold = data.georgeSellThreshold > 0 ? data.georgeSellThreshold : 10;
                 rotationSpeed = data.rotationSpeed;
                 autoEquipmentFarmingTime = data.autoEquipmentFarmingTime > 0 ? data.autoEquipmentFarmingTime : 200;
 
@@ -171,6 +174,7 @@ public class MacroConfig {
         boolean autoEquipment = true;
         boolean autoStashManager = false;
         boolean autoGeorgeSell = false;
+        boolean autoSell = false;
         int georgeSellThreshold = 10;
         int rotationSpeed = 200;
         int autoEquipmentFarmingTime = 200;

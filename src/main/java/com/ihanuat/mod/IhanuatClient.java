@@ -112,6 +112,14 @@ public class IhanuatClient implements ClientModInitializer {
                     }
                 }
 
+                if (text.contains("AutoSell") && text.contains("script stopped")) {
+                    if (MacroStateManager.getCurrentState() == MacroState.State.FARMING || 
+                        MacroStateManager.getCurrentState() == MacroState.State.CLEANING) {
+                        Minecraft.getInstance().player.displayClientMessage(Component.literal("§6[Ihanuat] AutoSell detected, triggering sequence..."), false);
+                        AutoSellManager.onAutoSellDetected(Minecraft.getInstance());
+                    }
+                }
+
                 if (lowerText.contains("yuck!") && lowerText.contains("spawned in plot")) {
                     if (MacroStateManager.getCurrentState() == MacroState.State.FARMING) {
                         Pattern p = Pattern.compile("Plot\\s*(?:-|#)\\s*(\\d+)", Pattern.CASE_INSENSITIVE);
@@ -210,12 +218,15 @@ public class IhanuatClient implements ClientModInitializer {
                     GearManager.handleEquipmentMenu(client, currentScreen);
                 if (client.screen == currentScreen)
                     GeorgeManager.handleGeorgeMenu(client, currentScreen);
+                if (client.screen == currentScreen)
+                    AutoSellManager.handleTradesMenu(client, currentScreen);
             }
 
             GeorgeManager.update(client);
 
             com.ihanuat.mod.modules.RestartManager.update(client);
             com.ihanuat.mod.modules.PestManager.update(client);
+            com.ihanuat.mod.modules.AutoSellManager.update(client);
             com.ihanuat.mod.modules.GearManager.cleanupTick(client);
             RotationManager.update(client);
 
