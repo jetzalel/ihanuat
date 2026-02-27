@@ -172,33 +172,22 @@ public class IhanuatClient implements ClientModInitializer {
                     }
                     new Thread(() -> {
                         try {
-                            long startTime = System.currentTimeMillis();
                             if (PestManager.prepSwappedForCurrentPestCycle
                                     && GearManager.trackedWardrobeSlot != MacroConfig.wardrobeSlotFarming) {
                                 client.execute(
                                         () -> GearManager.ensureWardrobeSlot(client, MacroConfig.wardrobeSlotFarming));
                                 Thread.sleep(800);
                             }
-                            long step1End = System.currentTimeMillis();
-                            client.player.displayClientMessage(net.minecraft.network.chat.Component.literal("§7[Timing] Start script wardrobe check: " + (step1End - startTime) + "ms"), false);
                             
                             ClientUtils.waitForGearAndGui(client);
-                            long step2End = System.currentTimeMillis();
-                            client.player.displayClientMessage(net.minecraft.network.chat.Component.literal("§7[Timing] Start script waitForGearAndGui: " + (step2End - step1End) + "ms"), false);
                             
                             client.execute(() -> GearManager.swapToFarmingTool(client));
                             Thread.sleep(250);
-                            long step3End = System.currentTimeMillis();
-                            client.player.displayClientMessage(net.minecraft.network.chat.Component.literal("§7[Timing] Start script swap tool: " + (step3End - step2End) + "ms"), false);
                             
                             ClientUtils.sendCommand(client, ".ez-stopscript");
                             Thread.sleep(250);
-                            long step4End = System.currentTimeMillis();
-                            client.player.displayClientMessage(net.minecraft.network.chat.Component.literal("§7[Timing] Start script stop script: " + (step4End - step3End) + "ms"), false);
                             
                             ClientUtils.sendCommand(client, MacroConfig.restartScript);
-                            long totalEnd = System.currentTimeMillis();
-                            client.player.displayClientMessage(net.minecraft.network.chat.Component.literal("§7[Timing] Total start script time: " + (totalEnd - startTime) + "ms"), false);
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
