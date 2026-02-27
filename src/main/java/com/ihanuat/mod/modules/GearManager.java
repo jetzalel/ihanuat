@@ -274,7 +274,9 @@ public class GearManager {
             return;
         }
 
-        // Stage 1: Cursor has new gear. Swap it directly with the equipment slot.
+        // Stage 1: Cursor has new gear. Click on the equipment slot to equip it.
+        // This automatically unequips the old gear and places it in the cursor.
+        // We don't need to handle the old gear placement - it can stay in cursor.
         if (equipmentInteractionStage == 1) {
             if (carried.isEmpty()) {
                 equipmentInteractionStage = 0; // Failed to pick up?
@@ -284,35 +286,9 @@ public class GearManager {
             client.gameMode.handleInventoryMouseClick(screen.getMenu().containerId, gearSlotIdx, 0,
                     ClickType.PICKUP, client.player);
             equipmentInteractionTime = now;
-            equipmentInteractionStage = 2;
-            return;
-        }
-
-        // Stage 2: Cursor has old gear. Put it back in an empty inventory slot.
-        if (equipmentInteractionStage == 2) {
-            if (carried.isEmpty()) {
-                // Done swapping (happens if old slot was empty)
-                equipmentInteractionStage = 0;
-                equipmentTargetIndex++;
-                equipmentInteractionTime = now;
-                return;
-            }
-            for (int i = playerInvStart; i < totalSlots; i++) {
-                Slot invSlot = screen.getMenu().slots.get(i);
-                if (!invSlot.hasItem()) {
-                    client.gameMode.handleInventoryMouseClick(screen.getMenu().containerId, invSlot.index, 0,
-                            ClickType.PICKUP, client.player);
-                    equipmentInteractionTime = now;
-                    equipmentInteractionStage = 0;
-                    equipmentTargetIndex++;
-                    return;
-                }
-            }
-            // No empty slot found? We're stuck with item in cursor.
-            // Just move to next and hope for the best, or log error.
             equipmentInteractionStage = 0;
             equipmentTargetIndex++;
-            equipmentInteractionTime = now;
+            return;
         }
     }
 

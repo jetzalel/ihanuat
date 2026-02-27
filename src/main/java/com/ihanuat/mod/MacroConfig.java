@@ -44,6 +44,9 @@ public class MacroConfig {
 
     // Restart Script Command (sent to restart farming)
     public static String restartScript = ".ez-startscript netherwart:1";
+    
+    // Garden Warp Delay (ms) - configurable delay after garden warp
+    public static int gardenWarpDelay = 1000;
 
     // Dynamic Rest (Minutes)
     public static int restScriptingTime = 30;
@@ -93,6 +96,7 @@ public class MacroConfig {
         data.equipmentSwapDelay = equipmentSwapDelay;
         data.restartTime = restartTime;
         data.restartScript = restartScript;
+        data.gardenWarpDelay = gardenWarpDelay;
 
         data.restScriptingTime = restScriptingTime;
         data.restScriptingTimeOffset = restScriptingTimeOffset;
@@ -183,6 +187,7 @@ public class MacroConfig {
         int equipmentSwapDelay = 500;
         int restartTime = 5;
         String restartScript = ".ez-startscript netherwart:1";
+        int gardenWarpDelay = 1000;
 
         int restScriptingTime = 30;
         int restScriptingTimeOffset = 3;

@@ -89,6 +89,13 @@ public class ConfigScreenFactory {
                                 .build());
 
                 general.addEntry(builder.getEntryBuilder()
+                                .startIntSlider(Component.literal("Garden Warp Delay (ms)"), MacroConfig.gardenWarpDelay,
+                                                0, 3000)
+                                .setDefaultValue(1000)
+                                .setSaveConsumer(newValue -> MacroConfig.gardenWarpDelay = newValue)
+                                .build());
+
+                general.addEntry(builder.getEntryBuilder()
                                 .startBooleanToggle(Component.literal("Auto-Visitor"), MacroConfig.autoVisitor)
                                 .setDefaultValue(true)
                                 .setSaveConsumer(newValue -> MacroConfig.autoVisitor = newValue)

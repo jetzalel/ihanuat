@@ -2,6 +2,7 @@ package com.ihanuat.mod.util;
 
 import com.ihanuat.mod.MacroState;
 import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.scores.Objective;
@@ -196,8 +197,8 @@ public class ClientUtils {
                 Thread.sleep(50);
 
             // Final check for any open GUI (wardrobe, equipment, or any other menu)
-            long startTime = System.currentTimeMillis();
-            while (client.screen != null && System.currentTimeMillis() - startTime < 5000) {
+            long guiStart = System.currentTimeMillis();
+            while (client.screen != null && System.currentTimeMillis() - guiStart < 5000) {
                 Thread.sleep(100);
             }
 
