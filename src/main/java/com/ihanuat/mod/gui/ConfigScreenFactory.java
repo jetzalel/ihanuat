@@ -180,6 +180,19 @@ public class ConfigScreenFactory {
                                 .build());
 
                 qol.addEntry(builder.getEntryBuilder()
+                                .startBooleanToggle(Component.literal("Auto Sell"), MacroConfig.autoSell)
+                                .setDefaultValue(false)
+                                .setSaveConsumer(newValue -> MacroConfig.autoSell = newValue)
+                                .build());
+
+                qol.addEntry(builder.getEntryBuilder()
+                                .startStrField(Component.literal("Custom AutoSell Items (| separated)"), MacroConfig.autoSellCustomItems)
+                                .setDefaultValue("Atmospheric Filter|Squeaky Toy|Beady Eyes|Clipped Wings|Overclocker|Mantid Claw|Flowering Bouquet|Bookworm|Chirping Stereo|Firefly|Capsule|Vinyl")
+                                .setSaveConsumer(newValue -> MacroConfig.autoSellCustomItems = newValue)
+                                .setTooltip(Component.literal("Enter item names separated by | (pipe) character. Example: Item1|Item2|Item3"))
+                                .build());
+
+                qol.addEntry(builder.getEntryBuilder()
                                 .startIntSlider(Component.literal("George Sell Threshold (Pets)"),
                                                 MacroConfig.georgeSellThreshold, 1, 35)
                                 .setDefaultValue(10)
