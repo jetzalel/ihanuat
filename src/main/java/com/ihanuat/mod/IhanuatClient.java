@@ -112,7 +112,7 @@ public class IhanuatClient implements ClientModInitializer {
                     }
                 }
 
-                if (text.contains("AutoSell") && text.contains("script stopped")) {
+                if (text.contains("AutoSell") && text.contains("script stopped") && text.contains("Taunahi")) {
                     if (MacroStateManager.getCurrentState() == MacroState.State.FARMING || 
                         MacroStateManager.getCurrentState() == MacroState.State.CLEANING) {
                         Minecraft.getInstance().player.displayClientMessage(Component.literal("§6[Ihanuat] AutoSell detected, triggering sequence..."), false);

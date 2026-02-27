@@ -65,6 +65,9 @@ public class AutoSellManager {
             int totalSlots = screen.getMenu().slots.size();
             int playerInvStart = Math.max(0, totalSlots - 36); // Start of player inventory (4 rows = 36 slots)
             
+            // Parse custom items from config
+            String[] customItems = MacroConfig.autoSellCustomItems.split("\\|");
+            
             for (int i = playerInvStart; i < totalSlots; i++) {
                 Slot slot = screen.getMenu().slots.get(i);
                 if (!slot.hasItem())
@@ -73,8 +76,8 @@ public class AutoSellManager {
                 String itemName = slot.getItem().getHoverName().getString();
                 
                 // Check if this item matches any of our target items
-                for (String targetItem : ITEMS_TO_CLICK) {
-                    if (itemName.contains(targetItem)) {
+                for (String targetItem : customItems) {
+                    if (itemName.contains(targetItem.trim())) {
                         client.player.displayClientMessage(Component.literal("§aAutoSell: Clicking " + itemName), true);
                         client.gameMode.handleInventoryMouseClick(screen.getMenu().containerId, slot.index, 0,
                                 ClickType.PICKUP, client.player);
