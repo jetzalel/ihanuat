@@ -71,8 +71,8 @@ public class ConfigScreenFactory {
 
                 general.addEntry(builder.getEntryBuilder()
                                 .startIntSlider(Component.literal("Equipment Swap Delay (ms)"),
-                                                MacroConfig.equipmentSwapDelay, 100, 2000)
-                                .setDefaultValue(500)
+                                                MacroConfig.equipmentSwapDelay, 100, 300)
+                                .setDefaultValue(170)
                                 .setSaveConsumer(newValue -> MacroConfig.equipmentSwapDelay = newValue)
                                 .build());
 
