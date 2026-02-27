@@ -170,22 +170,20 @@ public class PestManager {
                     ClientUtils.sendCommand(client, "/warp garden");
                     Thread.sleep(1000);
 
-                    client.execute(() -> {
-                        GearManager.swapToFarmingTool(client);
-                    });
-                    Thread.sleep(250);
+                client.execute(() -> {
+                    GearManager.swapToFarmingTool(client);
+                });
 
-                    if (MacroConfig.armorSwapVisitor && MacroConfig.wardrobeSlotVisitor > 0
-                            && GearManager.trackedWardrobeSlot != MacroConfig.wardrobeSlotVisitor) {
-                        client.player.displayClientMessage(Component.literal(
-                                "\u00A7eSwapping to Visitor Wardrobe (Slot " + MacroConfig.wardrobeSlotVisitor
-                                        + ")..."),
-                                true);
-                        client.execute(() -> GearManager.ensureWardrobeSlot(client, MacroConfig.wardrobeSlotVisitor));
-                        Thread.sleep(400);
-                    }
+                if (MacroConfig.armorSwapVisitor && MacroConfig.wardrobeSlotVisitor > 0
+                        && GearManager.trackedWardrobeSlot != MacroConfig.wardrobeSlotVisitor) {
+                    client.player.displayClientMessage(Component.literal(
+                            "\u00A7eSwapping to Visitor Wardrobe (Slot " + MacroConfig.wardrobeSlotVisitor
+                                    + ")..."),
+                            true);
+                    client.execute(() -> GearManager.ensureWardrobeSlot(client, MacroConfig.wardrobeSlotVisitor));
+                }
 
-                    ClientUtils.waitForGearAndGui(client);
+                ClientUtils.waitForGearAndGui(client);
                     try {
                         ClientUtils.sendCommand(client, ".ez-stopscript");
                         Thread.sleep(250);
@@ -250,7 +248,6 @@ public class PestManager {
                 client.execute(() -> {
                     GearManager.swapToFarmingTool(client);
                 });
-                Thread.sleep(250);
 
                 if (MacroConfig.armorSwapVisitor && MacroConfig.wardrobeSlotVisitor > 0
                         && GearManager.trackedWardrobeSlot != MacroConfig.wardrobeSlotVisitor) {
@@ -258,7 +255,6 @@ public class PestManager {
                             "\u00A7eSwapping to Visitor Wardrobe (Slot " + MacroConfig.wardrobeSlotVisitor + ")..."),
                             true);
                     client.execute(() -> GearManager.ensureWardrobeSlot(client, MacroConfig.wardrobeSlotVisitor));
-                    Thread.sleep(400);
                 }
 
                 ClientUtils.waitForGearAndGui(client);
@@ -275,14 +271,12 @@ public class PestManager {
             client.execute(() -> {
                 GearManager.swapToFarmingTool(client);
             });
-            Thread.sleep(250);
 
             if (MacroConfig.armorSwapVisitor && MacroConfig.wardrobeSlotFarming > 0
                     && GearManager.trackedWardrobeSlot != MacroConfig.wardrobeSlotFarming) {
                 client.player.displayClientMessage(Component.literal(
                         "§eRestoring Farming Wardrobe (Slot " + MacroConfig.wardrobeSlotFarming + ")..."), true);
                 client.execute(() -> GearManager.ensureWardrobeSlot(client, MacroConfig.wardrobeSlotFarming));
-                Thread.sleep(400);
             }
 
             ClientUtils.waitForGearAndGui(client);

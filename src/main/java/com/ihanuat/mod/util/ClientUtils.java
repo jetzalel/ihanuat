@@ -202,7 +202,7 @@ public class ClientUtils {
             }
 
             // Small safety delay after GUI is gone
-            Thread.sleep(400);
+            Thread.sleep(100);
         } catch (InterruptedException ignored) {
         }
     }

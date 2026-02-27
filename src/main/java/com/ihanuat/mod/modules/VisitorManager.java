@@ -68,20 +68,12 @@ public class VisitorManager {
             client.execute(() -> {
                 GearManager.swapToFarmingTool(client);
             });
-            try {
-                Thread.sleep(250);
-            } catch (InterruptedException ignored) {
-            }
 
             if (MacroConfig.armorSwapVisitor && MacroConfig.wardrobeSlotVisitor > 0
                     && GearManager.trackedWardrobeSlot != MacroConfig.wardrobeSlotVisitor) {
                 client.player.displayClientMessage(Component.literal(
                         "\u00A7eSwapping to Visitor Wardrobe (Slot " + MacroConfig.wardrobeSlotVisitor + ")..."), true);
                 client.execute(() -> GearManager.ensureWardrobeSlot(client, MacroConfig.wardrobeSlotVisitor));
-                try {
-                    Thread.sleep(400);
-                } catch (InterruptedException ignored) {
-                }
             }
             ClientUtils.waitForGearAndGui(client);
             try {
@@ -97,30 +89,18 @@ public class VisitorManager {
         client.execute(() -> {
             GearManager.swapToFarmingTool(client);
         });
-        try {
-            Thread.sleep(250);
-        } catch (InterruptedException ignored) {
-        }
 
         if (MacroConfig.armorSwapVisitor && MacroConfig.wardrobeSlotFarming > 0
                 && GearManager.trackedWardrobeSlot != MacroConfig.wardrobeSlotFarming) {
             client.player.displayClientMessage(Component.literal(
                     "§eRestoring Farming Wardrobe (Slot " + MacroConfig.wardrobeSlotFarming + ")..."), true);
             client.execute(() -> GearManager.ensureWardrobeSlot(client, MacroConfig.wardrobeSlotFarming));
-            try {
-                Thread.sleep(400);
-            } catch (InterruptedException ignored) {
-            }
         }
 
         ClientUtils.waitForGearAndGui(client);
 
         if (MacroConfig.autoEquipment) {
             GearManager.ensureEquipment(client, true); // Restore farming gear
-            try {
-                Thread.sleep(400);
-            } catch (InterruptedException ignored) {
-            }
         }
 
         ClientUtils.waitForGearAndGui(client);
