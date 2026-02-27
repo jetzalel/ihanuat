@@ -207,7 +207,7 @@ public class GeorgeManager {
         if (com.ihanuat.mod.MacroStateManager.getCurrentState() == com.ihanuat.mod.MacroState.State.FARMING) {
             new Thread(() -> {
                 try {
-                    Thread.sleep(800);
+                    com.ihanuat.mod.util.ClientUtils.waitForGearAndGui(client);
                     client.execute(() -> {
                         GearManager.swapToFarmingTool(client);
                         com.ihanuat.mod.util.ClientUtils.sendCommand(client, MacroConfig.restartScript);
