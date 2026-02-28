@@ -57,7 +57,7 @@ public class ConfigScreenFactory {
 
                 general.addEntry(builder.getEntryBuilder()
                                 .startIntSlider(Component.literal("Pest Threshold"), MacroConfig.pestThreshold, 1, 8)
-                                .setDefaultValue(1)
+                                .setDefaultValue(5)
                                 .setSaveConsumer(newValue -> MacroConfig.pestThreshold = newValue)
                                 .build());
 
@@ -95,7 +95,8 @@ public class ConfigScreenFactory {
                                 .build());
 
                 general.addEntry(builder.getEntryBuilder()
-                                .startIntSlider(Component.literal("Garden Warp Delay (ms)"), MacroConfig.gardenWarpDelay,
+                                .startIntSlider(Component.literal("Garden Warp Delay (ms)"),
+                                                MacroConfig.gardenWarpDelay,
                                                 0, 3000)
                                 .setDefaultValue(1000)
                                 .setSaveConsumer(newValue -> MacroConfig.gardenWarpDelay = newValue)
@@ -195,12 +196,13 @@ public class ConfigScreenFactory {
                 qol.addEntry(builder.getEntryBuilder()
                                 .startIntSlider(Component.literal("George Sell Threshold (Pets)"),
                                                 MacroConfig.georgeSellThreshold, 1, 35)
-                                .setDefaultValue(10)
+                                .setDefaultValue(3)
                                 .setSaveConsumer(newValue -> MacroConfig.georgeSellThreshold = newValue)
                                 .build());
 
                 qol.addEntry(builder.getEntryBuilder()
-                                .startBooleanToggle(Component.literal("Enable PlotTP Rewarp (for hyper-optimized farms that have startpos as plottp rewarp)"),
+                                .startBooleanToggle(Component.literal(
+                                                "Enable PlotTP Rewarp (for hyper-optimized farms that have startpos as plottp rewarp)"),
                                                 MacroConfig.enablePlotTpRewarp)
                                 .setDefaultValue(false)
                                 .setSaveConsumer(newValue -> MacroConfig.enablePlotTpRewarp = newValue)
