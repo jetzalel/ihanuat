@@ -214,6 +214,8 @@ public class IhanuatClient implements ClientModInitializer {
                     GearManager.handleEquipmentMenu(client, currentScreen);
                 if (client.screen == currentScreen)
                     GeorgeManager.handleGeorgeMenu(client, currentScreen);
+                if (client.screen == currentScreen)
+                    BoosterCookieManager.handleBoosterCookieMenu(client, currentScreen);
             }
 
             GeorgeManager.update(client);
