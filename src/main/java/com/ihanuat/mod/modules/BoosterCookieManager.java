@@ -7,17 +7,9 @@ import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 
-import java.util.Arrays;
-import java.util.List;
-
 public class BoosterCookieManager {
     public static volatile long interactionTime = 0;
     public static volatile int interactionStage = 0;
-
-    private static final List<String> TARGET_ITEMS = Arrays.asList(
-            "atmospheric filter", "squeaky toy", "beady eyes", "clipped wings", "overclocker",
-            "mantid claw", "flowering bouquet", "bookworm", "chirping stereo", "firefly",
-            "capsule", "vinyl");
 
     public static void handleBoosterCookieMenu(Minecraft client, AbstractContainerScreen<?> screen) {
         if (!MacroConfig.autoBoosterCookie || screen == null || client.player == null)
@@ -48,8 +40,8 @@ public class BoosterCookieManager {
                 ItemStack stack = slot.getItem();
                 String name = stack.getHoverName().getString().replaceAll("(?i)§.", "").toLowerCase();
 
-                for (String target : TARGET_ITEMS) {
-                    if (name.contains(target)) {
+                for (String target : MacroConfig.boosterCookieItems) {
+                    if (name.contains(target.toLowerCase())) {
                         foundSlotIdx = i;
                         break;
                     }
