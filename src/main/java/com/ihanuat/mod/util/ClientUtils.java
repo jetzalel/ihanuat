@@ -229,22 +229,16 @@ public class ClientUtils {
         if (client.player == null || client.options == null)
             return;
 
-        // Set sneak key down
-        client.execute(() -> client.options.keyShift.setDown(true));
+        client.execute(() -> {
+            client.options.keyShift.setDown(true);
+            client.gameMode.useItem(client.player, net.minecraft.world.InteractionHand.MAIN_HAND);
+        });
 
         try {
-            Thread.sleep(50);
-
-            // Perform the interaction with the shift key held down
-            client.execute(() -> client.gameMode.useItem(client.player, net.minecraft.world.InteractionHand.MAIN_HAND));
-
-            // Wait while shift is held to ensure the interaction registers with the server
-            // (critical for Etherwarp)
-            Thread.sleep(300);
+            Thread.sleep(100);
         } catch (InterruptedException ignored) {
         }
 
-        // Release sneak key
         client.execute(() -> client.options.keyShift.setDown(false));
     }
 

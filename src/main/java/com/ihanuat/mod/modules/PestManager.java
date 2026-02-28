@@ -27,6 +27,7 @@ public class PestManager {
     public static volatile boolean isReturningFromPestVisitor = false;
     public static volatile boolean isReturnToLocationActive = false;
     public static volatile boolean isStoppingFlight = false;
+    public static volatile boolean isSneakingForAotv = false;
     public static int flightStopStage = 0;
     public static int flightStopTicks = 0;
 
@@ -37,6 +38,7 @@ public class PestManager {
         isReturningFromPestVisitor = false;
         isReturnToLocationActive = false;
         isStoppingFlight = false;
+        isSneakingForAotv = false;
         flightStopStage = 0;
         flightStopTicks = 0;
         currentPestSessionId++;
@@ -410,6 +412,9 @@ public class PestManager {
                         // AOTV to Roof sequence
                         client.player.displayClientMessage(Component.literal("§6Using AOTV to Roof sequence..."), true);
 
+                        // Start sneaking early to ensure server knows we are sneaking
+                        isSneakingForAotv = true;
+
                         // Set pitch to -90 degrees using rotation speed
                         float targetPitch = -90.0f;
                         float currentPitch = client.player.getXRot();
@@ -428,6 +433,8 @@ public class PestManager {
                         if (aotvSlot == -1) {
                             client.player.displayClientMessage(
                                     Component.literal("§cAspect of the Void not found in inventory!"), true);
+                            isSneakingForAotv = false;
+                            client.execute(() -> client.options.keyShift.setDown(false));
                             // Fall back to normal plottp
                             if (currentInfestedPlot != null && !currentInfestedPlot.equals("0")) {
                                 ClientUtils.sendCommand(client, "/plottp " + currentInfestedPlot);
@@ -446,6 +453,8 @@ public class PestManager {
                                 client.player.displayClientMessage(
                                         Component.literal("§cAspect of the Void not in hotbar, using fallback..."),
                                         true);
+                                isSneakingForAotv = false;
+                                client.execute(() -> client.options.keyShift.setDown(false));
                                 if (currentInfestedPlot != null && !currentInfestedPlot.equals("0")) {
                                     ClientUtils.sendCommand(client, "/plottp " + currentInfestedPlot);
                                     Thread.sleep(300);
@@ -453,9 +462,13 @@ public class PestManager {
                             }
 
                             if (aotvSlot < 9) {
-                                // Perform shift+right click
-                                ClientUtils.performShiftRightClick(client);
-                                Thread.sleep(50); // Minimal delay after AOTV action
+                                // Perform the interaction now that we've been sneaking for a while
+                                client.execute(() -> client.gameMode.useItem(client.player,
+                                        net.minecraft.world.InteractionHand.MAIN_HAND));
+
+                                Thread.sleep(100); // Wait 100ms after right click before releasing shift
+                                isSneakingForAotv = false;
+                                client.execute(() -> client.options.keyShift.setDown(false));
                             }
                         }
                     } else {
