@@ -1,15 +1,18 @@
-use o to open the config and k to start the macro (change in controls accordingly)  
+Feature List:
+
+- Improved wardrobe swap (adds visitor wardrobe, much less delays)
+- Equipment swap
+- Rod swap (optional)
+- Auto-unstash
+- Auto George (sells Slug and Rat pets in inventory)
+- AOTV to roof
+- Support for farms that start with /plottp
+
+Use O to open the config and K to start the macro (change in controls accordingly)  
 before starting, ensure the auto start pest, auto start visitor, and wardrobe swap is off in taunahi settings. Use taunahi's rewarper.
 
 enable visitors, wardrobe swap, equipment swap according to your needs, all can be toggled on or off  
 set the start and end of the farm using the button in config while standing on that block in the config.  
-
-if adding a ceiling, have a lil 3x3 gap in ceiling at start, even if said start is in the furthest corner of that 3x3  
-so  
-001  
-000  
-000  
-with 1 being start of farm is fine  
 
 change the auto direction and should work on most farms, use .ez-listfarms to find the right command.
 
