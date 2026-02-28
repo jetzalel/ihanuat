@@ -9,7 +9,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 
 public class MacroConfig {
-    public static int pestThreshold = 1;
+    public static int pestThreshold = 5;
     public static int visitorThreshold = 5;
 
     public enum GearSwapMode {
@@ -26,8 +26,8 @@ public class MacroConfig {
     public static boolean autoEquipment = true;
     public static boolean autoStashManager = false;
     public static boolean autoGeorgeSell = false;
-    public static int georgeSellThreshold = 10;
-    public static int autoEquipmentFarmingTime = 200;
+    public static int georgeSellThreshold = 3;
+    public static int autoEquipmentFarmingTime = 170;
     public static boolean aotvToRoof = false;
 
     // Wardrobe Slots
@@ -171,7 +171,7 @@ public class MacroConfig {
     }
 
     private static class ConfigData {
-        int pestThreshold = 1;
+        int pestThreshold = 5;
         int visitorThreshold = 5;
         GearSwapMode gearSwapMode = GearSwapMode.NONE;
         UnflyMode unflyMode = UnflyMode.DOUBLE_TAP_SPACE;
@@ -179,9 +179,9 @@ public class MacroConfig {
         boolean autoEquipment = true;
         boolean autoStashManager = false;
         boolean autoGeorgeSell = false;
-        int georgeSellThreshold = 10;
+        int georgeSellThreshold = 3;
         int rotationTime = 500;
-        int autoEquipmentFarmingTime = 200;
+        int autoEquipmentFarmingTime = 170;
         boolean aotvToRoof = false;
 
         int wardrobeSlotFarming = 1;
