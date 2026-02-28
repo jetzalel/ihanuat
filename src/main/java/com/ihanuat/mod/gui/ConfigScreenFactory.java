@@ -209,6 +209,19 @@ public class ConfigScreenFactory {
                                 .build());
 
                 qol.addEntry(builder.getEntryBuilder()
+                                .startStrList(Component.literal("Booster Cookie Autosell Items"),
+                                                MacroConfig.boosterCookieItems)
+                                .setDefaultValue(java.util.Arrays.asList(
+                                                "Atmospheric Filter", "Squeaky Toy", "Beady Eyes", "Clipped Wings",
+                                                "Overclocker",
+                                                "Mantid Claw", "Flowering Bouquet", "Bookworm", "Chirping Stereo",
+                                                "Firefly",
+                                                "Capsule", "Vinyl"))
+                                .setExpanded(true)
+                                .setSaveConsumer(newValue -> MacroConfig.boosterCookieItems = newValue)
+                                .build());
+
+                qol.addEntry(builder.getEntryBuilder()
                                 .startBooleanToggle(Component.literal(
                                                 "Enable PlotTP Rewarp (for hyper-optimized farms that have startpos as plottp rewarp)"),
                                                 MacroConfig.enablePlotTpRewarp)

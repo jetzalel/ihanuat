@@ -27,6 +27,10 @@ public class MacroConfig {
     public static boolean autoStashManager = false;
     public static boolean autoGeorgeSell = false;
     public static boolean autoBoosterCookie = true;
+    public static java.util.List<String> boosterCookieItems = new java.util.ArrayList<>(java.util.Arrays.asList(
+            "Atmospheric Filter", "Squeaky Toy", "Beady Eyes", "Clipped Wings", "Overclocker",
+            "Mantid Claw", "Flowering Bouquet", "Bookworm", "Chirping Stereo", "Firefly",
+            "Capsule", "Vinyl"));
     public static int georgeSellThreshold = 3;
     public static int autoEquipmentFarmingTime = 170;
     public static boolean aotvToRoof = false;
@@ -87,6 +91,7 @@ public class MacroConfig {
         data.autoStashManager = autoStashManager;
         data.autoGeorgeSell = autoGeorgeSell;
         data.autoBoosterCookie = autoBoosterCookie;
+        data.boosterCookieItems = new java.util.ArrayList<>(boosterCookieItems);
         data.georgeSellThreshold = georgeSellThreshold;
         data.rotationTime = rotationTime;
         data.autoEquipmentFarmingTime = autoEquipmentFarmingTime;
@@ -139,6 +144,9 @@ public class MacroConfig {
                 autoStashManager = data.autoStashManager;
                 autoGeorgeSell = data.autoGeorgeSell;
                 autoBoosterCookie = data.autoBoosterCookie;
+                if (data.boosterCookieItems != null) {
+                    boosterCookieItems = new java.util.ArrayList<>(data.boosterCookieItems);
+                }
                 georgeSellThreshold = data.georgeSellThreshold;
                 rotationTime = data.rotationTime;
                 autoEquipmentFarmingTime = data.autoEquipmentFarmingTime;
@@ -183,6 +191,7 @@ public class MacroConfig {
         boolean autoStashManager = false;
         boolean autoGeorgeSell = false;
         boolean autoBoosterCookie = true;
+        java.util.List<String> boosterCookieItems;
         int georgeSellThreshold = 3;
         int rotationTime = 500;
         int autoEquipmentFarmingTime = 170;
