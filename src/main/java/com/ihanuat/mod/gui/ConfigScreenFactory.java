@@ -245,8 +245,10 @@ public class ConfigScreenFactory {
                                                 MacroConfig.rewarpEndY = client.player.getY();
                                                 MacroConfig.rewarpEndZ = client.player.getZ();
                                                 MacroConfig.rewarpEndPosSet = true;
+                                                MacroConfig.save();
                                                 client.player.displayClientMessage(
-                                                                Component.literal("§aRewarp End Position captured!"),
+                                                                Component.literal(
+                                                                                "§aRewarp End Position captured and saved!"),
                                                                 true);
                                         }
                                 }));
