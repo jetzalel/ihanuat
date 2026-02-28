@@ -28,6 +28,7 @@ public class MacroConfig {
     public static boolean autoGeorgeSell = false;
     public static int georgeSellThreshold = 10;
     public static int autoEquipmentFarmingTime = 200;
+    public static boolean aotvToRoof = false;
 
     // Wardrobe Slots
     public static int wardrobeSlotFarming = 1;
@@ -44,7 +45,7 @@ public class MacroConfig {
 
     // Restart Script Command (sent to restart farming)
     public static String restartScript = ".ez-startscript netherwart:1";
-    
+
     // Garden Warp Delay (ms) - configurable delay after garden warp
     public static int gardenWarpDelay = 1000;
 
@@ -53,7 +54,7 @@ public class MacroConfig {
     public static int restScriptingTimeOffset = 3;
     public static int restBreakTime = 20;
     public static int restBreakTimeOffset = 3;
-    public static int rotationSpeed = 200;
+    public static int rotationTime = 500;
 
     public static boolean enablePlotTpRewarp = false;
     public static String plotTpNumber = "0";
@@ -85,8 +86,9 @@ public class MacroConfig {
         data.autoStashManager = autoStashManager;
         data.autoGeorgeSell = autoGeorgeSell;
         data.georgeSellThreshold = georgeSellThreshold;
-        data.rotationSpeed = rotationSpeed;
+        data.rotationTime = rotationTime;
         data.autoEquipmentFarmingTime = autoEquipmentFarmingTime;
+        data.aotvToRoof = aotvToRoof;
 
         data.wardrobeSlotFarming = wardrobeSlotFarming;
         data.wardrobeSlotPest = wardrobeSlotPest;
@@ -135,8 +137,9 @@ public class MacroConfig {
                 autoStashManager = data.autoStashManager;
                 autoGeorgeSell = data.autoGeorgeSell;
                 georgeSellThreshold = data.georgeSellThreshold > 0 ? data.georgeSellThreshold : 10;
-                rotationSpeed = data.rotationSpeed;
+                rotationTime = data.rotationTime;
                 autoEquipmentFarmingTime = data.autoEquipmentFarmingTime > 0 ? data.autoEquipmentFarmingTime : 200;
+                aotvToRoof = data.aotvToRoof;
 
                 wardrobeSlotFarming = data.wardrobeSlotFarming > 0 ? data.wardrobeSlotFarming : 1;
                 wardrobeSlotPest = data.wardrobeSlotPest > 0 ? data.wardrobeSlotPest : 2;
@@ -147,6 +150,7 @@ public class MacroConfig {
                 restartTime = data.restartTime > 0 ? data.restartTime : 5;
                 if (data.restartScript != null && !data.restartScript.isBlank())
                     restartScript = data.restartScript;
+                gardenWarpDelay = data.gardenWarpDelay > 0 ? data.gardenWarpDelay : 1000;
 
                 restScriptingTime = data.restScriptingTime;
                 restScriptingTimeOffset = data.restScriptingTimeOffset;
@@ -176,8 +180,9 @@ public class MacroConfig {
         boolean autoStashManager = false;
         boolean autoGeorgeSell = false;
         int georgeSellThreshold = 10;
-        int rotationSpeed = 200;
+        int rotationTime = 500;
         int autoEquipmentFarmingTime = 200;
+        boolean aotvToRoof = false;
 
         int wardrobeSlotFarming = 1;
         int wardrobeSlotPest = 2;
