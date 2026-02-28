@@ -178,15 +178,15 @@ public class IhanuatClient implements ClientModInitializer {
                                         () -> GearManager.ensureWardrobeSlot(client, MacroConfig.wardrobeSlotFarming));
                                 Thread.sleep(800);
                             }
-                            
+
                             ClientUtils.waitForGearAndGui(client);
-                            
+
                             client.execute(() -> GearManager.swapToFarmingTool(client));
                             Thread.sleep(250);
-                            
+
                             ClientUtils.sendCommand(client, ".ez-stopscript");
                             Thread.sleep(250);
-                            
+
                             ClientUtils.sendCommand(client, MacroConfig.restartScript);
                         } catch (Exception e) {
                             e.printStackTrace();
@@ -222,6 +222,12 @@ public class IhanuatClient implements ClientModInitializer {
             com.ihanuat.mod.modules.PestManager.update(client);
             com.ihanuat.mod.modules.GearManager.cleanupTick(client);
             RotationManager.update(client);
+
+            if (PestManager.isSneakingForAotv) {
+                if (client.options != null) {
+                    client.options.keyShift.setDown(true);
+                }
+            }
 
             // Double-tap Space Flight Toggle
             if (PestManager.isStoppingFlight) {
