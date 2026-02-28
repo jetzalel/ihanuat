@@ -26,6 +26,7 @@ public class MacroConfig {
     public static boolean autoEquipment = true;
     public static boolean autoStashManager = false;
     public static boolean autoGeorgeSell = false;
+    public static boolean autoBoosterCookie = true;
     public static int georgeSellThreshold = 3;
     public static int autoEquipmentFarmingTime = 170;
     public static boolean aotvToRoof = false;
@@ -85,6 +86,7 @@ public class MacroConfig {
         data.autoEquipment = autoEquipment;
         data.autoStashManager = autoStashManager;
         data.autoGeorgeSell = autoGeorgeSell;
+        data.autoBoosterCookie = autoBoosterCookie;
         data.georgeSellThreshold = georgeSellThreshold;
         data.rotationTime = rotationTime;
         data.autoEquipmentFarmingTime = autoEquipmentFarmingTime;
@@ -136,6 +138,7 @@ public class MacroConfig {
                 autoEquipment = data.autoEquipment;
                 autoStashManager = data.autoStashManager;
                 autoGeorgeSell = data.autoGeorgeSell;
+                autoBoosterCookie = data.autoBoosterCookie;
                 georgeSellThreshold = data.georgeSellThreshold;
                 rotationTime = data.rotationTime;
                 autoEquipmentFarmingTime = data.autoEquipmentFarmingTime;
@@ -179,6 +182,7 @@ public class MacroConfig {
         boolean autoEquipment = true;
         boolean autoStashManager = false;
         boolean autoGeorgeSell = false;
+        boolean autoBoosterCookie = true;
         int georgeSellThreshold = 3;
         int rotationTime = 500;
         int autoEquipmentFarmingTime = 170;

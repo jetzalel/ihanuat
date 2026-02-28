@@ -201,6 +201,14 @@ public class ConfigScreenFactory {
                                 .build());
 
                 qol.addEntry(builder.getEntryBuilder()
+                                .startBooleanToggle(Component
+                                                .literal("Custom Autosell (triggers on opening booster cookie menu)"),
+                                                MacroConfig.autoBoosterCookie)
+                                .setDefaultValue(true)
+                                .setSaveConsumer(newValue -> MacroConfig.autoBoosterCookie = newValue)
+                                .build());
+
+                qol.addEntry(builder.getEntryBuilder()
                                 .startBooleanToggle(Component.literal(
                                                 "Enable PlotTP Rewarp (for hyper-optimized farms that have startpos as plottp rewarp)"),
                                                 MacroConfig.enablePlotTpRewarp)
