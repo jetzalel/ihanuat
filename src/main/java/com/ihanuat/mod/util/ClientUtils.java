@@ -216,7 +216,8 @@ public class ClientUtils {
             net.minecraft.world.item.ItemStack stack = client.player.getInventory().getItem(i);
             if (stack != null && !stack.isEmpty()) {
                 String itemName = stack.getHoverName().getString().replaceAll("\u00A7[0-9a-fk-or]", "").trim();
-                if (itemName.equalsIgnoreCase("Aspect of the Void")) {
+                String lowercaseName = itemName.toLowerCase();
+                if (lowercaseName.contains("aspect of the void") || lowercaseName.contains("aspect of the end")) {
                     return i;
                 }
             }
@@ -229,22 +230,22 @@ public class ClientUtils {
             return;
 
         // Set sneak key down
-        client.options.keyShift.setDown(true);
-        
-        // Hold shift for 50ms then right click right away
+        client.execute(() -> client.options.keyShift.setDown(true));
+
         try {
             Thread.sleep(50);
-            
+
             // Perform the interaction with the shift key held down
-            client.gameMode.useItemOn(client.player, net.minecraft.world.InteractionHand.MAIN_HAND, null);
-            
-            // Small delay to ensure the interaction registers
-            Thread.sleep(50);
+            client.execute(() -> client.gameMode.useItem(client.player, net.minecraft.world.InteractionHand.MAIN_HAND));
+
+            // Wait while shift is held to ensure the interaction registers with the server
+            // (critical for Etherwarp)
+            Thread.sleep(300);
         } catch (InterruptedException ignored) {
         }
-        
+
         // Release sneak key
-        client.options.keyShift.setDown(false);
+        client.execute(() -> client.options.keyShift.setDown(false));
     }
 
     public static void waitForRotationToComplete(Minecraft client, float targetPitch, int rotationTime) {
@@ -257,11 +258,11 @@ public class ClientUtils {
         while (System.currentTimeMillis() - startTime < timeout) {
             float currentPitch = client.player.getXRot();
             float pitchDiff = Math.abs(currentPitch - targetPitch);
-            
+
             if (pitchDiff < 1.0f) {
                 break; // Rotation complete
             }
-            
+
             try {
                 Thread.sleep(50);
             } catch (InterruptedException ignored) {

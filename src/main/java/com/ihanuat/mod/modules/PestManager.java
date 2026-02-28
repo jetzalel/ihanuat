@@ -179,8 +179,8 @@ public class PestManager {
                     if (MacroConfig.armorSwapVisitor && MacroConfig.wardrobeSlotVisitor > 0
                             && GearManager.trackedWardrobeSlot != MacroConfig.wardrobeSlotVisitor) {
                         client.player.displayClientMessage(Component.literal(
-                                        "\u00A7eSwapping to Visitor Wardrobe (Slot " + MacroConfig.wardrobeSlotVisitor
-                                                + ")..."),
+                                "\u00A7eSwapping to Visitor Wardrobe (Slot " + MacroConfig.wardrobeSlotVisitor
+                                        + ")..."),
                                 true);
                         client.execute(() -> GearManager.ensureWardrobeSlot(client, MacroConfig.wardrobeSlotVisitor));
                     }
@@ -199,7 +199,7 @@ public class PestManager {
                 Thread.sleep(150);
                 ClientUtils.sendCommand(client, "/warp garden");
                 Thread.sleep(MacroConfig.gardenWarpDelay);
-                
+
                 isReturningFromPestVisitor = true;
                 finalizeReturnToFarm(client);
             } catch (Exception e) {
@@ -255,7 +255,7 @@ public class PestManager {
                 if (MacroConfig.armorSwapVisitor && MacroConfig.wardrobeSlotVisitor > 0
                         && GearManager.trackedWardrobeSlot != MacroConfig.wardrobeSlotVisitor) {
                     client.player.displayClientMessage(Component.literal(
-                                    "\u00A7eSwapping to Visitor Wardrobe (Slot " + MacroConfig.wardrobeSlotVisitor + ")..."),
+                            "\u00A7eSwapping to Visitor Wardrobe (Slot " + MacroConfig.wardrobeSlotVisitor + ")..."),
                             true);
                     client.execute(() -> GearManager.ensureWardrobeSlot(client, MacroConfig.wardrobeSlotVisitor));
                 }
@@ -409,24 +409,25 @@ public class PestManager {
                     if (MacroConfig.aotvToRoof) {
                         // AOTV to Roof sequence
                         client.player.displayClientMessage(Component.literal("§6Using AOTV to Roof sequence..."), true);
-                        
+
                         // Set pitch to -90 degrees using rotation speed
                         float targetPitch = -90.0f;
                         float currentPitch = client.player.getXRot();
-                        
+
                         // Use the proper rotation method that respects rotation time
                         // Create a target position to look at that achieves -90 pitch
                         Vec3 eyePos = client.player.getEyePosition();
                         Vec3 targetPos = new Vec3(eyePos.x, eyePos.y + 100, eyePos.z); // Look straight up
                         RotationManager.initiateRotation(client, targetPos, MacroConfig.rotationTime);
-                        
+
                         // Wait for rotation to complete with minimal delay
                         ClientUtils.waitForRotationToComplete(client, targetPitch, MacroConfig.rotationTime);
-                        
+
                         // Find Aspect of the Void in inventory
                         int aotvSlot = ClientUtils.findAspectOfTheVoidSlot(client);
                         if (aotvSlot == -1) {
-                            client.player.displayClientMessage(Component.literal("§cAspect of the Void not found in inventory!"), true);
+                            client.player.displayClientMessage(
+                                    Component.literal("§cAspect of the Void not found in inventory!"), true);
                             // Fall back to normal plottp
                             if (currentInfestedPlot != null && !currentInfestedPlot.equals("0")) {
                                 ClientUtils.sendCommand(client, "/plottp " + currentInfestedPlot);
@@ -435,17 +436,22 @@ public class PestManager {
                         } else {
                             // Swap to Aspect of the Void
                             if (aotvSlot < 9) {
-                                // Use the proper method to change selected slot
-                                ((AccessorInventory) client.player.getInventory()).setSelected(aotvSlot);
+                                // Use the proper method to change selected slot on the main thread
+                                int slot = aotvSlot;
+                                client.execute(
+                                        () -> ((AccessorInventory) client.player.getInventory()).setSelected(slot));
+                                Thread.sleep(100); // Small wait for slot sync
                             } else {
                                 // Item is in main inventory, not hotbar - use fallback
-                                client.player.displayClientMessage(Component.literal("§cAspect of the Void not in hotbar, using fallback..."), true);
+                                client.player.displayClientMessage(
+                                        Component.literal("§cAspect of the Void not in hotbar, using fallback..."),
+                                        true);
                                 if (currentInfestedPlot != null && !currentInfestedPlot.equals("0")) {
                                     ClientUtils.sendCommand(client, "/plottp " + currentInfestedPlot);
                                     Thread.sleep(300);
                                 }
                             }
-                            
+
                             if (aotvSlot < 9) {
                                 // Perform shift+right click
                                 ClientUtils.performShiftRightClick(client);
@@ -459,7 +465,7 @@ public class PestManager {
                             Thread.sleep(100); // Reduced delay for warp to plot
                         }
                     }
-                    
+
                     // Trigger pest cleaning sequence immediately
                     ClientUtils.sendCommand(client, ".ez-stopscript");
                     Thread.sleep(50); // Minimal delay
