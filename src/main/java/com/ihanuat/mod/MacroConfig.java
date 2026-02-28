@@ -136,21 +136,21 @@ public class MacroConfig {
                 autoEquipment = data.autoEquipment;
                 autoStashManager = data.autoStashManager;
                 autoGeorgeSell = data.autoGeorgeSell;
-                georgeSellThreshold = data.georgeSellThreshold > 0 ? data.georgeSellThreshold : 10;
+                georgeSellThreshold = data.georgeSellThreshold;
                 rotationTime = data.rotationTime;
-                autoEquipmentFarmingTime = data.autoEquipmentFarmingTime > 0 ? data.autoEquipmentFarmingTime : 200;
+                autoEquipmentFarmingTime = data.autoEquipmentFarmingTime;
                 aotvToRoof = data.aotvToRoof;
 
-                wardrobeSlotFarming = data.wardrobeSlotFarming > 0 ? data.wardrobeSlotFarming : 1;
-                wardrobeSlotPest = data.wardrobeSlotPest > 0 ? data.wardrobeSlotPest : 2;
-                wardrobeSlotVisitor = data.wardrobeSlotVisitor > 0 ? data.wardrobeSlotVisitor : 3;
+                wardrobeSlotFarming = data.wardrobeSlotFarming;
+                wardrobeSlotPest = data.wardrobeSlotPest;
+                wardrobeSlotVisitor = data.wardrobeSlotVisitor;
                 armorSwapVisitor = data.armorSwapVisitor;
-                guiClickDelay = data.guiClickDelay > 0 ? data.guiClickDelay : 500;
-                equipmentSwapDelay = data.equipmentSwapDelay > 0 ? data.equipmentSwapDelay : 500;
-                restartTime = data.restartTime > 0 ? data.restartTime : 5;
+                guiClickDelay = data.guiClickDelay;
+                equipmentSwapDelay = data.equipmentSwapDelay;
+                restartTime = data.restartTime;
                 if (data.restartScript != null && !data.restartScript.isBlank())
                     restartScript = data.restartScript;
-                gardenWarpDelay = data.gardenWarpDelay > 0 ? data.gardenWarpDelay : 1000;
+                gardenWarpDelay = data.gardenWarpDelay;
 
                 restScriptingTime = data.restScriptingTime;
                 restScriptingTimeOffset = data.restScriptingTimeOffset;
