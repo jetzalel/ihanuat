@@ -41,10 +41,10 @@ public class MacroConfig {
     public static final int DEFAULT_WARDROBE_SLOT_VISITOR = 3;
     public static final boolean DEFAULT_ARMOR_SWAP_VISITOR = false;
     public static final int DEFAULT_GUI_CLICK_DELAY = 500;
-    public static final int DEFAULT_EQUIPMENT_SWAP_DELAY = 170;
+    public static final int DEFAULT_EQUIPMENT_SWAP_DELAY = 250;
     public static final int DEFAULT_ROD_SWAP_DELAY = 100;
     public static final int DEFAULT_BOOK_COMBINE_DELAY = 300;
-    public static final int DEFAULT_BOOK_THRESHOLD = 5;
+    public static final int DEFAULT_BOOK_THRESHOLD = 7;
     public static final int DEFAULT_RESTART_TIME = 5;
     public static final String DEFAULT_RESTART_SCRIPT = ".ez-startscript netherwart:1";
     public static final int DEFAULT_GARDEN_WARP_DELAY = 1000;

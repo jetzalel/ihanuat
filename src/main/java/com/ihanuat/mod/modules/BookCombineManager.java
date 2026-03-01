@@ -221,20 +221,29 @@ public class BookCombineManager {
     }
 
     private static void finishCombining(Minecraft client) {
-        if (client.player != null && client.screen != null) {
-            client.player.closeContainer();
-        }
         isCombining = false;
-        client.player.displayClientMessage(Component.literal("§6Book Combine finished. Resuming script..."), true);
+
+        if (client.player != null && client.screen != null) {
+            client.execute(() -> client.player.closeContainer());
+        }
+
+        if (client.player != null) {
+            client.player.displayClientMessage(Component.literal("§6Book Combine finished. Resuming script..."), true);
+        }
 
         if (com.ihanuat.mod.MacroStateManager.getCurrentState() == com.ihanuat.mod.MacroState.State.FARMING) {
             new Thread(() -> {
                 try {
-                    com.ihanuat.mod.util.ClientUtils.waitForGearAndGui(client);
-                    client.execute(() -> {
-                        GearManager.swapToFarmingTool(client);
-                        com.ihanuat.mod.util.ClientUtils.sendCommand(client, MacroConfig.restartScript);
-                    });
+                    // Wait for GUI to fully close
+                    long guiWait = System.currentTimeMillis();
+                    while (client.screen != null && System.currentTimeMillis() - guiWait < 3000)
+                        Thread.sleep(50);
+                    Thread.sleep(300);
+
+                    client.execute(() -> GearManager.swapToFarmingTool(client));
+                    Thread.sleep(200);
+
+                    com.ihanuat.mod.util.ClientUtils.sendCommand(client, MacroConfig.restartScript);
                 } catch (Exception ignored) {
                 }
             }).start();
