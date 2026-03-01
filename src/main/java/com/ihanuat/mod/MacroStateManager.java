@@ -34,6 +34,7 @@ public class MacroStateManager {
         com.ihanuat.mod.modules.PestManager.reset();
         com.ihanuat.mod.modules.GearManager.reset();
         com.ihanuat.mod.modules.GeorgeManager.reset();
+        com.ihanuat.mod.modules.BookCombineManager.reset();
         com.ihanuat.mod.modules.RecoveryManager.reset();
     }
 }

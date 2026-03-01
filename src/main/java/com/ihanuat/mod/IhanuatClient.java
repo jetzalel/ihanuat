@@ -170,6 +170,8 @@ public class IhanuatClient implements ClientModInitializer {
                 if (MacroStateManager.getCurrentState() == MacroState.State.OFF) {
                     PestManager.reset();
                     GearManager.reset();
+                    GeorgeManager.reset();
+                    BookCombineManager.reset();
                     RecoveryManager.reset();
                     MacroStateManager.setCurrentState(MacroState.State.FARMING);
                     if (nextRestTriggerMs == 0) {
@@ -229,6 +231,7 @@ public class IhanuatClient implements ClientModInitializer {
             }
 
             GeorgeManager.update(client);
+            BookCombineManager.update(client);
 
             RestartManager.update(client);
             PestManager.update(client);

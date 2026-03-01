@@ -44,6 +44,7 @@ public class MacroConfig {
     public static final int DEFAULT_EQUIPMENT_SWAP_DELAY = 170;
     public static final int DEFAULT_ROD_SWAP_DELAY = 100;
     public static final int DEFAULT_BOOK_COMBINE_DELAY = 300;
+    public static final int DEFAULT_BOOK_THRESHOLD = 5;
     public static final int DEFAULT_RESTART_TIME = 5;
     public static final String DEFAULT_RESTART_SCRIPT = ".ez-startscript netherwart:1";
     public static final int DEFAULT_GARDEN_WARP_DELAY = 1000;
@@ -83,6 +84,7 @@ public class MacroConfig {
     public static int equipmentSwapDelay = DEFAULT_EQUIPMENT_SWAP_DELAY;
     public static int rodSwapDelay = DEFAULT_ROD_SWAP_DELAY;
     public static int bookCombineDelay = DEFAULT_BOOK_COMBINE_DELAY;
+    public static int bookThreshold = DEFAULT_BOOK_THRESHOLD;
 
     // Restart Time (Minutes before expected server restart to stop macro)
     public static int restartTime = DEFAULT_RESTART_TIME;
@@ -145,6 +147,7 @@ public class MacroConfig {
         data.equipmentSwapDelay = equipmentSwapDelay;
         data.rodSwapDelay = rodSwapDelay;
         data.bookCombineDelay = bookCombineDelay;
+        data.bookThreshold = bookThreshold;
         data.restartTime = restartTime;
         data.restartScript = restartScript;
         data.gardenWarpDelay = gardenWarpDelay;
@@ -206,6 +209,7 @@ public class MacroConfig {
                 equipmentSwapDelay = data.equipmentSwapDelay;
                 rodSwapDelay = data.rodSwapDelay;
                 bookCombineDelay = data.bookCombineDelay;
+                bookThreshold = data.bookThreshold;
                 restartTime = data.restartTime;
                 if (data.restartScript != null && !data.restartScript.isBlank())
                     restartScript = data.restartScript;
@@ -255,6 +259,7 @@ public class MacroConfig {
         int equipmentSwapDelay = DEFAULT_EQUIPMENT_SWAP_DELAY;
         int rodSwapDelay = DEFAULT_ROD_SWAP_DELAY;
         int bookCombineDelay = DEFAULT_BOOK_COMBINE_DELAY;
+        int bookThreshold = DEFAULT_BOOK_THRESHOLD;
         int restartTime = DEFAULT_RESTART_TIME;
         String restartScript = DEFAULT_RESTART_SCRIPT;
         int gardenWarpDelay = DEFAULT_GARDEN_WARP_DELAY;

@@ -21,6 +21,18 @@ public class BookCombineManager {
     private static volatile int pendingSlot0 = -1;
     private static volatile int pendingSlot1 = -1;
 
+    public static volatile boolean isCombining = false;
+    public static volatile boolean isPreparingToCombine = false;
+
+    public static void reset() {
+        isCombining = false;
+        isPreparingToCombine = false;
+        interactionStage = 0;
+        interactionTime = 0;
+        pendingSlot0 = -1;
+        pendingSlot1 = -1;
+    }
+
     public static void handleAnvilMenu(Minecraft client, AbstractContainerScreen<?> screen) {
         if (!MacroConfig.autoBookCombine || screen == null || client.player == null)
             return;
@@ -99,7 +111,148 @@ public class BookCombineManager {
             interactionStage = 0;
             pendingSlot0 = -1;
             pendingSlot1 = -1;
+
+            // After one successful combine, check if more pairs exist
+            Map<String, List<Integer>> remainingPairs = getInventoryBooks(screen);
+            boolean hasMore = false;
+            for (Map.Entry<String, List<Integer>> entry : remainingPairs.entrySet()) {
+                if (entry.getValue().size() >= 2 && !isMaxLevel(entry.getKey())) {
+                    hasMore = true;
+                    break;
+                }
+            }
+
+            if (!hasMore && isCombining) {
+                finishCombining(client);
+            }
         }
+    }
+
+    public static void update(Minecraft client) {
+        if (!MacroConfig.autoBookCombine || client.player == null)
+            return;
+
+        if (isPreparingToCombine) {
+            if (com.ihanuat.mod.MacroStateManager.getCurrentState() != com.ihanuat.mod.MacroState.State.FARMING
+                    || PestManager.isCleaningInProgress || PestManager.prepSwappedForCurrentPestCycle
+                    || VisitorManager.getVisitorCount(client) >= MacroConfig.visitorThreshold) {
+                isPreparingToCombine = false;
+                client.player.displayClientMessage(
+                        Component.literal("§c[Ihanuat] Aborting Book Combine prep due to priority event."), false);
+            }
+            return;
+        }
+
+        if (isCombining) {
+            if (com.ihanuat.mod.MacroStateManager.getCurrentState() != com.ihanuat.mod.MacroState.State.FARMING
+                    || PestManager.isCleaningInProgress || PestManager.prepSwappedForCurrentPestCycle
+                    || VisitorManager.getVisitorCount(client) >= MacroConfig.visitorThreshold) {
+                isCombining = false;
+                client.player.displayClientMessage(
+                        Component.literal("§c[Ihanuat] Aborting Book Combine due to priority event."), false);
+                return;
+            }
+
+            // If GUI closed but we were supposed to be combining and still have pairs
+            if (client.screen == null) {
+                long now = System.currentTimeMillis();
+                if (now - interactionTime > 1500) {
+                    finishCombining(client);
+                }
+            }
+            return;
+        }
+
+        if (GearManager.isSwappingWardrobe || GearManager.isSwappingEquipment ||
+                PestManager.isCleaningInProgress || PestManager.prepSwappedForCurrentPestCycle ||
+                GeorgeManager.isSelling || GeorgeManager.isPreparingToSell)
+            return;
+
+        if (com.ihanuat.mod.MacroStateManager.getCurrentState() != com.ihanuat.mod.MacroState.State.FARMING)
+            return;
+
+        int bookCount = countBooksInInventory(client);
+        if (bookCount >= MacroConfig.bookThreshold) {
+            triggerAutomaticCombine(client, bookCount);
+        }
+    }
+
+    private static void triggerAutomaticCombine(Minecraft client, int count) {
+        client.player.displayClientMessage(
+                Component.literal("§6§lIhanuat >> §7Auto Combining books (" + count + " books in inventory)..."),
+                false);
+
+        com.ihanuat.mod.util.ClientUtils.forceReleaseKeys(client);
+
+        isPreparingToCombine = true;
+        isCombining = false;
+
+        new Thread(() -> {
+            try {
+                com.ihanuat.mod.util.ClientUtils.sendCommand(client, ".ez-stopscript");
+
+                boolean success = true;
+                for (int i = 0; i < 50; i++) {
+                    Thread.sleep(100);
+                    if (!isPreparingToCombine) {
+                        success = false;
+                        break;
+                    }
+                    if (com.ihanuat.mod.MacroStateManager
+                            .getCurrentState() != com.ihanuat.mod.MacroState.State.FARMING) {
+                        success = false;
+                        break;
+                    }
+                }
+
+                if (success && isPreparingToCombine) {
+                    isPreparingToCombine = false;
+                    isCombining = true;
+                    interactionStage = 0;
+                    interactionTime = System.currentTimeMillis();
+                    com.ihanuat.mod.util.ClientUtils.sendCommand(client, "/av");
+                } else {
+                    isPreparingToCombine = false;
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }).start();
+    }
+
+    private static void finishCombining(Minecraft client) {
+        if (client.player != null && client.screen != null) {
+            client.player.closeContainer();
+        }
+        isCombining = false;
+        client.player.displayClientMessage(Component.literal("§6Book Combine finished. Resuming script..."), true);
+
+        if (com.ihanuat.mod.MacroStateManager.getCurrentState() == com.ihanuat.mod.MacroState.State.FARMING) {
+            new Thread(() -> {
+                try {
+                    com.ihanuat.mod.util.ClientUtils.waitForGearAndGui(client);
+                    client.execute(() -> {
+                        GearManager.swapToFarmingTool(client);
+                        com.ihanuat.mod.util.ClientUtils.sendCommand(client, MacroConfig.restartScript);
+                    });
+                } catch (Exception ignored) {
+                }
+            }).start();
+        }
+    }
+
+    private static int countBooksInInventory(Minecraft client) {
+        int count = 0;
+        for (int i = 0; i < 36; i++) {
+            ItemStack stack = client.player.getInventory().getItem(i);
+            if (!stack.isEmpty() && stack.getItem().toString().toLowerCase().contains("enchanted_book")) {
+                String name = stack.getHoverName().getString().toLowerCase();
+                if (!name.contains("sunder")) {
+                    count++;
+                }
+            }
+        }
+        return count;
     }
 
     /**

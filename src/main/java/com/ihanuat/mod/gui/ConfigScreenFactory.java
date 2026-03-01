@@ -209,6 +209,13 @@ public class ConfigScreenFactory {
                                 .build());
 
                 qol.addEntry(builder.getEntryBuilder()
+                                .startIntSlider(Component.literal("Book Threshold"),
+                                                MacroConfig.bookThreshold, 1, 35)
+                                .setDefaultValue(MacroConfig.DEFAULT_BOOK_THRESHOLD)
+                                .setSaveConsumer(newValue -> MacroConfig.bookThreshold = newValue)
+                                .build());
+
+                qol.addEntry(builder.getEntryBuilder()
                                 .startBooleanToggle(Component.literal("Stash Manager"), MacroConfig.autoStashManager)
                                 .setDefaultValue(MacroConfig.DEFAULT_AUTO_STASH_MANAGER)
                                 .setSaveConsumer(newValue -> MacroConfig.autoStashManager = newValue)
