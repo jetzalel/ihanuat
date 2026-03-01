@@ -57,6 +57,15 @@ public class ConfigScreenFactory {
                                 .build());
 
                 general.addEntry(builder.entryBuilder()
+                                .startBooleanToggle(Component.literal("Persist Session Timer On Pause"),
+                                                MacroConfig.persistSessionTimer)
+                                .setDefaultValue(MacroConfig.DEFAULT_PERSIST_SESSION_TIMER)
+                                .setTooltip(Component.literal(
+                                                "When enabled, the session timer won't reset if paused/unpaused manually. It will only reset when the game is relaunched."))
+                                .setSaveConsumer(newValue -> MacroConfig.persistSessionTimer = newValue)
+                                .build());
+
+                general.addEntry(builder.entryBuilder()
                                 .startIntSlider(Component.literal("Pest Threshold"), MacroConfig.pestThreshold, 1, 8)
                                 .setDefaultValue(MacroConfig.DEFAULT_PEST_THRESHOLD)
                                 .setSaveConsumer(newValue -> MacroConfig.pestThreshold = newValue)
