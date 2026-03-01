@@ -256,7 +256,8 @@ public class BookCombineManager {
             ItemStack stack = client.player.getInventory().getItem(i);
             if (!stack.isEmpty() && stack.getItem().toString().toLowerCase().contains("enchanted_book")) {
                 String name = stack.getHoverName().getString().toLowerCase();
-                if (!name.contains("sunder")) {
+                if (!name.contains("sunder") && !name.contains("pesterminator 5")
+                        && !name.contains("pesterminator v")) {
                     count++;
                 }
             }
