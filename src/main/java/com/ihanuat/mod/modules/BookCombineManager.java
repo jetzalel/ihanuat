@@ -11,6 +11,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.ItemLore;
 
 import java.util.*;
+import com.ihanuat.mod.util.EnchantmentUtils;
 
 public class BookCombineManager {
     public static volatile long interactionTime = 0;
@@ -157,11 +158,32 @@ public class BookCombineManager {
     /**
      * Returns true if the key represents a book that should not be combined
      * further.
-     * Matches common max-level suffixes (Roman numeral V/X, digit 5/10).
+     * Parses the enchantment name and level from the key and checks against
+     * the known max levels for each enchantment.
      */
     private static boolean isMaxLevel(String key) {
-        String upper = key.toUpperCase().trim();
-        return upper.endsWith(" V") || upper.endsWith(" X")
-                || upper.endsWith(" 5") || upper.endsWith(" 10");
+        int lastSpace = key.lastIndexOf(' ');
+        String name;
+        String levelStr;
+
+        if (lastSpace == -1) {
+            name = key;
+            levelStr = "1";
+        } else {
+            String suffix = key.substring(lastSpace + 1).trim();
+            // Check if suffix is a valid Roman numeral or numeric string
+            if (suffix.matches("^[IVXLCDM]+$") || suffix.matches("^[0-9]+$")) {
+                name = key.substring(0, lastSpace).trim();
+                levelStr = suffix;
+            } else {
+                name = key;
+                levelStr = "1";
+            }
+        }
+
+        int currentLevel = EnchantmentUtils.parseLevel(levelStr);
+        int maxLevel = EnchantmentUtils.getMaxLevel(name);
+
+        return currentLevel >= maxLevel;
     }
 }

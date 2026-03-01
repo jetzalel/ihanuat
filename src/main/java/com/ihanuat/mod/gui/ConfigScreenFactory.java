@@ -123,9 +123,9 @@ public class ConfigScreenFactory {
 
                 general.addEntry(builder.getEntryBuilder()
                                 .startIntSlider(Component.literal(
-                                                "Auto-Equipment Timing (time left on pest cd to swap to  pest spawn equip) (sec)"),
+                                                "Auto-Equipment Timing (Leave on 170 unless you know what you're doing) (sec)"),
                                                 MacroConfig.autoEquipmentFarmingTime, 1, 300)
-                                .setDefaultValue(200)
+                                .setDefaultValue(170)
                                 .setSaveConsumer(newValue -> MacroConfig.autoEquipmentFarmingTime = newValue)
                                 .build());
 
