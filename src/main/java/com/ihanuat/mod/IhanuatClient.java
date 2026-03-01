@@ -1,7 +1,15 @@
 package com.ihanuat.mod;
 
 import com.ihanuat.mod.gui.ConfigScreenFactory;
-import com.ihanuat.mod.modules.*;
+import com.ihanuat.mod.modules.GearManager;
+import com.ihanuat.mod.modules.PestManager;
+import com.ihanuat.mod.modules.GeorgeManager;
+import com.ihanuat.mod.modules.RecoveryManager;
+import com.ihanuat.mod.modules.RestartManager;
+import com.ihanuat.mod.modules.BoosterCookieManager;
+import com.ihanuat.mod.modules.BookCombineManager;
+import com.ihanuat.mod.modules.RotationManager;
+import com.ihanuat.mod.modules.VisitorManager;
 import com.ihanuat.mod.util.ClientUtils;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -89,8 +97,7 @@ public class IhanuatClient implements ClientModInitializer {
                 if ((lowerText.contains("server") && lowerText.contains("restart"))
                         || text.contains("Evacuating to Hub...") || text.contains("SERVER REBOOT!")
                         || lowerText.contains("proxy restart")) {
-                    com.ihanuat.mod.modules.RestartManager
-                            .handleRestartMessage(net.minecraft.client.Minecraft.getInstance());
+                    RestartManager.handleRestartMessage(net.minecraft.client.Minecraft.getInstance());
                     return;
                 }
 
@@ -163,6 +170,7 @@ public class IhanuatClient implements ClientModInitializer {
                 if (MacroStateManager.getCurrentState() == MacroState.State.OFF) {
                     PestManager.reset();
                     GearManager.reset();
+                    RecoveryManager.reset();
                     MacroStateManager.setCurrentState(MacroState.State.FARMING);
                     if (nextRestTriggerMs == 0) {
                         int base = MacroConfig.restScriptingTime;
@@ -216,19 +224,25 @@ public class IhanuatClient implements ClientModInitializer {
                     GeorgeManager.handleGeorgeMenu(client, currentScreen);
                 if (client.screen == currentScreen)
                     BoosterCookieManager.handleBoosterCookieMenu(client, currentScreen);
+                if (client.screen == currentScreen)
+                    BookCombineManager.handleAnvilMenu(client, currentScreen);
             }
 
             GeorgeManager.update(client);
 
-            com.ihanuat.mod.modules.RestartManager.update(client);
-            com.ihanuat.mod.modules.PestManager.update(client);
-            com.ihanuat.mod.modules.GearManager.cleanupTick(client);
+            RestartManager.update(client);
+            PestManager.update(client);
+            GearManager.cleanupTick(client);
             RotationManager.update(client);
 
             if (PestManager.isSneakingForAotv) {
                 if (client.options != null) {
                     client.options.keyShift.setDown(true);
                 }
+            }
+
+            if (GearManager.isHoldingRodUse) {
+                client.gameMode.useItem(client.player, net.minecraft.world.InteractionHand.MAIN_HAND);
             }
 
             // Double-tap Space Flight Toggle

@@ -83,6 +83,13 @@ public class ConfigScreenFactory {
                                 .build());
 
                 general.addEntry(builder.getEntryBuilder()
+                                .startIntSlider(Component.literal("Rod Swap Delay (ms)"),
+                                                MacroConfig.rodSwapDelay, 50, 1000)
+                                .setDefaultValue(100)
+                                .setSaveConsumer(newValue -> MacroConfig.rodSwapDelay = newValue)
+                                .build());
+
+                general.addEntry(builder.getEntryBuilder()
                                 .startIntField(Component.literal("Restart Time (Minutes)"), MacroConfig.restartTime)
                                 .setDefaultValue(5)
                                 .setSaveConsumer(newValue -> MacroConfig.restartTime = newValue)
@@ -179,6 +186,19 @@ public class ConfigScreenFactory {
                                 .build());
 
                 ConfigCategory qol = builder.getOrCreateCategory(Component.literal("QOL"));
+                qol.addEntry(builder.getEntryBuilder()
+                                .startBooleanToggle(Component.literal("Auto-Book Combine"), MacroConfig.autoBookCombine)
+                                .setDefaultValue(false)
+                                .setSaveConsumer(newValue -> MacroConfig.autoBookCombine = newValue)
+                                .build());
+
+                qol.addEntry(builder.getEntryBuilder()
+                                .startIntSlider(Component.literal("Book Combine Delay (ms)"),
+                                                MacroConfig.bookCombineDelay, 100, 2000)
+                                .setDefaultValue(300)
+                                .setSaveConsumer(newValue -> MacroConfig.bookCombineDelay = newValue)
+                                .build());
+
                 qol.addEntry(builder.getEntryBuilder()
                                 .startBooleanToggle(Component.literal("Stash Manager"), MacroConfig.autoStashManager)
                                 .setDefaultValue(false)

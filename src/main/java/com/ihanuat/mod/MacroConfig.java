@@ -25,6 +25,7 @@ public class MacroConfig {
     public static boolean autoVisitor = true;
     public static boolean autoEquipment = true;
     public static boolean autoStashManager = false;
+    public static boolean autoBookCombine = false;
     public static boolean autoGeorgeSell = false;
     public static boolean autoBoosterCookie = true;
     public static java.util.List<String> boosterCookieItems = new java.util.ArrayList<>(java.util.Arrays.asList(
@@ -44,6 +45,8 @@ public class MacroConfig {
     // GUI Click Delay (ms)
     public static int guiClickDelay = 500;
     public static int equipmentSwapDelay = 500;
+    public static int rodSwapDelay = 100;
+    public static int bookCombineDelay = 300;
 
     // Restart Time (Minutes before expected server restart to stop macro)
     public static int restartTime = 5;
@@ -89,6 +92,7 @@ public class MacroConfig {
         data.autoVisitor = autoVisitor;
         data.autoEquipment = autoEquipment;
         data.autoStashManager = autoStashManager;
+        data.autoBookCombine = autoBookCombine;
         data.autoGeorgeSell = autoGeorgeSell;
         data.autoBoosterCookie = autoBoosterCookie;
         data.boosterCookieItems = new java.util.ArrayList<>(boosterCookieItems);
@@ -103,6 +107,8 @@ public class MacroConfig {
         data.armorSwapVisitor = armorSwapVisitor;
         data.guiClickDelay = guiClickDelay;
         data.equipmentSwapDelay = equipmentSwapDelay;
+        data.rodSwapDelay = rodSwapDelay;
+        data.bookCombineDelay = bookCombineDelay;
         data.restartTime = restartTime;
         data.restartScript = restartScript;
         data.gardenWarpDelay = gardenWarpDelay;
@@ -142,6 +148,7 @@ public class MacroConfig {
                 autoVisitor = data.autoVisitor;
                 autoEquipment = data.autoEquipment;
                 autoStashManager = data.autoStashManager;
+                autoBookCombine = data.autoBookCombine;
                 autoGeorgeSell = data.autoGeorgeSell;
                 autoBoosterCookie = data.autoBoosterCookie;
                 if (data.boosterCookieItems != null) {
@@ -158,6 +165,8 @@ public class MacroConfig {
                 armorSwapVisitor = data.armorSwapVisitor;
                 guiClickDelay = data.guiClickDelay;
                 equipmentSwapDelay = data.equipmentSwapDelay;
+                rodSwapDelay = data.rodSwapDelay;
+                bookCombineDelay = data.bookCombineDelay;
                 restartTime = data.restartTime;
                 if (data.restartScript != null && !data.restartScript.isBlank())
                     restartScript = data.restartScript;
@@ -189,6 +198,7 @@ public class MacroConfig {
         boolean autoVisitor = true;
         boolean autoEquipment = true;
         boolean autoStashManager = false;
+        boolean autoBookCombine = false;
         boolean autoGeorgeSell = false;
         boolean autoBoosterCookie = true;
         java.util.List<String> boosterCookieItems;
@@ -203,6 +213,8 @@ public class MacroConfig {
         boolean armorSwapVisitor = false;
         int guiClickDelay = 500;
         int equipmentSwapDelay = 500;
+        int rodSwapDelay = 100;
+        int bookCombineDelay = 300;
         int restartTime = 5;
         String restartScript = ".ez-startscript netherwart:1";
         int gardenWarpDelay = 1000;
