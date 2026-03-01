@@ -88,23 +88,34 @@ public class DynamicRestManager {
             if (remaining > 0) {
                 // Show countdown in the action-bar
                 long totalSecs = remaining / 1000;
-                long mins = totalSecs / 60;
-                long secs = totalSecs % 60;
+                long rHours = totalSecs / 3600;
+                long rMins = (totalSecs % 3600) / 60;
+                long rSecs = totalSecs % 60;
 
-                long sessionTotalSecs = MacroStateManager.getSessionStartTime() == 0 ? 0
-                        : (System.currentTimeMillis() - MacroStateManager.getSessionStartTime()) / 1000;
+                long sessionTotalSecs = MacroStateManager.getSessionRunningTime() / 1000;
                 long sHours = sessionTotalSecs / 3600;
                 long sMins = (sessionTotalSecs % 3600) / 60;
                 long sSecs = sessionTotalSecs % 60;
-
                 String sessionStr = sHours > 0
                         ? String.format("%02d:%02d:%02d", sHours, sMins, sSecs)
                         : String.format("%02d:%02d", sMins, sSecs);
 
+                long lifetimeTotalSecs = MacroStateManager.getLifetimeRunningTime() / 1000;
+                long lHours = lifetimeTotalSecs / 3600;
+                long lMins = (lifetimeTotalSecs % 3600) / 60;
+                long lSecs = lifetimeTotalSecs % 60;
+                String lifetimeStr = lHours > 0
+                        ? String.format("%02d:%02d:%02d", lHours, lMins, lSecs)
+                        : String.format("%02d:%02d", lMins, lSecs);
+
+                String restStr = rHours > 0
+                        ? String.format("%02d:%02d:%02d", rHours, rMins, rSecs)
+                        : String.format("%02d:%02d", rMins, rSecs);
+
                 String stateDesc = currentState == MacroState.State.CLEANING ? "Cleaning..." : "Farming...";
                 String hudText = String.format(
-                        "§l§b[Ihanuat] §7%s §8| §dSession: %s §8| §eNext rest: §a%02d:%02d", stateDesc, sessionStr,
-                        mins, secs);
+                        "§l§b[Ihanuat] §7%s §8| §dLife: %s §8| §dSession: %s §8| §eNext rest: §a%s", stateDesc,
+                        lifetimeStr, sessionStr, restStr);
                 client.player.displayClientMessage(Component.literal(hudText), true);
             } else {
                 // Timer expired — kick off the rest sequence

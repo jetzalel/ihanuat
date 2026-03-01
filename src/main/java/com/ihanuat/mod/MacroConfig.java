@@ -57,6 +57,7 @@ public class MacroConfig {
     public static final String DEFAULT_DISCORD_WEBHOOK_URL = "";
     public static final int DEFAULT_DISCORD_STATUS_UPDATE_TIME = 5;
     public static final boolean DEFAULT_SEND_DISCORD_STATUS = false;
+    public static final boolean DEFAULT_PERSIST_SESSION_TIMER = false;
 
     public static int pestThreshold = DEFAULT_PEST_THRESHOLD;
     public static int visitorThreshold = DEFAULT_VISITOR_THRESHOLD;
@@ -116,6 +117,7 @@ public class MacroConfig {
     public static String discordWebhookUrl = DEFAULT_DISCORD_WEBHOOK_URL;
     public static int discordStatusUpdateTime = DEFAULT_DISCORD_STATUS_UPDATE_TIME;
     public static boolean sendDiscordStatus = DEFAULT_SEND_DISCORD_STATUS;
+    public static boolean persistSessionTimer = DEFAULT_PERSIST_SESSION_TIMER;
 
     // Rewarp coordinates
     public static double rewarpEndX = 0;
@@ -179,6 +181,7 @@ public class MacroConfig {
         data.rewarpEndY = rewarpEndY;
         data.rewarpEndZ = rewarpEndZ;
         data.rewarpEndPosSet = rewarpEndPosSet;
+        data.persistSessionTimer = persistSessionTimer;
 
         try (FileWriter writer = new FileWriter(CONFIG_FILE)) {
             GSON.toJson(data, writer);
@@ -247,6 +250,7 @@ public class MacroConfig {
                 rewarpEndY = data.rewarpEndY;
                 rewarpEndZ = data.rewarpEndZ;
                 rewarpEndPosSet = data.rewarpEndPosSet;
+                persistSessionTimer = data.persistSessionTimer;
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -298,5 +302,6 @@ public class MacroConfig {
         double rewarpEndY = 0;
         double rewarpEndZ = 0;
         boolean rewarpEndPosSet = false;
+        boolean persistSessionTimer = DEFAULT_PERSIST_SESSION_TIMER;
     }
 }

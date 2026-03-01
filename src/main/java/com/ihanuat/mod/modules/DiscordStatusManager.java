@@ -93,8 +93,7 @@ public class DiscordStatusManager {
             writer.append("Content-Type: application/json; charset=UTF-8\r\n\r\n");
 
             String state = String.valueOf(MacroStateManager.getCurrentState());
-            long sessionTotalSecs = MacroStateManager.getSessionStartTime() == 0 ? 0
-                    : (System.currentTimeMillis() - MacroStateManager.getSessionStartTime()) / 1000;
+            long sessionTotalSecs = MacroStateManager.getSessionRunningTime() / 1000;
             long sHours = sessionTotalSecs / 3600;
             long sMins = (sessionTotalSecs % 3600) / 60;
             long sSecs = sessionTotalSecs % 60;
@@ -107,9 +106,12 @@ public class DiscordStatusManager {
             if (nextRestTriggerMs > 0 && !DynamicRestManager.isRestPending()) {
                 long remaining = nextRestTriggerMs - System.currentTimeMillis();
                 if (remaining > 0) {
-                    long mins = (remaining / 1000) / 60;
-                    long secs = (remaining / 1000) % 60;
-                    nextRestStr = String.format("%02d:%02d", mins, secs);
+                    long totalSecs = remaining / 1000;
+                    long rHours = totalSecs / 3600;
+                    long rMins = (totalSecs % 3600) / 60;
+                    long rSecs = totalSecs % 60;
+                    nextRestStr = rHours > 0 ? String.format("%02d:%02d:%02d", rHours, rMins, rSecs)
+                            : String.format("%02d:%02d", rMins, rSecs);
                 } else {
                     nextRestStr = "Starting soon...";
                 }
