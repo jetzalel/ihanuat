@@ -270,6 +270,27 @@ public class ConfigScreenFactory {
                                 .setSaveConsumer(newValue -> MacroConfig.plotTpNumber = newValue)
                                 .build());
 
+                qol.addEntry(builder.entryBuilder()
+                                .startBooleanToggle(Component.literal("Send Status through Discord"),
+                                                MacroConfig.sendDiscordStatus)
+                                .setDefaultValue(MacroConfig.DEFAULT_SEND_DISCORD_STATUS)
+                                .setSaveConsumer(newValue -> MacroConfig.sendDiscordStatus = newValue)
+                                .build());
+
+                qol.addEntry(builder.entryBuilder()
+                                .startStrField(Component.literal("Discord Webhook URL"), MacroConfig.discordWebhookUrl)
+                                .setDefaultValue(MacroConfig.DEFAULT_DISCORD_WEBHOOK_URL)
+                                .setSaveConsumer(newValue -> MacroConfig.discordWebhookUrl = newValue)
+                                .build());
+
+                qol.addEntry(builder.entryBuilder()
+                                .startIntField(Component.literal("Status Update Time (Minutes)"),
+                                                MacroConfig.discordStatusUpdateTime)
+                                .setDefaultValue(MacroConfig.DEFAULT_DISCORD_STATUS_UPDATE_TIME)
+                                .setMax(1440)
+                                .setSaveConsumer(newValue -> MacroConfig.discordStatusUpdateTime = newValue)
+                                .build());
+
                 qol.addEntry(new ButtonEntry(
                                 Component.literal("Capture Rewarp End Position"),
                                 Component.literal("Captures your current position as the trigger for PlotTP Rewarp."),

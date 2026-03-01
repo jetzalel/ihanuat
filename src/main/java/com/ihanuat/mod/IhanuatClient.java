@@ -234,6 +234,7 @@ public class IhanuatClient implements ClientModInitializer {
             PestManager.update(client);
             GearManager.cleanupTick(client);
             RotationManager.update(client);
+            com.ihanuat.mod.modules.DiscordStatusManager.update(client);
 
             if (PestManager.isSneakingForAotv) {
                 if (client.options != null) {

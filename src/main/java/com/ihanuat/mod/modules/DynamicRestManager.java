@@ -79,8 +79,9 @@ public class DynamicRestManager {
         if (client.player == null)
             return;
 
-        // === Countdown / timer display (only while actively farming) ===
-        if (MacroStateManager.getCurrentState() == MacroState.State.FARMING
+        // === Countdown / timer display (only while actively running) ===
+        MacroState.State currentState = MacroStateManager.getCurrentState();
+        if (currentState != MacroState.State.OFF && currentState != MacroState.State.RECOVERING
                 && nextRestTriggerMs > 0 && !restSequencePending) {
             long remaining = nextRestTriggerMs - System.currentTimeMillis();
 
@@ -89,8 +90,21 @@ public class DynamicRestManager {
                 long totalSecs = remaining / 1000;
                 long mins = totalSecs / 60;
                 long secs = totalSecs % 60;
+
+                long sessionTotalSecs = MacroStateManager.getSessionStartTime() == 0 ? 0
+                        : (System.currentTimeMillis() - MacroStateManager.getSessionStartTime()) / 1000;
+                long sHours = sessionTotalSecs / 3600;
+                long sMins = (sessionTotalSecs % 3600) / 60;
+                long sSecs = sessionTotalSecs % 60;
+
+                String sessionStr = sHours > 0
+                        ? String.format("%02d:%02d:%02d", sHours, sMins, sSecs)
+                        : String.format("%02d:%02d", sMins, sSecs);
+
+                String stateDesc = currentState == MacroState.State.CLEANING ? "Cleaning..." : "Farming...";
                 String hudText = String.format(
-                        "§b[Ihanuat] §7Farming... §8| §eNext rest: §a%02d:%02d", mins, secs);
+                        "§l§b[Ihanuat] §7%s §8| §dSession: %s §8| §eNext rest: §a%02d:%02d", stateDesc, sessionStr,
+                        mins, secs);
                 client.player.displayClientMessage(Component.literal(hudText), true);
             } else {
                 // Timer expired — kick off the rest sequence
