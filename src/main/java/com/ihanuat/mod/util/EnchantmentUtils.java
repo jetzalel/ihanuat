@@ -119,7 +119,9 @@ public class EnchantmentUtils {
         MAX_LEVELS.put("Crop Fever", 5);
         MAX_LEVELS.put("Duplex", 5);
         MAX_LEVELS.put("Fatal Tempo", 5);
+        MAX_LEVELS.put("First Impression", 5);
         MAX_LEVELS.put("Flash", 5);
+        MAX_LEVELS.put("Flowstate", 5);
         MAX_LEVELS.put("Habanero Tactics", 4);
         MAX_LEVELS.put("Inferno", 5);
         MAX_LEVELS.put("Last Stand", 5);
@@ -138,12 +140,23 @@ public class EnchantmentUtils {
         if (enchantmentName == null)
             return 5;
 
+        // Check custom user configuration first
+        for (String custom : com.ihanuat.mod.MacroConfig.customEnchantmentLevels) {
+            String[] parts = custom.split(":");
+            if (parts.length >= 2 && parts[0].trim().equalsIgnoreCase(enchantmentName)) {
+                try {
+                    return Integer.parseInt(parts[1].trim());
+                } catch (NumberFormatException ignored) {
+                }
+            }
+        }
+
         // Handle "Turbo-" enchantments generally as they all have max level 5
         if (enchantmentName.toLowerCase().startsWith("turbo-")) {
             return 5;
         }
 
-        // Search effectively case-insensitively
+        // Search effectively case-insensitively in predefined map
         for (Map.Entry<String, Integer> entry : MAX_LEVELS.entrySet()) {
             if (entry.getKey().equalsIgnoreCase(enchantmentName)) {
                 return entry.getValue();

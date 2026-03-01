@@ -30,7 +30,7 @@ public class ConfigScreenFactory {
                                 .startEnumSelector(Component.literal("Wardrobe/Rod Swap Mode"),
                                                 MacroConfig.GearSwapMode.class,
                                                 MacroConfig.gearSwapMode)
-                                .setDefaultValue(MacroConfig.GearSwapMode.NONE)
+                                .setDefaultValue(MacroConfig.DEFAULT_GEAR_SWAP_MODE)
                                 .setSaveConsumer(newValue -> MacroConfig.gearSwapMode = newValue)
                                 .build());
 
@@ -38,66 +38,66 @@ public class ConfigScreenFactory {
                                 .startEnumSelector(Component.literal("Unfly Mode (after /warp garden)"),
                                                 MacroConfig.UnflyMode.class,
                                                 MacroConfig.unflyMode)
-                                .setDefaultValue(MacroConfig.UnflyMode.DOUBLE_TAP_SPACE)
+                                .setDefaultValue(MacroConfig.DEFAULT_UNFLY_MODE)
                                 .setSaveConsumer(newValue -> MacroConfig.unflyMode = newValue)
                                 .build());
 
                 general.addEntry(builder.getEntryBuilder()
                                 .startBooleanToggle(Component.literal("AOTV to Roof"), MacroConfig.aotvToRoof)
-                                .setDefaultValue(false)
+                                .setDefaultValue(MacroConfig.DEFAULT_AOTV_TO_ROOF)
                                 .setSaveConsumer(newValue -> MacroConfig.aotvToRoof = newValue)
                                 .build());
 
                 general.addEntry(builder.getEntryBuilder()
                                 .startIntSlider(Component.literal("Rotation Time (ms)"), MacroConfig.rotationTime,
                                                 100, 3000)
-                                .setDefaultValue(500)
+                                .setDefaultValue(MacroConfig.DEFAULT_ROTATION_TIME)
                                 .setSaveConsumer(newValue -> MacroConfig.rotationTime = newValue)
                                 .build());
 
                 general.addEntry(builder.getEntryBuilder()
                                 .startIntSlider(Component.literal("Pest Threshold"), MacroConfig.pestThreshold, 1, 8)
-                                .setDefaultValue(5)
+                                .setDefaultValue(MacroConfig.DEFAULT_PEST_THRESHOLD)
                                 .setSaveConsumer(newValue -> MacroConfig.pestThreshold = newValue)
                                 .build());
 
                 general.addEntry(builder.getEntryBuilder()
                                 .startIntSlider(Component.literal("Visitor Threshold"), MacroConfig.visitorThreshold, 1,
                                                 5)
-                                .setDefaultValue(5)
+                                .setDefaultValue(MacroConfig.DEFAULT_VISITOR_THRESHOLD)
                                 .setSaveConsumer(newValue -> MacroConfig.visitorThreshold = newValue)
                                 .build());
 
                 general.addEntry(builder.getEntryBuilder()
                                 .startIntSlider(Component.literal("GUI Click Delay (ms)"), MacroConfig.guiClickDelay,
                                                 100, 2000)
-                                .setDefaultValue(500)
+                                .setDefaultValue(MacroConfig.DEFAULT_GUI_CLICK_DELAY)
                                 .setSaveConsumer(newValue -> MacroConfig.guiClickDelay = newValue)
                                 .build());
 
                 general.addEntry(builder.getEntryBuilder()
                                 .startIntSlider(Component.literal("Equipment Swap Delay (ms)"),
                                                 MacroConfig.equipmentSwapDelay, 100, 300)
-                                .setDefaultValue(170)
+                                .setDefaultValue(MacroConfig.DEFAULT_EQUIPMENT_SWAP_DELAY)
                                 .setSaveConsumer(newValue -> MacroConfig.equipmentSwapDelay = newValue)
                                 .build());
 
                 general.addEntry(builder.getEntryBuilder()
                                 .startIntSlider(Component.literal("Rod Swap Delay (ms)"),
                                                 MacroConfig.rodSwapDelay, 50, 1000)
-                                .setDefaultValue(100)
+                                .setDefaultValue(MacroConfig.DEFAULT_ROD_SWAP_DELAY)
                                 .setSaveConsumer(newValue -> MacroConfig.rodSwapDelay = newValue)
                                 .build());
 
                 general.addEntry(builder.getEntryBuilder()
                                 .startIntField(Component.literal("Restart Time (Minutes)"), MacroConfig.restartTime)
-                                .setDefaultValue(5)
+                                .setDefaultValue(MacroConfig.DEFAULT_RESTART_TIME)
                                 .setSaveConsumer(newValue -> MacroConfig.restartTime = newValue)
                                 .build());
 
                 general.addEntry(builder.getEntryBuilder()
                                 .startStrField(Component.literal("Restart Script Command"), MacroConfig.restartScript)
-                                .setDefaultValue(".ez-startscript netherwart:1")
+                                .setDefaultValue(MacroConfig.DEFAULT_RESTART_SCRIPT)
                                 .setSaveConsumer(newValue -> MacroConfig.restartScript = newValue)
                                 .build());
 
@@ -105,19 +105,19 @@ public class ConfigScreenFactory {
                                 .startIntSlider(Component.literal("Garden Warp Delay (ms)"),
                                                 MacroConfig.gardenWarpDelay,
                                                 0, 3000)
-                                .setDefaultValue(1000)
+                                .setDefaultValue(MacroConfig.DEFAULT_GARDEN_WARP_DELAY)
                                 .setSaveConsumer(newValue -> MacroConfig.gardenWarpDelay = newValue)
                                 .build());
 
                 general.addEntry(builder.getEntryBuilder()
                                 .startBooleanToggle(Component.literal("Auto-Visitor"), MacroConfig.autoVisitor)
-                                .setDefaultValue(true)
+                                .setDefaultValue(MacroConfig.DEFAULT_AUTO_VISITOR)
                                 .setSaveConsumer(newValue -> MacroConfig.autoVisitor = newValue)
                                 .build());
 
                 general.addEntry(builder.getEntryBuilder()
                                 .startBooleanToggle(Component.literal("Auto-Equipment"), MacroConfig.autoEquipment)
-                                .setDefaultValue(true)
+                                .setDefaultValue(MacroConfig.DEFAULT_AUTO_EQUIPMENT)
                                 .setSaveConsumer(newValue -> MacroConfig.autoEquipment = newValue)
                                 .build());
 
@@ -125,35 +125,35 @@ public class ConfigScreenFactory {
                                 .startIntSlider(Component.literal(
                                                 "Auto-Equipment Timing (Leave on 170 unless you know what you're doing) (sec)"),
                                                 MacroConfig.autoEquipmentFarmingTime, 1, 300)
-                                .setDefaultValue(170)
+                                .setDefaultValue(MacroConfig.DEFAULT_AUTO_EQUIPMENT_FARMING_TIME)
                                 .setSaveConsumer(newValue -> MacroConfig.autoEquipmentFarmingTime = newValue)
                                 .build());
 
                 general.addEntry(builder.getEntryBuilder()
                                 .startBooleanToggle(Component.literal("Armor Swap for Visitor"),
                                                 MacroConfig.armorSwapVisitor)
-                                .setDefaultValue(false)
+                                .setDefaultValue(MacroConfig.DEFAULT_ARMOR_SWAP_VISITOR)
                                 .setSaveConsumer(newValue -> MacroConfig.armorSwapVisitor = newValue)
                                 .build());
 
                 general.addEntry(builder.getEntryBuilder()
                                 .startIntSlider(Component.literal("Wardrobe Slot: Farming"),
                                                 MacroConfig.wardrobeSlotFarming, 1, 9)
-                                .setDefaultValue(1)
+                                .setDefaultValue(MacroConfig.DEFAULT_WARDROBE_SLOT_FARMING)
                                 .setSaveConsumer(newValue -> MacroConfig.wardrobeSlotFarming = newValue)
                                 .build());
 
                 general.addEntry(builder.getEntryBuilder()
                                 .startIntSlider(Component.literal("Wardrobe Slot: Pest"), MacroConfig.wardrobeSlotPest,
                                                 1, 9)
-                                .setDefaultValue(2)
+                                .setDefaultValue(MacroConfig.DEFAULT_WARDROBE_SLOT_PEST)
                                 .setSaveConsumer(newValue -> MacroConfig.wardrobeSlotPest = newValue)
                                 .build());
 
                 general.addEntry(builder.getEntryBuilder()
                                 .startIntSlider(Component.literal("Wardrobe Slot: Visitor"),
                                                 MacroConfig.wardrobeSlotVisitor, 1, 9)
-                                .setDefaultValue(3)
+                                .setDefaultValue(MacroConfig.DEFAULT_WARDROBE_SLOT_VISITOR)
                                 .setSaveConsumer(newValue -> MacroConfig.wardrobeSlotVisitor = newValue)
                                 .build());
 
@@ -161,47 +161,56 @@ public class ConfigScreenFactory {
                 dynamicRest.addEntry(builder.getEntryBuilder()
                                 .startIntField(Component.literal("Scripting Time (Minutes)"),
                                                 MacroConfig.restScriptingTime)
-                                .setDefaultValue(30)
+                                .setDefaultValue(MacroConfig.DEFAULT_REST_SCRIPTING_TIME)
                                 .setSaveConsumer(newValue -> MacroConfig.restScriptingTime = newValue)
                                 .build());
 
                 dynamicRest.addEntry(builder.getEntryBuilder()
                                 .startIntField(Component.literal("Scripting Time Offset (Minutes)"),
                                                 MacroConfig.restScriptingTimeOffset)
-                                .setDefaultValue(3)
+                                .setDefaultValue(MacroConfig.DEFAULT_REST_SCRIPTING_TIME_OFFSET)
                                 .setSaveConsumer(newValue -> MacroConfig.restScriptingTimeOffset = newValue)
                                 .build());
 
                 dynamicRest.addEntry(builder.getEntryBuilder()
                                 .startIntField(Component.literal("Break Time (Minutes)"), MacroConfig.restBreakTime)
-                                .setDefaultValue(20)
+                                .setDefaultValue(MacroConfig.DEFAULT_REST_BREAK_TIME)
                                 .setSaveConsumer(newValue -> MacroConfig.restBreakTime = newValue)
                                 .build());
 
                 dynamicRest.addEntry(builder.getEntryBuilder()
                                 .startIntField(Component.literal("Break Time Offset (Minutes)"),
                                                 MacroConfig.restBreakTimeOffset)
-                                .setDefaultValue(3)
+                                .setDefaultValue(MacroConfig.DEFAULT_REST_BREAK_TIME_OFFSET)
                                 .setSaveConsumer(newValue -> MacroConfig.restBreakTimeOffset = newValue)
                                 .build());
 
                 ConfigCategory qol = builder.getOrCreateCategory(Component.literal("QOL"));
                 qol.addEntry(builder.getEntryBuilder()
                                 .startBooleanToggle(Component.literal("Auto-Book Combine"), MacroConfig.autoBookCombine)
-                                .setDefaultValue(false)
+                                .setDefaultValue(MacroConfig.DEFAULT_AUTO_BOOK_COMBINE)
                                 .setSaveConsumer(newValue -> MacroConfig.autoBookCombine = newValue)
                                 .build());
 
                 qol.addEntry(builder.getEntryBuilder()
                                 .startIntSlider(Component.literal("Book Combine Delay (ms)"),
                                                 MacroConfig.bookCombineDelay, 100, 2000)
-                                .setDefaultValue(300)
+                                .setDefaultValue(MacroConfig.DEFAULT_BOOK_COMBINE_DELAY)
                                 .setSaveConsumer(newValue -> MacroConfig.bookCombineDelay = newValue)
                                 .build());
 
                 qol.addEntry(builder.getEntryBuilder()
+                                .startStrList(Component.literal("Custom Enchantment Max Levels"),
+                                                MacroConfig.customEnchantmentLevels)
+                                .setDefaultValue(MacroConfig.DEFAULT_CUSTOM_ENCHANTMENT_LEVELS)
+                                .setTooltip(Component.literal("Format: EnchantmentName:MaxLevel (e.g. Sharpness:7)"))
+                                .setExpanded(true)
+                                .setSaveConsumer(newValue -> MacroConfig.customEnchantmentLevels = newValue)
+                                .build());
+
+                qol.addEntry(builder.getEntryBuilder()
                                 .startBooleanToggle(Component.literal("Stash Manager"), MacroConfig.autoStashManager)
-                                .setDefaultValue(false)
+                                .setDefaultValue(MacroConfig.DEFAULT_AUTO_STASH_MANAGER)
                                 .setSaveConsumer(newValue -> MacroConfig.autoStashManager = newValue)
                                 .build());
 
@@ -209,14 +218,14 @@ public class ConfigScreenFactory {
                                 .startBooleanToggle(Component
                                                 .literal("Auto George Sell (requires abiphone with George contact)"),
                                                 MacroConfig.autoGeorgeSell)
-                                .setDefaultValue(false)
+                                .setDefaultValue(MacroConfig.DEFAULT_AUTO_GEORGE_SELL)
                                 .setSaveConsumer(newValue -> MacroConfig.autoGeorgeSell = newValue)
                                 .build());
 
                 qol.addEntry(builder.getEntryBuilder()
                                 .startIntSlider(Component.literal("George Sell Threshold (Pets)"),
                                                 MacroConfig.georgeSellThreshold, 1, 35)
-                                .setDefaultValue(3)
+                                .setDefaultValue(MacroConfig.DEFAULT_GEORGE_SELL_THRESHOLD)
                                 .setSaveConsumer(newValue -> MacroConfig.georgeSellThreshold = newValue)
                                 .build());
 
@@ -224,19 +233,14 @@ public class ConfigScreenFactory {
                                 .startBooleanToggle(Component
                                                 .literal("Custom Autosell (triggers on opening booster cookie menu)"),
                                                 MacroConfig.autoBoosterCookie)
-                                .setDefaultValue(true)
+                                .setDefaultValue(MacroConfig.DEFAULT_AUTO_BOOSTER_COOKIE)
                                 .setSaveConsumer(newValue -> MacroConfig.autoBoosterCookie = newValue)
                                 .build());
 
                 qol.addEntry(builder.getEntryBuilder()
                                 .startStrList(Component.literal("Booster Cookie Autosell Items"),
                                                 MacroConfig.boosterCookieItems)
-                                .setDefaultValue(java.util.Arrays.asList(
-                                                "Atmospheric Filter", "Squeaky Toy", "Beady Eyes", "Clipped Wings",
-                                                "Overclocker",
-                                                "Mantid Claw", "Flowering Bouquet", "Bookworm", "Chirping Stereo",
-                                                "Firefly",
-                                                "Capsule", "Vinyl"))
+                                .setDefaultValue(MacroConfig.DEFAULT_BOOSTER_COOKIE_ITEMS)
                                 .setExpanded(true)
                                 .setSaveConsumer(newValue -> MacroConfig.boosterCookieItems = newValue)
                                 .build());
@@ -245,13 +249,13 @@ public class ConfigScreenFactory {
                                 .startBooleanToggle(Component.literal(
                                                 "Enable PlotTP Rewarp (for hyper-optimized farms that have startpos as plottp rewarp)"),
                                                 MacroConfig.enablePlotTpRewarp)
-                                .setDefaultValue(false)
+                                .setDefaultValue(MacroConfig.DEFAULT_ENABLE_PLOT_TP_REWARP)
                                 .setSaveConsumer(newValue -> MacroConfig.enablePlotTpRewarp = newValue)
                                 .build());
 
                 qol.addEntry(builder.getEntryBuilder()
                                 .startStrField(Component.literal("PlotTP Number"), MacroConfig.plotTpNumber)
-                                .setDefaultValue("0")
+                                .setDefaultValue(MacroConfig.DEFAULT_PLOT_TP_NUMBER)
                                 .setSaveConsumer(newValue -> MacroConfig.plotTpNumber = newValue)
                                 .build());
 
