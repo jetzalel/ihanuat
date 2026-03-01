@@ -5,6 +5,7 @@ Feature List:
 - Rod swap (optional)
 - Auto-unstash
 - Auto George (sells Slug and Rat pets in inventory)
+- Auto Book combine
 - AOTV to roof
 - Support for farms that start with /plottp
 - Custom NPC sell
