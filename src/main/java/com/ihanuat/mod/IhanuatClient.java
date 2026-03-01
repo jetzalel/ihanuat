@@ -5,6 +5,7 @@ import com.ihanuat.mod.modules.GearManager;
 import com.ihanuat.mod.modules.PestManager;
 import com.ihanuat.mod.modules.GeorgeManager;
 import com.ihanuat.mod.modules.RecoveryManager;
+import com.ihanuat.mod.modules.DynamicRestManager;
 import com.ihanuat.mod.modules.RestartManager;
 import com.ihanuat.mod.modules.BoosterCookieManager;
 import com.ihanuat.mod.modules.BookCombineManager;
@@ -26,7 +27,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import org.lwjgl.glfw.GLFW;
 
-import java.util.Random;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -41,7 +41,6 @@ public class IhanuatClient implements ClientModInitializer {
     private static long lastRewarpTime = 0;
     private static final long REWARP_COOLDOWN_MS = 5000; // 5 seconds cooldown
 
-    private static long nextRestTriggerMs = 0;
     private static boolean isPickingUpStash = false;
 
     @Override
@@ -75,6 +74,7 @@ public class IhanuatClient implements ClientModInitializer {
                     RestStateManager.clearState();
                 }
                 hasCheckedPersistenceOnJoin = true;
+                MacroStateManager.setIntentionalDisconnect(false);
             }
         });
 
@@ -174,12 +174,7 @@ public class IhanuatClient implements ClientModInitializer {
                     BookCombineManager.reset();
                     RecoveryManager.reset();
                     MacroStateManager.setCurrentState(MacroState.State.FARMING);
-                    if (nextRestTriggerMs == 0) {
-                        int base = MacroConfig.restScriptingTime;
-                        int offset = MacroConfig.restScriptingTimeOffset;
-                        int randomOffset = (offset > 0) ? (new Random().nextInt(offset * 2 + 1) - offset) : 0;
-                        nextRestTriggerMs = System.currentTimeMillis() + ((base + randomOffset) * 60L * 1000L);
-                    }
+                    DynamicRestManager.scheduleNextRest();
                     new Thread(() -> {
                         try {
                             if (PestManager.prepSwappedForCurrentPestCycle
@@ -203,6 +198,7 @@ public class IhanuatClient implements ClientModInitializer {
                         }
                     }).start();
                 } else {
+                    DynamicRestManager.reset();
                     MacroStateManager.stopMacro(client);
                 }
             }
@@ -233,6 +229,7 @@ public class IhanuatClient implements ClientModInitializer {
             GeorgeManager.update(client);
             BookCombineManager.update(client);
 
+            DynamicRestManager.update(client);
             RestartManager.update(client);
             PestManager.update(client);
             GearManager.cleanupTick(client);

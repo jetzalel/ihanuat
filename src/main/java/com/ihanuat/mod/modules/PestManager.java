@@ -172,7 +172,7 @@ public class PestManager {
                             Component.literal("\u00A7dVisitor Threshold Met (" + visitors + "). Warping to Garden..."),
                             true);
                     ClientUtils.sendCommand(client, "/warp garden");
-                    Thread.sleep(MacroConfig.gardenWarpDelay);
+                    Thread.sleep(MacroConfig.getRandomizedDelay(MacroConfig.gardenWarpDelay));
 
                     client.execute(() -> {
                         GearManager.swapToFarmingTool(client);
@@ -200,7 +200,7 @@ public class PestManager {
 
                 Thread.sleep(150);
                 ClientUtils.sendCommand(client, "/warp garden");
-                Thread.sleep(MacroConfig.gardenWarpDelay);
+                Thread.sleep(MacroConfig.getRandomizedDelay(MacroConfig.gardenWarpDelay));
 
                 isReturningFromPestVisitor = true;
                 finalizeReturnToFarm(client);
@@ -423,10 +423,12 @@ public class PestManager {
                         // Create a target position to look at that achieves -90 pitch
                         Vec3 eyePos = client.player.getEyePosition();
                         Vec3 targetPos = new Vec3(eyePos.x, eyePos.y + 100, eyePos.z); // Look straight up
-                        RotationManager.initiateRotation(client, targetPos, MacroConfig.rotationTime);
+                        RotationManager.initiateRotation(client, targetPos,
+                                MacroConfig.getRandomizedDelay(MacroConfig.rotationTime));
 
                         // Wait for rotation to complete with minimal delay
-                        ClientUtils.waitForRotationToComplete(client, targetPitch, MacroConfig.rotationTime);
+                        ClientUtils.waitForRotationToComplete(client, targetPitch,
+                                MacroConfig.getRandomizedDelay(MacroConfig.rotationTime));
 
                         // Find Aspect of the Void in inventory
                         int aotvSlot = ClientUtils.findAspectOfTheVoidSlot(client);

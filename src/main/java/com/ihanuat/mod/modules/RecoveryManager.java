@@ -69,6 +69,7 @@ public class RecoveryManager {
                         Component.literal("\u00A7a[Ihanuat] Recovery Successful! Resuming Farming..."), false);
                 recoveryFailedAttempts = 0;
                 MacroStateManager.setCurrentState(MacroState.State.FARMING);
+                com.ihanuat.mod.modules.DynamicRestManager.scheduleNextRest();
                 GearManager.swapToFarmingTool(client);
                 ClientUtils.sendCommand(client, MacroConfig.restartScript);
                 break;

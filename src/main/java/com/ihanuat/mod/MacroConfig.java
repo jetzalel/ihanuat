@@ -45,7 +45,7 @@ public class MacroConfig {
     public static final int DEFAULT_ROD_SWAP_DELAY = 100;
     public static final int DEFAULT_BOOK_COMBINE_DELAY = 300;
     public static final int DEFAULT_BOOK_THRESHOLD = 7;
-    public static final int DEFAULT_RESTART_TIME = 5;
+    public static final int DEFAULT_ADDITIONAL_RANDOM_DELAY = 0;
     public static final String DEFAULT_RESTART_SCRIPT = ".ez-startscript netherwart:1";
     public static final int DEFAULT_GARDEN_WARP_DELAY = 1000;
     public static final int DEFAULT_REST_SCRIPTING_TIME = 30;
@@ -86,8 +86,15 @@ public class MacroConfig {
     public static int bookCombineDelay = DEFAULT_BOOK_COMBINE_DELAY;
     public static int bookThreshold = DEFAULT_BOOK_THRESHOLD;
 
-    // Restart Time (Minutes before expected server restart to stop macro)
-    public static int restartTime = DEFAULT_RESTART_TIME;
+    // Additional Random Delay (ms) added to gui interactions, tool swaps, warps,
+    // and rotations
+    public static int additionalRandomDelay = DEFAULT_ADDITIONAL_RANDOM_DELAY;
+
+    public static int getRandomizedDelay(int baseDelay) {
+        if (additionalRandomDelay <= 0)
+            return baseDelay;
+        return baseDelay + (int) (Math.random() * (additionalRandomDelay + 1));
+    }
 
     // Restart Script Command (sent to restart farming)
     public static String restartScript = DEFAULT_RESTART_SCRIPT;
@@ -148,7 +155,7 @@ public class MacroConfig {
         data.rodSwapDelay = rodSwapDelay;
         data.bookCombineDelay = bookCombineDelay;
         data.bookThreshold = bookThreshold;
-        data.restartTime = restartTime;
+        data.additionalRandomDelay = additionalRandomDelay;
         data.restartScript = restartScript;
         data.gardenWarpDelay = gardenWarpDelay;
 
@@ -210,7 +217,7 @@ public class MacroConfig {
                 rodSwapDelay = data.rodSwapDelay;
                 bookCombineDelay = data.bookCombineDelay;
                 bookThreshold = data.bookThreshold;
-                restartTime = data.restartTime;
+                additionalRandomDelay = data.additionalRandomDelay;
                 if (data.restartScript != null && !data.restartScript.isBlank())
                     restartScript = data.restartScript;
                 gardenWarpDelay = data.gardenWarpDelay;
@@ -260,7 +267,7 @@ public class MacroConfig {
         int rodSwapDelay = DEFAULT_ROD_SWAP_DELAY;
         int bookCombineDelay = DEFAULT_BOOK_COMBINE_DELAY;
         int bookThreshold = DEFAULT_BOOK_THRESHOLD;
-        int restartTime = DEFAULT_RESTART_TIME;
+        int additionalRandomDelay = DEFAULT_ADDITIONAL_RANDOM_DELAY;
         String restartScript = DEFAULT_RESTART_SCRIPT;
         int gardenWarpDelay = DEFAULT_GARDEN_WARP_DELAY;
 

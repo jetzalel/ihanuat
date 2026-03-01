@@ -85,7 +85,7 @@ public class GearManager {
             return;
 
         long now = System.currentTimeMillis();
-        if (now - wardrobeInteractionTime < MacroConfig.guiClickDelay)
+        if (now - wardrobeInteractionTime < MacroConfig.getRandomizedDelay(MacroConfig.guiClickDelay))
             return;
 
         String title = screen.getTitle().getString();
@@ -181,7 +181,7 @@ public class GearManager {
             return;
 
         long now = System.currentTimeMillis();
-        if (now - equipmentInteractionTime < MacroConfig.equipmentSwapDelay)
+        if (now - equipmentInteractionTime < MacroConfig.getRandomizedDelay(MacroConfig.equipmentSwapDelay))
             return;
 
         String title = screen.getTitle().getString();

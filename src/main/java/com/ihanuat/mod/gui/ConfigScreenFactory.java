@@ -91,9 +91,12 @@ public class ConfigScreenFactory {
                                 .build());
 
                 general.addEntry(builder.entryBuilder()
-                                .startIntField(Component.literal("Restart Time (Minutes)"), MacroConfig.restartTime)
-                                .setDefaultValue(MacroConfig.DEFAULT_RESTART_TIME)
-                                .setSaveConsumer(newValue -> MacroConfig.restartTime = newValue)
+                                .startIntSlider(Component.literal("Additional Random Delay (0-1000ms)"),
+                                                MacroConfig.additionalRandomDelay, 0, 1000)
+                                .setDefaultValue(MacroConfig.DEFAULT_ADDITIONAL_RANDOM_DELAY)
+                                .setTooltip(Component.literal(
+                                                "Adds extra random delay to GUI clicks, tool swaps, warps, and rotations"))
+                                .setSaveConsumer(newValue -> MacroConfig.additionalRandomDelay = newValue)
                                 .build());
 
                 general.addEntry(builder.entryBuilder()
