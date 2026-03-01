@@ -334,7 +334,23 @@ public class GearManager {
         try {
             // Swap to the rod first
             client.execute(() -> ((AccessorInventory) client.player.getInventory()).setSelected(finalRodSlot));
-            Thread.sleep(MacroConfig.rodSwapDelay);
+
+            // Wait until the client-side inventory reflects the slot change
+            long swapWaitStart = System.currentTimeMillis();
+            while (System.currentTimeMillis() - swapWaitStart < 1500) {
+                if (((AccessorInventory) client.player.getInventory()).getSelected() == finalRodSlot) {
+                    ItemStack current = client.player.getInventory().getItem(finalRodSlot);
+                    if (current.getHoverName().getString().toLowerCase().contains("rod")) {
+                        break;
+                    }
+                }
+                Thread.sleep(10);
+            }
+
+            // Configurable delay after swap is confirmed
+            if (MacroConfig.rodSwapDelay > 0) {
+                Thread.sleep(MacroConfig.rodSwapDelay);
+            }
 
             // Spam right-click every tick for rodSwapDelay ms via the tick-driven flag
             isHoldingRodUse = true;
