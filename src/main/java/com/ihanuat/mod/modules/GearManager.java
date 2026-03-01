@@ -28,6 +28,7 @@ public class GearManager {
 
     public static volatile boolean shouldRestartFarmingAfterSwap = false;
     public static volatile long wardrobeOpenPendingTime = 0;
+    public static volatile boolean isHoldingRodUse = false;
 
     public static void reset() {
         isSwappingWardrobe = false;
@@ -36,6 +37,7 @@ public class GearManager {
         wardrobeCleanupTicks = 0;
         trackedWardrobeSlot = -1;
         trackedIsPestGear = null;
+        isHoldingRodUse = false;
     }
 
     public static void triggerWardrobeSwap(Minecraft client, int slot) {
@@ -83,7 +85,7 @@ public class GearManager {
             return;
 
         long now = System.currentTimeMillis();
-        if (now - wardrobeInteractionTime < MacroConfig.guiClickDelay)
+        if (now - wardrobeInteractionTime < MacroConfig.getRandomizedDelay(MacroConfig.guiClickDelay))
             return;
 
         String title = screen.getTitle().getString();
@@ -179,7 +181,7 @@ public class GearManager {
             return;
 
         long now = System.currentTimeMillis();
-        if (now - equipmentInteractionTime < MacroConfig.equipmentSwapDelay)
+        if (now - equipmentInteractionTime < MacroConfig.getRandomizedDelay(MacroConfig.equipmentSwapDelay))
             return;
 
         String title = screen.getTitle().getString();
@@ -312,18 +314,36 @@ public class GearManager {
 
     public static void executeRodSequence(Minecraft client) {
         client.player.displayClientMessage(Component.literal("\u00A7eExecuting Rod Swap sequence..."), true);
+
+        // Find the rod slot first (don't swap yet)
+        int rodSlot = -1;
         for (int i = 0; i < 9; i++) {
             String rodItemName = client.player.getInventory().getItem(i).getHoverName().getString().toLowerCase();
             if (rodItemName.contains("rod")) {
-                ((AccessorInventory) client.player.getInventory()).setSelected(i);
+                rodSlot = i;
                 break;
             }
         }
+
+        if (rodSlot == -1) {
+            client.player.displayClientMessage(Component.literal("\u00A7cRod not found in hotbar!"), true);
+            return;
+        }
+
+        final int finalRodSlot = rodSlot;
         try {
-            Thread.sleep(500);
-            client.execute(() -> client.gameMode.useItem(client.player, net.minecraft.world.InteractionHand.MAIN_HAND));
-            Thread.sleep(375);
+            // Swap to the rod first
+            client.execute(() -> ((AccessorInventory) client.player.getInventory()).setSelected(finalRodSlot));
+            Thread.sleep(MacroConfig.rodSwapDelay);
+
+            // Spam right-click every tick for rodSwapDelay ms via the tick-driven flag
+            isHoldingRodUse = true;
+            Thread.sleep(MacroConfig.rodSwapDelay);
+
+            // Stop spamming
+            isHoldingRodUse = false;
         } catch (InterruptedException e) {
+            isHoldingRodUse = false;
             e.printStackTrace();
         }
     }

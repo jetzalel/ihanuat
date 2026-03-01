@@ -29,7 +29,8 @@ public class RotationManager {
         float totalDistance = (float) Math.sqrt(yawDiff * yawDiff + pitchDiff * pitchDiff);
 
         // Use rotationTime as the target duration in milliseconds
-        rotationDuration = Math.max(150, Math.max((long) MacroConfig.rotationTime, minDuration));
+        rotationDuration = Math.max(150,
+                Math.max((long) MacroConfig.getRandomizedDelay(MacroConfig.rotationTime), minDuration));
         rotationStartTime = System.currentTimeMillis();
         isRotating = true;
     }

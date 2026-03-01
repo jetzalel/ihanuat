@@ -38,7 +38,7 @@ public class GeorgeManager {
             return;
 
         long now = System.currentTimeMillis();
-        if (now - interactionTime < MacroConfig.guiClickDelay)
+        if (now - interactionTime < MacroConfig.getRandomizedDelay(MacroConfig.guiClickDelay))
             return;
 
         String title = screen.getTitle().getString();

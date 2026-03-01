@@ -2,6 +2,7 @@ package com.ihanuat.mod.modules;
 
 import com.ihanuat.mod.MacroState;
 import com.ihanuat.mod.MacroStateManager;
+import com.ihanuat.mod.MacroConfig;
 import com.ihanuat.mod.util.ClientUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
@@ -10,6 +11,12 @@ public class RecoveryManager {
     private static int recoveryFailedAttempts = 0;
     private static long lastRecoveryActionTime = 0;
     private static MacroState.Location lastRecoveryLocation = MacroState.Location.UNKNOWN;
+
+    public static void reset() {
+        recoveryFailedAttempts = 0;
+        lastRecoveryActionTime = 0;
+        lastRecoveryLocation = MacroState.Location.UNKNOWN;
+    }
 
     public static void update(Minecraft client) {
         if (MacroStateManager.getCurrentState() != MacroState.State.RECOVERING)
@@ -62,8 +69,9 @@ public class RecoveryManager {
                         Component.literal("\u00A7a[Ihanuat] Recovery Successful! Resuming Farming..."), false);
                 recoveryFailedAttempts = 0;
                 MacroStateManager.setCurrentState(MacroState.State.FARMING);
+                com.ihanuat.mod.modules.DynamicRestManager.scheduleNextRest();
                 GearManager.swapToFarmingTool(client);
-                ClientUtils.sendCommand(client, com.ihanuat.mod.MacroConfig.restartScript);
+                ClientUtils.sendCommand(client, MacroConfig.restartScript);
                 break;
         }
     }
