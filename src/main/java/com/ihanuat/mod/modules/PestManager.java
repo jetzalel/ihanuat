@@ -1,19 +1,20 @@
 package com.ihanuat.mod.modules;
 
-import com.ihanuat.mod.MacroConfig;
-import com.ihanuat.mod.MacroState;
-import com.ihanuat.mod.mixin.AccessorInventory;
-import com.ihanuat.mod.util.ClientUtils;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.PlayerInfo;
-import net.minecraft.network.chat.Component;
-import net.minecraft.world.phys.Vec3;
-
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import com.ihanuat.mod.MacroConfig;
+import com.ihanuat.mod.MacroState;
+import com.ihanuat.mod.mixin.AccessorInventory;
+import com.ihanuat.mod.util.ClientUtils;
+
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.PlayerInfo;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.phys.Vec3;
 
 public class PestManager {
     private static final Pattern PESTS_ALIVE_PATTERN = Pattern.compile("(?i)(?:Pests|Alive):?\\s*\\(?(\\d+)\\)?");
@@ -172,7 +173,7 @@ public class PestManager {
                             Component.literal("\u00A7dVisitor Threshold Met (" + visitors + "). Warping to Garden..."),
                             true);
                     ClientUtils.sendCommand(client, "/warp garden");
-                    Thread.sleep(MacroConfig.getRandomizedDelay(MacroConfig.gardenWarpDelay));
+                    Thread.sleep(MacroConfig.gardenWarpDelay);
 
                     client.execute(() -> {
                         GearManager.swapToFarmingTool(client);
@@ -200,7 +201,7 @@ public class PestManager {
 
                 Thread.sleep(150);
                 ClientUtils.sendCommand(client, "/warp garden");
-                Thread.sleep(MacroConfig.getRandomizedDelay(MacroConfig.gardenWarpDelay));
+                Thread.sleep(MacroConfig.gardenWarpDelay);
 
                 isReturningFromPestVisitor = true;
                 finalizeReturnToFarm(client);
@@ -415,20 +416,24 @@ public class PestManager {
                         // Start sneaking early to ensure server knows we are sneaking
                         isSneakingForAotv = true;
 
-                        // Set pitch to -90 degrees using rotation speed
-                        float targetPitch = -90.0f;
-                        float currentPitch = client.player.getXRot();
-
-                        // Use the proper rotation method that respects rotation time
-                        // Create a target position to look at that achieves -90 pitch
+                        // Randomize yaw preservation offset slightly so heading isn't pixel-perfect
+                        // each time
                         Vec3 eyePos = client.player.getEyePosition();
-                        Vec3 targetPos = new Vec3(eyePos.x, eyePos.y + 100, eyePos.z); // Look straight up
-                        RotationManager.initiateRotation(client, targetPos,
-                                MacroConfig.getRandomizedDelay(MacroConfig.rotationTime));
+                        float yawRad = (float) Math.toRadians(client.player.getYRot());
+                        double offsetVariance = 0.0008 + Math.random() * 0.0006; // 0.0008–0.0014
+                        double offsetX = -Math.sin(yawRad) * offsetVariance;
+                        double offsetZ = Math.cos(yawRad) * offsetVariance;
+
+                        // Randomize target pitch: aim for -90 but vary by a degree or two
+                        double pitchVariance = 85.0 + Math.random() * 6.0; // 85°–91° up
+                        Vec3 targetPos = new Vec3(eyePos.x + offsetX, eyePos.y + pitchVariance, eyePos.z + offsetZ);
+
+                        // Randomize rotation speed slightly around the configured time
+                        int rotationTimeVariance = (int) (MacroConfig.rotationTime * (0.92 + Math.random() * 0.16)); // ±8%
+                        RotationManager.initiateRotation(client, targetPos, rotationTimeVariance);
 
                         // Wait for rotation to complete with minimal delay
-                        ClientUtils.waitForRotationToComplete(client, targetPitch,
-                                MacroConfig.getRandomizedDelay(MacroConfig.rotationTime));
+                        ClientUtils.waitForRotationToComplete(client, -90.0f, rotationTimeVariance);
 
                         // Find Aspect of the Void in inventory
                         int aotvSlot = ClientUtils.findAspectOfTheVoidSlot(client);
@@ -464,13 +469,41 @@ public class PestManager {
                             }
 
                             if (aotvSlot < 9) {
-                                // Perform the interaction now that we've been sneaking for a while
+                                // Small random hesitation before right-clicking (50–130ms)
+                                Thread.sleep(50 + (long) (Math.random() * 80));
                                 client.execute(() -> client.gameMode.useItem(client.player,
                                         net.minecraft.world.InteractionHand.MAIN_HAND));
 
-                                Thread.sleep(100); // Wait 100ms after right click before releasing shift
+                                // Randomize shift release delay too (80–160ms)
+                                Thread.sleep(80 + (long) (Math.random() * 80));
                                 isSneakingForAotv = false;
                                 client.execute(() -> client.options.keyShift.setDown(false));
+
+                                // Small random pause before starting to look forward (30–80ms) - simulates
+                                // human reaction
+                                Thread.sleep(30 + (long) (Math.random() * 50));
+
+                                // Smoothly rotate back to looking roughly forward after etherwarp
+                                Vec3 newEyePos = client.player.getEyePosition();
+                                float yawRadPost = (float) Math.toRadians(client.player.getYRot());
+                                double postOffsetVariance = 0.0008 + Math.random() * 0.0006;
+                                double postOffsetX = -Math.sin(yawRadPost) * postOffsetVariance;
+                                double postOffsetZ = Math.cos(yawRadPost) * postOffsetVariance;
+
+                                // Target a slightly randomized forward-ish pitch (-10 to +10 degrees around
+                                // horizontal)
+                                double targetPitchDeg = -5.0 + Math.random() * 10.0;
+                                double pitchOffsetY = Math.tan(Math.toRadians(-targetPitchDeg)) * 5.0;
+
+                                Vec3 forwardTarget = new Vec3(
+                                        newEyePos.x + postOffsetX * 100,
+                                        newEyePos.y + pitchOffsetY,
+                                        newEyePos.z + postOffsetZ * 100);
+
+                                // Smooth rotation time (250–400ms) — fast enough to not look frozen, slow
+                                // enough to look human
+                                int returnRotationTime = 250 + (int) (Math.random() * 150);
+                                RotationManager.initiateRotation(client, forwardTarget, returnRotationTime);
                             }
                         }
                     } else {
