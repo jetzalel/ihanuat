@@ -9,6 +9,32 @@ public class MacroStateManager {
     private static volatile long sessionAccumulated = 0;
     private static volatile long lifetimeAccumulated = 0;
     private static volatile long lastSessionStartTime = 0;
+    private static long lastPeriodicSaveTime = 0;
+
+    public static void syncFromConfig() {
+        lifetimeAccumulated = MacroConfig.lifetimeAccumulated;
+    }
+
+    public static void periodicUpdate() {
+        if (!isMacroRunning())
+            return;
+
+        long now = System.currentTimeMillis();
+        if (now - lastPeriodicSaveTime > 60000) { // 1 minute
+            lastPeriodicSaveTime = now;
+            long diff = now - lastSessionStartTime;
+
+            if (MacroConfig.persistSessionTimer) {
+                // Keep session timer as is for pause/unpause if enabled
+            } else {
+                // Not actually hit here since we're periodic other than if someone pauses?
+                // Wait, sessionAccumulated is only saved to disk if we want it to survive
+                // RESTART
+            }
+            MacroConfig.lifetimeAccumulated = lifetimeAccumulated + diff;
+            MacroConfig.save();
+        }
+    }
 
     public static long getSessionRunningTime() {
         if (currentState != MacroState.State.OFF && currentState != MacroState.State.RECOVERING
@@ -49,6 +75,7 @@ public class MacroStateManager {
             if (!com.ihanuat.mod.MacroConfig.persistSessionTimer) {
                 sessionAccumulated = 0;
             }
+            lastPeriodicSaveTime = System.currentTimeMillis();
         } else if (currentState != MacroState.State.OFF && currentState != MacroState.State.RECOVERING
                 && (state == MacroState.State.OFF || state == MacroState.State.RECOVERING)) {
             if (lastSessionStartTime != 0) {
@@ -56,6 +83,10 @@ public class MacroStateManager {
                 sessionAccumulated += diff;
                 lifetimeAccumulated += diff;
                 lastSessionStartTime = 0;
+
+                // Persist stats
+                MacroConfig.lifetimeAccumulated = lifetimeAccumulated;
+                MacroConfig.save();
             }
         }
         currentState = state;
@@ -70,5 +101,8 @@ public class MacroStateManager {
         com.ihanuat.mod.modules.GeorgeManager.reset();
         com.ihanuat.mod.modules.BookCombineManager.reset();
         com.ihanuat.mod.modules.RecoveryManager.reset();
+        if (!MacroConfig.persistSessionTimer) {
+            com.ihanuat.mod.modules.DynamicRestManager.reset();
+        }
     }
 }

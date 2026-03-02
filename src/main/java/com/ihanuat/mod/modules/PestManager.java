@@ -31,6 +31,7 @@ public class PestManager {
     public static volatile boolean isSneakingForAotv = false;
     public static int flightStopStage = 0;
     public static int flightStopTicks = 0;
+    public static volatile boolean isPrepSwapping = false;
 
     public static void reset() {
         isCleaningInProgress = false;
@@ -42,6 +43,7 @@ public class PestManager {
         isSneakingForAotv = false;
         flightStopStage = 0;
         flightStopTicks = 0;
+        isPrepSwapping = false;
         currentPestSessionId++;
     }
 
@@ -287,6 +289,8 @@ public class PestManager {
             try {
                 ClientUtils.sendCommand(client, ".ez-stopscript");
                 Thread.sleep(250);
+                if (isCleaningInProgress || isPrepSwapping)
+                    return;
                 ClientUtils.sendCommand(client, MacroConfig.restartScript);
             } catch (InterruptedException ignored) {
             }
@@ -301,6 +305,7 @@ public class PestManager {
 
     private static void triggerPrepSwap(Minecraft client) {
         prepSwappedForCurrentPestCycle = true;
+        isPrepSwapping = true;
         client.player.displayClientMessage(Component.literal("\u00A7ePest cooldown detected. Triggering prep-swap..."),
                 true);
         new Thread(() -> {
@@ -335,6 +340,8 @@ public class PestManager {
                 }
             } catch (Exception e) {
                 e.printStackTrace();
+            } finally {
+                isPrepSwapping = false;
             }
         }).start();
     }
@@ -539,6 +546,8 @@ public class PestManager {
                 Thread.sleep(250);
                 ClientUtils.sendCommand(client, ".ez-stopscript");
                 Thread.sleep(250);
+                if (isCleaningInProgress || isPrepSwapping)
+                    return;
                 ClientUtils.sendCommand(client, MacroConfig.restartScript);
             } catch (Exception ignored) {
             }

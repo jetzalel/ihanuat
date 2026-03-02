@@ -118,6 +118,7 @@ public class MacroConfig {
     public static int discordStatusUpdateTime = DEFAULT_DISCORD_STATUS_UPDATE_TIME;
     public static boolean sendDiscordStatus = DEFAULT_SEND_DISCORD_STATUS;
     public static boolean persistSessionTimer = DEFAULT_PERSIST_SESSION_TIMER;
+    public static long lifetimeAccumulated = 0;
 
     // Rewarp coordinates
     public static double rewarpEndX = 0;
@@ -182,6 +183,7 @@ public class MacroConfig {
         data.rewarpEndZ = rewarpEndZ;
         data.rewarpEndPosSet = rewarpEndPosSet;
         data.persistSessionTimer = persistSessionTimer;
+        data.lifetimeAccumulated = lifetimeAccumulated;
 
         try (FileWriter writer = new FileWriter(CONFIG_FILE)) {
             GSON.toJson(data, writer);
@@ -251,6 +253,7 @@ public class MacroConfig {
                 rewarpEndZ = data.rewarpEndZ;
                 rewarpEndPosSet = data.rewarpEndPosSet;
                 persistSessionTimer = data.persistSessionTimer;
+                lifetimeAccumulated = data.lifetimeAccumulated;
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -303,5 +306,6 @@ public class MacroConfig {
         double rewarpEndZ = 0;
         boolean rewarpEndPosSet = false;
         boolean persistSessionTimer = DEFAULT_PERSIST_SESSION_TIMER;
+        long lifetimeAccumulated = 0;
     }
 }

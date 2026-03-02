@@ -37,6 +37,9 @@ public class ClientUtils {
         if (cmd.startsWith("/")) {
             client.getConnection().sendCommand(cmd.substring(1));
         } else {
+            if (cmd.equalsIgnoreCase(".ez-stopscript")) {
+                client.execute(() -> forceReleaseKeys(client));
+            }
             client.getConnection().sendChat(cmd);
         }
 
