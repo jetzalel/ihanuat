@@ -1,8 +1,6 @@
 package com.ihanuat.mod.modules;
 
 import net.minecraft.core.component.DataComponents;
-import net.minecraft.world.item.component.ItemLore;
-
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
@@ -390,40 +388,37 @@ public class ProfitManager {
         // 2. Track Cultivating counter on held item
         net.minecraft.world.item.ItemStack held = client.player.getMainHandItem();
         if (held != null && !held.isEmpty()) {
-            ItemLore lore = held.get(DataComponents.LORE);
-            if (lore != null) {
-                for (net.minecraft.network.chat.Component line : lore.lines()) {
-                    String lineText = line.getString().replaceAll("\u00A7[0-9a-fk-or]", "").trim();
-                    // Match "Cultivating IX 42,512,969"
-                    java.util.regex.Matcher m = java.util.regex.Pattern
-                            .compile("Cultivating\\s+[IVXLCDM]+\\s+([\\d,]+)")
-                            .matcher(lineText);
-                    if (m.find()) {
-                        try {
-                            long newValue = Long.parseLong(m.group(1).replace(",", ""));
-                            if (lastCultivatingValue != -1 && newValue > lastCultivatingValue) {
-                                long delta = newValue - lastCultivatingValue;
-                                if (currentFarmedCrop != null) {
-                                    if (currentFarmedCrop.equalsIgnoreCase("Wheat")
-                                            || currentFarmedCrop.equalsIgnoreCase("Seeds")) {
-                                        // Ratio 1 Wheat : 1.5 Seeds (Total 2.5)
-                                        int wheatDelta = (int) Math.round(delta / 2.5);
-                                        int seedsDelta = (int) delta - wheatDelta;
-                                        if (wheatDelta > 0)
-                                            addDrop("Wheat", wheatDelta);
-                                        if (seedsDelta > 0)
-                                            addDrop("Seeds", seedsDelta);
-                                    } else {
-                                        addDrop(currentFarmedCrop, (int) delta);
-                                    }
-                                }
-                            }
-                            lastCultivatingValue = newValue;
-                            return; // Found Cultivating, done for this tick
-                        } catch (Exception ignored) {
+            long newValue = -1;
+
+            // Hypixel 1.21 stores this in custom_data
+            net.minecraft.world.item.component.CustomData custom = held.get(DataComponents.CUSTOM_DATA);
+            if (custom != null) {
+                net.minecraft.nbt.CompoundTag tag = custom.copyTag();
+                if (tag.contains("farmed_cultivating")) {
+                    newValue = tag.getLong("farmed_cultivating").get();
+                }
+            }
+
+            if (newValue != -1) {
+                if (lastCultivatingValue != -1 && newValue > lastCultivatingValue) {
+                    long delta = newValue - lastCultivatingValue;
+                    if (currentFarmedCrop != null) {
+                        if (currentFarmedCrop.equalsIgnoreCase("Wheat")
+                                || currentFarmedCrop.equalsIgnoreCase("Seeds")) {
+                            // Ratio 1 Wheat : 1.5 Seeds (Total 2.5)
+                            int wheatDelta = (int) Math.round(delta / 2.5);
+                            int seedsDelta = (int) delta - wheatDelta;
+                            if (wheatDelta > 0)
+                                addDrop("Wheat", wheatDelta);
+                            if (seedsDelta > 0)
+                                addDrop("Seeds", seedsDelta);
+                        } else {
+                            addDrop(currentFarmedCrop, (int) delta);
                         }
                     }
                 }
+                lastCultivatingValue = newValue;
+                return; // Found value, done for this tick
             }
         }
         lastCultivatingValue = -1;
