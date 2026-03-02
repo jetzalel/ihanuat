@@ -27,7 +27,7 @@ public class ProfitManager {
             "Seeds", "Enchanted Seeds", "Box of Seeds",
             "Potato", "Enchanted Potato", "Enchanted Baked Potato",
             "Carrot", "Enchanted Carrot", "Enchanted Golden Carrot",
-            "Melon Slice", "Melon Block", "Enchanted Melon Slice", "Enchanted Melon Block",
+            "Melon Slice", "Melon Block", "Enchanted Melon Slice", "Enchanted Melon",
             "Pumpkin", "Enchanted Pumpkin", "Polished Pumpkin",
             "Sugar Cane", "Enchanted Sugar", "Enchanted Sugar Cane",
             "Cactus", "Enchanted Cactus Green", "Enchanted Cactus",
@@ -49,6 +49,8 @@ public class ProfitManager {
             "Dung", "Honey Jar", "Plant Matter", "Tasty Cheese", "Compost", "Jelly");
 
     private static final Set<String> PETS_SET = Set.of("Epic Slug", "Legendary Slug", "Rat");
+
+    private static final Set<String> ARMOR_DROPS_SET = Set.of("Cropie", "Squash", "Fermento", "Helianthus");
 
     private static final Set<String> BASE_CROPS = Set.of(
             "Wheat", "Potato", "Carrot", "Melon Slice", "Pumpkin",
@@ -96,7 +98,11 @@ public class ProfitManager {
             Map.entry("Tasty Cheese", 0L), Map.entry("Compost", 0L), Map.entry("Jelly", 0L),
 
             // Pets
-            Map.entry("Epic Slug", 500000L), Map.entry("Legendary Slug", 5000000L), Map.entry("Rat", 5000L));
+            Map.entry("Epic Slug", 500000L), Map.entry("Legendary Slug", 5000000L), Map.entry("Rat", 5000L),
+
+            // Armor Drops
+            Map.entry("Cropie", 25000L), Map.entry("Squash", 75000L), Map.entry("Fermento", 250000L),
+            Map.entry("Helianthus", 0L));
 
     private static final Map<String, String> BAZAAR_MAPPING = Map.of(
             "Sunder VI Book", "ENCHANTMENT_SUNDER_6",
@@ -106,15 +112,18 @@ public class ProfitManager {
             "Plant Matter", "PLANT_MATTER",
             "Tasty Cheese", "CHEESE_FUEL",
             "Compost", "COMPOST",
-            "Jelly", "JELLY");
+            "Jelly", "JELLY",
+            "Helianthus", "HELIANTHUS");
 
     private static final Pattern PEST_PATTERN = Pattern.compile("received\\s+(\\d+)x\\s+(.+?)\\s+for\\s+killing",
             Pattern.CASE_INSENSITIVE);
     private static final Pattern RARE_DROP_PATTERN = Pattern.compile(
-            "RARE DROP!\\s+(?:You dropped\\s+)?(?:(\\d+)x\\s+)?(.+?)(?:\\s+\\(|!|$)", Pattern.CASE_INSENSITIVE);
+            "RARE DROP!\\s+(?:You dropped\\s+)?(?:(\\d+)x\\s+)?(.+?)(?=\\s*\\(|!|$)", Pattern.CASE_INSENSITIVE);
     private static final Pattern PET_DROP_PATTERN = Pattern.compile(
-            "PET DROP!\\s+(?:§[0-9a-fk-or])*§([56])(?:§[0-9a-fk-or])*([\\w\\s]+?)(?:\\s+\\(|!|$)",
+            "PET DROP!\\s+(?:§[0-9a-fk-or])*§([56bf])(?:§[0-9a-fk-or])*([\\w\\s]+?)(?=\\s*\\(|!|$)",
             Pattern.CASE_INSENSITIVE);
+    private static final Pattern RARE_CROP_PATTERN = Pattern.compile(
+            "RARE CROP!\\s+(.+?)(?=\\s*\\(|!|$)", Pattern.CASE_INSENSITIVE);
 
     private static final Pattern STRIP_COLOR_PATTERN = Pattern.compile("(?i)§[0-9A-FK-OR]");
 
@@ -139,9 +148,15 @@ public class ProfitManager {
             return;
         }
 
-        String cleanText = STRIP_COLOR_PATTERN.matcher(text).replaceAll("");
+        Matcher cropMatcher = RARE_CROP_PATTERN.matcher(text);
+        if (cropMatcher.find()) {
+            addDrop(cropMatcher.group(1).trim(), 1);
+            return;
+        }
 
-        Matcher pestMatcher = PEST_PATTERN.matcher(cleanText);
+        String plainText = STRIP_COLOR_PATTERN.matcher(text).replaceAll("").trim();
+
+        Matcher pestMatcher = PEST_PATTERN.matcher(plainText);
         if (pestMatcher.find()) {
             try {
                 int count = Integer.parseInt(pestMatcher.group(1));
@@ -152,7 +167,7 @@ public class ProfitManager {
             }
         }
 
-        Matcher rareMatcher = RARE_DROP_PATTERN.matcher(cleanText);
+        Matcher rareMatcher = RARE_DROP_PATTERN.matcher(plainText);
         if (rareMatcher.find()) {
             try {
                 String countStr = rareMatcher.group(1);
@@ -243,6 +258,7 @@ public class ProfitManager {
         compact.put("Crops", 0L);
         compact.put("Pest Items", 0L);
         compact.put("Pets", 0L);
+        compact.put("Armor Drops", 0L);
         compact.put("Others", 0L);
 
         Map<String, Integer> targetCounts = lifetime ? lifetimeCounts : sessionCounts;
@@ -258,6 +274,8 @@ public class ProfitManager {
                 compact.put("Pest Items", compact.get("Pest Items") + profit);
             } else if (PETS_SET.contains(name)) {
                 compact.put("Pets", compact.get("Pets") + profit);
+            } else if (ARMOR_DROPS_SET.contains(name)) {
+                compact.put("Armor Drops", compact.get("Armor Drops") + profit);
             } else {
                 compact.put("Others", compact.get("Others") + profit);
             }
@@ -282,10 +300,8 @@ public class ProfitManager {
         long total = 0;
         Map<String, Integer> targetCounts = lifetime ? lifetimeCounts : sessionCounts;
         for (Map.Entry<String, Integer> entry : targetCounts.entrySet()) {
-            Long price = TRACKED_ITEMS.get(entry.getKey());
-            if (price != null) {
-                total += price * entry.getValue();
-            }
+            long price = getItemPrice(entry.getKey());
+            total += price * entry.getValue();
         }
         return total;
     }
