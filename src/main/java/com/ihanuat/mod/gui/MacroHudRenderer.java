@@ -1,5 +1,6 @@
 package com.ihanuat.mod.gui;
 
+import com.ihanuat.mod.MacroConfig;
 import com.ihanuat.mod.MacroState;
 import com.ihanuat.mod.MacroStateManager;
 import com.ihanuat.mod.modules.DynamicRestManager;
@@ -8,7 +9,10 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 
 /**
- * Renders the macro status panel HUD in the top-left corner of the screen.
+ * Renders the macro status panel HUD.
+ *
+ * During gameplay:  rendered via HudRenderCallback (respects showHud config).
+ * During inventory: always rendered in edit-mode so the user can drag/resize it.
  *
  * Layout:
  *   ┌───────────────────────┐
@@ -20,11 +24,13 @@ import net.minecraft.client.gui.GuiGraphics;
  *   │ next rest        0:00 │
  *   │ [====progress bar===] │
  *   └───────────────────────┘
+ *
+ * Drag to reposition, Ctrl+Drag to resize (scale).
  */
 public class MacroHudRenderer {
 
-    // ── Layout ───────────────────────────────────────────────────────────────
-    private static final int PANEL_W      = 190;
+    // ── Base layout (at scale = 1.0) ─────────────────────────────────────────
+    static final int PANEL_W      = 190;
     private static final int PADDING_H    = 7;
     private static final int PADDING_V    = 5;
     private static final int FONT_H       = 9;
@@ -45,75 +51,164 @@ public class MacroHudRenderer {
     private static final int BAR_BG_COLOR      = 0xFF1A1A32;
     private static final int BAR_FILL_COLOR    = 0xFF6464B4;
 
+    // Edit-mode border colors
+    private static final int BORDER_IDLE    = 0xFF6464B4;  // accent purple
+    private static final int BORDER_DRAG    = 0xFFAAAAFF;  // bright blue while moving
+    private static final int BORDER_RESIZE  = 0xFFFFAA00;  // orange while resizing
+
     // ── Title animation ───────────────────────────────────────────────────────
     private static final String TARGET_TITLE   = "Ihanuat";
     private static final char[] SCRAMBLE_CHARS = {'*', '/', '_', '\\', '|', '#', '!', '%', '&'};
-    private static final int CHAR_INTERVAL_MS  = 90;  // ms between each char starting
-    private static final int SCRAMBLE_MS       = 70;  // ms each char scrambles before settling
-    private static final int STAY_MS           = 7000; // ms the full title stays visible
+    private static final int CHAR_INTERVAL_MS  = 90;
+    private static final int SCRAMBLE_MS       = 70;
+    private static final int STAY_MS           = 7000;
 
     private static long animPhaseStartMs = -1;
     private static int  animPhase        = 0; // 0=typing  1=staying  2=untyping
 
+    // ── Drag / resize state ───────────────────────────────────────────────────
+    private static boolean isDragging   = false;
+    private static boolean isResizing   = false;
+    private static int     dragOffsetX  = 0;
+    private static int     dragOffsetY  = 0;
+    private static float   resizeStartScale  = 1f;
+    private static double  resizeStartMouseX = 0;
+
     // ── Registration ─────────────────────────────────────────────────────────
 
     public static void register() {
-        HudRenderCallback.EVENT.register((guiGraphics, delta) ->
-                render(guiGraphics, Minecraft.getInstance()));
+        HudRenderCallback.EVENT.register((guiGraphics, delta) -> {
+            if (MacroConfig.showHud)
+                render(guiGraphics, Minecraft.getInstance(), false);
+        });
+    }
+
+    // ── Public API for ScreenEvents ──────────────────────────────────────────
+
+    /** Call from inventory afterRender to show the panel in edit mode (respects showHud). */
+    public static void renderInEditMode(GuiGraphics g, Minecraft client) {
+        if (!MacroConfig.showHud) return;
+        render(g, client, true);
+    }
+
+    /** True while a drag or resize gesture is in progress. */
+    public static boolean isInteracting() {
+        return isDragging || isResizing;
+    }
+
+    /** Returns true when screen-space (mouseX, mouseY) is over the HUD panel. */
+    public static boolean isHovered(double mouseX, double mouseY) {
+        float scale = MacroConfig.hudScale;
+        double localX = (mouseX - MacroConfig.hudX) / scale;
+        double localY = (mouseY - MacroConfig.hudY) / scale;
+        return localX >= 0 && localX <= PANEL_W && localY >= 0 && localY <= panelH();
+    }
+
+    /**
+     * Begin drag or resize.
+     * @param ctrl  true → resize (Ctrl held), false → move
+     */
+    public static void startDrag(double mouseX, double mouseY, boolean ctrl) {
+        if (ctrl) {
+            isResizing = true;
+            resizeStartScale  = MacroConfig.hudScale;
+            resizeStartMouseX = mouseX;
+        } else {
+            isDragging   = true;
+            dragOffsetX  = (int)(mouseX - MacroConfig.hudX);
+            dragOffsetY  = (int)(mouseY - MacroConfig.hudY);
+        }
+    }
+
+    /** Update position or scale during an active gesture. */
+    public static void drag(double mouseX, double mouseY) {
+        if (isDragging) {
+            MacroConfig.hudX = (int)(mouseX - dragOffsetX);
+            MacroConfig.hudY = (int)(mouseY - dragOffsetY);
+            Minecraft mc = Minecraft.getInstance();
+            if (mc.getWindow() != null) {
+                int sw = mc.getWindow().getGuiScaledWidth();
+                int sh = mc.getWindow().getGuiScaledHeight();
+                float s = MacroConfig.hudScale;
+                MacroConfig.hudX = Math.max(0, Math.min(MacroConfig.hudX, sw - (int)(PANEL_W * s)));
+                MacroConfig.hudY = Math.max(0, Math.min(MacroConfig.hudY, sh - (int)(panelH() * s)));
+            }
+        } else if (isResizing) {
+            double delta = mouseX - resizeStartMouseX;
+            MacroConfig.hudScale = Math.max(0.5f, Math.min(2.5f, resizeStartScale + (float)(delta * 0.005)));
+        }
+    }
+
+    /** End gesture and persist position/scale to config. */
+    public static void endDrag() {
+        if (isDragging || isResizing) {
+            isDragging = false;
+            isResizing = false;
+            MacroConfig.save();
+        }
     }
 
     // ── Rendering ────────────────────────────────────────────────────────────
 
-    public static void render(GuiGraphics g, Minecraft client) {
+    private static void render(GuiGraphics g, Minecraft client, boolean editMode) {
         if (client.player == null) return;
 
         MacroState.State state = MacroStateManager.getCurrentState();
-        if (state == MacroState.State.OFF) return;
+        if (!editMode && state == MacroState.State.OFF) return;
 
         // ── Compute data ─────────────────────────────────────────────────────
 
-        long sessionMs  = MacroStateManager.getSessionRunningTime();
-        long lifetimeMs = MacroStateManager.getLifetimeRunningTime();
+        // When the macro is OFF (edit mode preview), show dummy "farming" state
+        String stateStr   = "farming";
+        int    stateColor = STATE_FARMING;
+        if (state == MacroState.State.CLEANING) {
+            stateStr = "cleaning"; stateColor = STATE_CLEANING;
+        } else if (state == MacroState.State.RECOVERING) {
+            stateStr = "recovering"; stateColor = STATE_RECOVERING;
+        }
+
+        long sessionMs  = (state != MacroState.State.OFF) ? MacroStateManager.getSessionRunningTime()  : 0;
+        long lifetimeMs = (state != MacroState.State.OFF) ? MacroStateManager.getLifetimeRunningTime() : 0;
 
         long restTriggerMs = DynamicRestManager.getNextRestTriggerMs();
         String nextRestStr = restTriggerMs <= 0 ? "---"
                 : formatTime(Math.max(0, restTriggerMs - System.currentTimeMillis()));
 
-        String stateStr;
-        int stateColor;
-        switch (state) {
-            case CLEANING:   stateStr = "cleaning";   stateColor = STATE_CLEANING;   break;
-            case RECOVERING: stateStr = "recovering"; stateColor = STATE_RECOVERING; break;
-            default:         stateStr = "farming";    stateColor = STATE_FARMING;    break;
+        int panelH = panelH();
+
+        // ── Apply position + scale transform ─────────────────────────────────
+        float scale = MacroConfig.hudScale;
+        g.pose().pushMatrix();
+        g.pose().translate(MacroConfig.hudX, MacroConfig.hudY);
+        g.pose().scale(scale, scale);
+
+        // ── Edit-mode border ─────────────────────────────────────────────────
+        if (editMode) {
+            int borderColor = isDragging ? BORDER_DRAG : isResizing ? BORDER_RESIZE : BORDER_IDLE;
+            fillRoundedRect(g, -1, -1, PANEL_W + 2, panelH + 2, CORNER_RADIUS + 1, borderColor);
         }
 
-        // ── Layout ───────────────────────────────────────────────────────────
-
-        // top-padding + title + gap + sep + gap + 4 rows + bar(h+3) + bottom-padding
-        int panelH = PADDING_V + FONT_H + 3 + 1 + 3 + 4 * ROW_HEIGHT + BAR_HEIGHT + 3 + PADDING_V;
-        int x = 10, y = 10;
-
-        fillRoundedRect(g, x, y, PANEL_W, panelH, CORNER_RADIUS, BG_COLOR);
+        // ── Panel background ─────────────────────────────────────────────────
+        fillRoundedRect(g, 0, 0, PANEL_W, panelH, CORNER_RADIUS, BG_COLOR);
 
         // ── Title (animated) ─────────────────────────────────────────────────
-        // Anchor X is fixed to the full title width so the text doesn't shift while typing
-        int titleAnchorX = x + (PANEL_W - client.font.width(TARGET_TITLE)) / 2;
-        int titleY = y + PADDING_V;
+        int titleAnchorX = (PANEL_W - client.font.width(TARGET_TITLE)) / 2;
+        int titleY = PADDING_V;
         g.drawString(client.font, getAnimatedTitle(), titleAnchorX, titleY, TITLE_COLOR, false);
 
         // ── Separator ────────────────────────────────────────────────────────
         int sepY = titleY + FONT_H + 3;
-        g.fill(x + PADDING_H, sepY, x + PANEL_W - PADDING_H, sepY + 1, SEP_COLOR);
+        g.fill(PADDING_H, sepY, PANEL_W - PADDING_H, sepY + 1, SEP_COLOR);
 
         // ── Rows ─────────────────────────────────────────────────────────────
         int rowY = sepY + 1 + 3;
-        drawRow(g, client, x, rowY, "macro state",      stateStr, stateColor);
+        drawRow(g, client, rowY, "macro state",      stateStr, stateColor);
         rowY += ROW_HEIGHT;
-        drawRow(g, client, x, rowY, "current session",  formatTime(sessionMs));
+        drawRow(g, client, rowY, "current session",  formatTime(sessionMs));
         rowY += ROW_HEIGHT;
-        drawRow(g, client, x, rowY, "lifetime session", formatTime(lifetimeMs));
+        drawRow(g, client, rowY, "lifetime session", formatTime(lifetimeMs));
         rowY += ROW_HEIGHT;
-        drawRow(g, client, x, rowY, "next rest",        nextRestStr);
+        drawRow(g, client, rowY, "next rest",        nextRestStr);
         rowY += ROW_HEIGHT;
 
         // ── Progress bar ─────────────────────────────────────────────────────
@@ -121,8 +216,24 @@ public class MacroHudRenderer {
         float progress = (scheduledMs > 0 && restTriggerMs > 0)
                 ? (float)(scheduledMs - Math.max(0, restTriggerMs - System.currentTimeMillis())) / scheduledMs
                 : 0f;
-        drawProgressBar(g, x + BAR_INDENT, rowY, PANEL_W - BAR_INDENT * 2, BAR_HEIGHT,
+        drawProgressBar(g, BAR_INDENT, rowY, PANEL_W - BAR_INDENT * 2, BAR_HEIGHT,
                 progress, BAR_BG_COLOR, BAR_FILL_COLOR);
+
+        // ── Edit-mode hint ───────────────────────────────────────────────────
+        if (editMode) {
+            String hint = isDragging ? "moving..." : isResizing ? "resizing..." : "drag \u2022 ctrl+drag to resize";
+            int hintX = (PANEL_W - client.font.width(hint)) / 2;
+            g.drawString(client.font, hint, hintX, panelH + 3, LABEL_COLOR, false);
+        }
+
+        g.pose().popMatrix();
+    }
+
+    // ── Panel height helper ───────────────────────────────────────────────────
+
+    // top-padding + title + gap + sep + gap + 4 rows + bar(h+3) + bottom-padding
+    static int panelH() {
+        return PADDING_V + FONT_H + 3 + 1 + 3 + 4 * ROW_HEIGHT + BAR_HEIGHT + 3 + PADDING_V;
     }
 
     // ── Title animation ───────────────────────────────────────────────────────
@@ -138,7 +249,6 @@ public class MacroHudRenderer {
         int n = TARGET_TITLE.length();
         long phaseDuration = (long)(n - 1) * CHAR_INTERVAL_MS + SCRAMBLE_MS;
 
-        // Advance phase
         long elapsed = now - animPhaseStartMs;
         if      (animPhase == 0 && elapsed >= phaseDuration) { animPhase = 1; animPhaseStartMs = now; }
         else if (animPhase == 1 && elapsed >= STAY_MS)        { animPhase = 2; animPhaseStartMs = now; }
@@ -150,7 +260,6 @@ public class MacroHudRenderer {
         StringBuilder sb = new StringBuilder();
 
         if (animPhase == 0) {
-            // Type left → right: each char scrambles then settles
             for (int i = 0; i < n; i++) {
                 long charStart = (long) i * CHAR_INTERVAL_MS;
                 if (elapsed < charStart) break;
@@ -161,7 +270,6 @@ public class MacroHudRenderer {
                 sb.append(TARGET_TITLE.charAt(i));
             }
         } else {
-            // Untype right → left: each char scrambles then disappears
             for (int i = 0; i < n; i++) {
                 long charStart = (long)(n - 1 - i) * CHAR_INTERVAL_MS;
                 if (elapsed < charStart) {
@@ -181,20 +289,20 @@ public class MacroHudRenderer {
     // ── Draw helpers ─────────────────────────────────────────────────────────
 
     private static void drawRow(GuiGraphics g, Minecraft client,
-                                int panelX, int y, String label, String value) {
-        drawRow(g, client, panelX, y, label, value, VALUE_COLOR);
+                                int y, String label, String value) {
+        drawRow(g, client, y, label, value, VALUE_COLOR);
     }
 
     private static void drawRow(GuiGraphics g, Minecraft client,
-                                int panelX, int y, String label, String value, int valueColor) {
-        g.drawString(client.font, label, panelX + PADDING_H, y, LABEL_COLOR, false);
-        int valueX = panelX + PANEL_W - PADDING_H - client.font.width(value);
+                                int y, String label, String value, int valueColor) {
+        g.drawString(client.font, label, PADDING_H, y, LABEL_COLOR, false);
+        int valueX = PANEL_W - PADDING_H - client.font.width(value);
         g.drawString(client.font, value, valueX, y, valueColor, false);
     }
 
     /**
-     * Pill-shaped progress bar. The fill is clipped to the rounded trough on both
-     * ends using the same circle math, so no pixels bleed outside the background.
+     * Pill-shaped progress bar. Fill is clipped to the rounded trough on both
+     * ends using the same circle math so no pixels bleed outside the background.
      */
     private static void drawProgressBar(GuiGraphics g, int x, int y, int w, int h,
                                         float progress, int bgColor, int fillColor) {
