@@ -29,12 +29,16 @@ public class DynamicRestManager {
     /** Epoch-ms when the next rest should be triggered. 0 = not scheduled yet. */
     private static long nextRestTriggerMs = 0;
 
-    /** Total duration of the current scripting period (ms). Used for the progress bar. */
+    /**
+     * Total duration of the current scripting period (ms). Used for the progress
+     * bar.
+     */
     private static long scheduledDurationMs = 0;
 
     private static boolean restSequencePending = false;
     private static int restSequenceStage = 0;
     private static long nextStageActionTime = 0;
+    private static long lastTimeUpdate = 0;
 
     // ── Public API ───────────────────────────────────────────────────────────
 
@@ -43,11 +47,17 @@ public class DynamicRestManager {
      * Schedules the next rest timer using the configured scripting time ± offset.
      */
     public static void scheduleNextRest() {
+        if (MacroConfig.persistSessionTimer && nextRestTriggerMs != 0) {
+            // Already scheduled and we want to persist, so just update lastTimeUpdate
+            lastTimeUpdate = System.currentTimeMillis();
+            return;
+        }
         int base = MacroConfig.restScriptingTime;
         int offset = MacroConfig.restScriptingTimeOffset;
         int randomOffset = (offset > 0) ? (new Random().nextInt(offset * 2 + 1) - offset) : 0;
         scheduledDurationMs = (base + randomOffset) * 60L * 1000L;
         nextRestTriggerMs = System.currentTimeMillis() + scheduledDurationMs;
+        lastTimeUpdate = System.currentTimeMillis();
         restSequencePending = false;
         restSequenceStage = 0;
         nextStageActionTime = 0;
@@ -62,6 +72,7 @@ public class DynamicRestManager {
         restSequencePending = false;
         restSequenceStage = 0;
         nextStageActionTime = 0;
+        lastTimeUpdate = 0;
     }
 
     /** Returns true while a rest sequence is actively in progress. */
@@ -74,7 +85,10 @@ public class DynamicRestManager {
         return nextRestTriggerMs;
     }
 
-    /** Returns the total scripting duration that was scheduled (ms), or 0 if not set. */
+    /**
+     * Returns the total scripting duration that was scheduled (ms), or 0 if not
+     * set.
+     */
     public static long getScheduledDurationMs() {
         return scheduledDurationMs;
     }
@@ -91,19 +105,40 @@ public class DynamicRestManager {
 
         // === Countdown / timer display (only while actively running) ===
         MacroState.State currentState = MacroStateManager.getCurrentState();
-        if (currentState != MacroState.State.OFF && currentState != MacroState.State.RECOVERING
-                && nextRestTriggerMs > 0 && !restSequencePending) {
-            long remaining = nextRestTriggerMs - System.currentTimeMillis();
+        boolean isRunning = currentState != MacroState.State.OFF && currentState != MacroState.State.RECOVERING;
 
-            if (remaining <= 0) {
-                // Timer expired — kick off the rest sequence
-                restSequencePending = true;
-                restSequenceStage = 0;
-                nextStageActionTime = System.currentTimeMillis();
-                client.player.displayClientMessage(
-                        Component.literal("§6[Ihanuat] Dynamic Rest triggered! Starting shutdown sequence..."),
-                        false);
+        if (nextRestTriggerMs > 0 && !restSequencePending) {
+            long now = System.currentTimeMillis();
+
+            if (isRunning) {
+                // If we were paused, resume by shifting the target time forward by the gap
+                if (lastTimeUpdate != 0 && now > lastTimeUpdate) {
+                    // This creates a "pause" effect - the trigger point moves forward in real-time
+                    // while we aren't running.
+                    // Actually, if we are RUNNING, we shouldn't shift it.
+                    // If we just STARTED running, we should have shifted it.
+                }
+
+                long remaining = nextRestTriggerMs - now;
+                if (remaining <= 0) {
+                    // Timer expired — kick off the rest sequence
+                    restSequencePending = true;
+                    restSequenceStage = 0;
+                    nextStageActionTime = now;
+                    client.player.displayClientMessage(
+                            Component.literal("§6[Ihanuat] Dynamic Rest triggered! Starting shutdown sequence..."),
+                            false);
+                }
+            } else {
+                // Not running (paused)
+                if (MacroConfig.persistSessionTimer && lastTimeUpdate != 0) {
+                    long gap = now - lastTimeUpdate;
+                    if (gap > 0) {
+                        nextRestTriggerMs += gap;
+                    }
+                }
             }
+            lastTimeUpdate = now;
         }
 
         // === Shutdown sequence — runs to completion regardless of current state ===
