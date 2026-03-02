@@ -59,6 +59,11 @@ public class MacroConfig {
     public static final boolean DEFAULT_SEND_DISCORD_STATUS = false;
     public static final boolean DEFAULT_PERSIST_SESSION_TIMER = false;
 
+    public static final int DEFAULT_HUD_X = 10;
+    public static final int DEFAULT_HUD_Y = 10;
+    public static final float DEFAULT_HUD_SCALE = 1.0f;
+    public static final boolean DEFAULT_SHOW_HUD = true;
+
     public static int pestThreshold = DEFAULT_PEST_THRESHOLD;
     public static int visitorThreshold = DEFAULT_VISITOR_THRESHOLD;
     public static GearSwapMode gearSwapMode = DEFAULT_GEAR_SWAP_MODE;
@@ -119,6 +124,12 @@ public class MacroConfig {
     public static boolean sendDiscordStatus = DEFAULT_SEND_DISCORD_STATUS;
     public static boolean persistSessionTimer = DEFAULT_PERSIST_SESSION_TIMER;
     public static long lifetimeAccumulated = 0;
+
+    // HUD
+    public static int hudX = DEFAULT_HUD_X;
+    public static int hudY = DEFAULT_HUD_Y;
+    public static float hudScale = DEFAULT_HUD_SCALE;
+    public static boolean showHud = DEFAULT_SHOW_HUD;
 
     // Rewarp coordinates
     public static double rewarpEndX = 0;
@@ -183,6 +194,10 @@ public class MacroConfig {
         data.rewarpEndZ = rewarpEndZ;
         data.rewarpEndPosSet = rewarpEndPosSet;
         data.persistSessionTimer = persistSessionTimer;
+        data.hudX = hudX;
+        data.hudY = hudY;
+        data.hudScale = hudScale;
+        data.showHud = showHud;
         data.lifetimeAccumulated = lifetimeAccumulated;
 
         try (FileWriter writer = new FileWriter(CONFIG_FILE)) {
@@ -253,6 +268,10 @@ public class MacroConfig {
                 rewarpEndZ = data.rewarpEndZ;
                 rewarpEndPosSet = data.rewarpEndPosSet;
                 persistSessionTimer = data.persistSessionTimer;
+                hudX = data.hudX;
+                hudY = data.hudY;
+                hudScale = data.hudScale > 0 ? data.hudScale : DEFAULT_HUD_SCALE;
+                showHud = data.showHud;
                 lifetimeAccumulated = data.lifetimeAccumulated;
             }
         } catch (IOException e) {
@@ -306,6 +325,10 @@ public class MacroConfig {
         double rewarpEndZ = 0;
         boolean rewarpEndPosSet = false;
         boolean persistSessionTimer = DEFAULT_PERSIST_SESSION_TIMER;
+        int hudX = DEFAULT_HUD_X;
+        int hudY = DEFAULT_HUD_Y;
+        float hudScale = DEFAULT_HUD_SCALE;
+        boolean showHud = DEFAULT_SHOW_HUD;
         long lifetimeAccumulated = 0;
     }
 }

@@ -28,6 +28,14 @@ public class ConfigScreenFactory {
                 ConfigCategory general = builder.getOrCreateCategory(Component.literal("General"));
 
                 general.addEntry(builder.entryBuilder()
+                                .startBooleanToggle(Component.literal("Show HUD Panel"), MacroConfig.showHud)
+                                .setDefaultValue(MacroConfig.DEFAULT_SHOW_HUD)
+                                .setTooltip(Component.literal(
+                                                "Display the Ihanuat status panel during gameplay. Open your inventory to drag/resize it."))
+                                .setSaveConsumer(newValue -> MacroConfig.showHud = newValue)
+                                .build());
+
+                general.addEntry(builder.entryBuilder()
                                 .startEnumSelector(Component.literal("Wardrobe/Rod Swap Mode"),
                                                 MacroConfig.GearSwapMode.class,
                                                 MacroConfig.gearSwapMode)

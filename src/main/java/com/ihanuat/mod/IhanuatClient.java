@@ -18,6 +18,8 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
 import net.fabricmc.fabric.api.client.message.v1.ClientSendMessageEvents;
+import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
+import net.fabricmc.fabric.api.client.screen.v1.ScreenMouseEvents;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.ChatScreen;
@@ -49,6 +51,37 @@ public class IhanuatClient implements ClientModInitializer {
         MacroConfig.load();
         MacroStateManager.syncFromConfig();
         MacroHudRenderer.register();
+
+        // ── HUD edit-mode: render panel and handle drag/resize in inventory screens ──
+        ScreenEvents.AFTER_INIT.register((mcClient, screen, scaledWidth, scaledHeight) -> {
+            if (!(screen instanceof AbstractContainerScreen)) return;
+
+            ScreenEvents.afterRender(screen).register((scr, graphics, mouseX, mouseY, tickDelta) ->
+                    MacroHudRenderer.renderInEditMode(graphics, Minecraft.getInstance()));
+
+            // Fabric 0.141+: mouse event object carries x, y, button and modifiers
+            ScreenMouseEvents.allowMouseClick(screen).register((scr, event) -> {
+                if (event.button() == 0 && MacroHudRenderer.isHovered(event.x(), event.y())) {
+                    boolean ctrl = (event.modifiers() & GLFW.GLFW_MOD_CONTROL) != 0;
+                    MacroHudRenderer.startDrag(event.x(), event.y(), ctrl);
+                    return false;
+                }
+                return true;
+            });
+
+            ScreenMouseEvents.allowMouseDrag(screen).register((scr, event, deltaX, deltaY) -> {
+                if (MacroHudRenderer.isInteracting()) {
+                    MacroHudRenderer.drag(event.x(), event.y());
+                    return false;
+                }
+                return true;
+            });
+
+            ScreenMouseEvents.allowMouseRelease(screen).register((scr, event) -> {
+                MacroHudRenderer.endDrag();
+                return true;
+            });
+        });
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (client.player == null) {
