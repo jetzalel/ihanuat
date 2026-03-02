@@ -1,6 +1,7 @@
 package com.ihanuat.mod.gui;
 
 import com.ihanuat.mod.MacroConfig;
+import com.ihanuat.mod.modules.ProfitManager;
 import me.shedaniel.clothconfig2.api.ConfigBuilder;
 import me.shedaniel.clothconfig2.api.ConfigCategory;
 import me.shedaniel.clothconfig2.gui.entries.TooltipListEntry;
@@ -28,11 +29,27 @@ public class ConfigScreenFactory {
                 ConfigCategory general = builder.getOrCreateCategory(Component.literal("General"));
 
                 general.addEntry(builder.entryBuilder()
-                                .startBooleanToggle(Component.literal("Show HUD Panel"), MacroConfig.showHud)
+                                .startBooleanToggle(Component.literal("Show Macro Status HUD"), MacroConfig.showHud)
                                 .setDefaultValue(MacroConfig.DEFAULT_SHOW_HUD)
-                                .setTooltip(Component.literal(
-                                                "Display the Ihanuat status panel during gameplay. Open your inventory to drag/resize it."))
+                                .setTooltip(Component.literal("Display the timer and macro state panel."))
                                 .setSaveConsumer(newValue -> MacroConfig.showHud = newValue)
+                                .build());
+
+                general.addEntry(builder.entryBuilder()
+                                .startBooleanToggle(Component.literal("Show Session Profit HUD"),
+                                                MacroConfig.showSessionProfitHud)
+                                .setDefaultValue(MacroConfig.DEFAULT_SHOW_SESSION_PROFIT_HUD)
+                                .setTooltip(Component.literal("Display the profit tracker for your current session."))
+                                .setSaveConsumer(newValue -> MacroConfig.showSessionProfitHud = newValue)
+                                .build());
+
+                general.addEntry(builder.entryBuilder()
+                                .startBooleanToggle(Component.literal("Show Lifetime Profit HUD"),
+                                                MacroConfig.showLifetimeHud)
+                                .setDefaultValue(MacroConfig.DEFAULT_SHOW_LIFETIME_HUD)
+                                .setTooltip(Component.literal(
+                                                "Display a persistent profit tracker that doesn't reset across game restarts."))
+                                .setSaveConsumer(newValue -> MacroConfig.showLifetimeHud = newValue)
                                 .build());
 
                 general.addEntry(builder.entryBuilder()
@@ -68,9 +85,16 @@ public class ConfigScreenFactory {
                                 .startBooleanToggle(Component.literal("Persist Session Timer On Pause"),
                                                 MacroConfig.persistSessionTimer)
                                 .setDefaultValue(MacroConfig.DEFAULT_PERSIST_SESSION_TIMER)
-                                .setTooltip(Component.literal(
-                                                "When enabled, the session timer won't reset if paused/unpaused manually. It will only reset when the game is relaunched."))
                                 .setSaveConsumer(newValue -> MacroConfig.persistSessionTimer = newValue)
+                                .build());
+
+                general.addEntry(builder.entryBuilder()
+                                .startBooleanToggle(Component.literal("Compact Profit Calculator"),
+                                                MacroConfig.compactProfitCalculator)
+                                .setDefaultValue(MacroConfig.DEFAULT_COMPACT_PROFIT_CALCULATOR)
+                                .setTooltip(Component.literal(
+                                                "Condenses the profit panel into Categories (Crops, Pest Items, Pets) instead of individual items."))
+                                .setSaveConsumer(newValue -> MacroConfig.compactProfitCalculator = newValue)
                                 .build());
 
                 general.addEntry(builder.entryBuilder()
@@ -294,6 +318,34 @@ public class ConfigScreenFactory {
                                 .setSaveConsumer(newValue -> MacroConfig.sendDiscordStatus = newValue)
                                 .build());
 
+                qol.addEntry(new ButtonEntry(
+                                Component.literal("Reset Session Profit"),
+                                Component.literal("Clears drops from the current session ONLY."),
+                                button -> {
+                                        ProfitManager.reset();
+                                        Minecraft client = Minecraft.getInstance();
+                                        if (client.player != null) {
+                                                client.player.displayClientMessage(
+                                                                Component.literal(
+                                                                                "\u00A7aSession Profit has been reset!"),
+                                                                true);
+                                        }
+                                }));
+
+                qol.addEntry(new ButtonEntry(
+                                Component.literal("Reset Lifetime Profit"),
+                                Component.literal("PERMANENTLY clears all lifetime tracked drops."),
+                                button -> {
+                                        ProfitManager.resetLifetime();
+                                        Minecraft client = Minecraft.getInstance();
+                                        if (client.player != null) {
+                                                client.player.displayClientMessage(
+                                                                Component.literal(
+                                                                                "\u00A7cLifetime Profit has been reset!"),
+                                                                true);
+                                        }
+                                }));
+
                 qol.addEntry(builder.entryBuilder()
                                 .startStrField(Component.literal("Discord Webhook URL"), MacroConfig.discordWebhookUrl)
                                 .setDefaultValue(MacroConfig.DEFAULT_DISCORD_WEBHOOK_URL)
@@ -321,7 +373,7 @@ public class ConfigScreenFactory {
                                                 MacroConfig.save();
                                                 client.player.displayClientMessage(
                                                                 Component.literal(
-                                                                                "§aRewarp End Position captured and saved!"),
+                                                                                "\u00A7aRewarp End Position captured and saved!"),
                                                                 true);
                                         }
                                 }));

@@ -31,7 +31,7 @@ import net.minecraft.client.gui.GuiGraphics;
 public class MacroHudRenderer {
 
     // ── Base layout (at scale = 1.0) ─────────────────────────────────────────
-    static final int PANEL_W = 190;
+    static final int PANEL_W = 230;
     private static final int PADDING_H = 7;
     private static final int PADDING_V = 5;
     private static final int FONT_H = 9;
@@ -230,6 +230,7 @@ public class MacroHudRenderer {
                 : 0f;
         drawProgressBar(g, BAR_INDENT, rowY, PANEL_W - BAR_INDENT * 2, BAR_HEIGHT,
                 progress, BAR_BG_COLOR, BAR_FILL_COLOR);
+        rowY += BAR_HEIGHT + 3;
 
         // ── Edit-mode hint ───────────────────────────────────────────────────
         if (editMode) {

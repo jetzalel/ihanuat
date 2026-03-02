@@ -48,8 +48,7 @@ public class DynamicRestManager {
      */
     public static void scheduleNextRest() {
         if (MacroConfig.persistSessionTimer && nextRestTriggerMs != 0) {
-            // Already scheduled and we want to persist, so just update lastTimeUpdate
-            lastTimeUpdate = System.currentTimeMillis();
+            // Already scheduled and we want to persist
             return;
         }
         int base = MacroConfig.restScriptingTime;
@@ -103,25 +102,18 @@ public class DynamicRestManager {
         if (client.player == null)
             return;
 
-        // === Countdown / timer display (only while actively running) ===
         MacroState.State currentState = MacroStateManager.getCurrentState();
-        boolean isRunning = currentState != MacroState.State.OFF && currentState != MacroState.State.RECOVERING;
+        boolean isFarming = currentState == MacroState.State.FARMING;
+        boolean isCleaning = currentState == MacroState.State.CLEANING;
+        long now = System.currentTimeMillis();
 
+        // === Timer Logic ===
         if (nextRestTriggerMs > 0 && !restSequencePending) {
-            long now = System.currentTimeMillis();
-
-            if (isRunning) {
-                // If we were paused, resume by shifting the target time forward by the gap
-                if (lastTimeUpdate != 0 && now > lastTimeUpdate) {
-                    // This creates a "pause" effect - the trigger point moves forward in real-time
-                    // while we aren't running.
-                    // Actually, if we are RUNNING, we shouldn't shift it.
-                    // If we just STARTED running, we should have shifted it.
-                }
-
+            if (isFarming || isCleaning) {
+                // Ticking state: check if we should trigger
                 long remaining = nextRestTriggerMs - now;
-                if (remaining <= 0) {
-                    // Timer expired — kick off the rest sequence
+                if (remaining <= 0 && isFarming) {
+                    // Only trigger shutdown sequence once we are actively farming
                     restSequencePending = true;
                     restSequenceStage = 0;
                     nextStageActionTime = now;
@@ -130,8 +122,9 @@ public class DynamicRestManager {
                             false);
                 }
             } else {
-                // Not running (paused)
-                if (MacroConfig.persistSessionTimer && lastTimeUpdate != 0) {
+                // Paused state (OFF, RECOVERING): shift the trigger forward to pause the
+                // countdown
+                if (lastTimeUpdate != 0) {
                     long gap = now - lastTimeUpdate;
                     if (gap > 0) {
                         nextRestTriggerMs += gap;
@@ -141,15 +134,20 @@ public class DynamicRestManager {
             lastTimeUpdate = now;
         }
 
-        // === Shutdown sequence — runs to completion regardless of current state ===
+        // === Shutdown sequence — runs once pending and in Farming state ===
         if (!restSequencePending)
             return;
 
-        if (System.currentTimeMillis() < nextStageActionTime)
+        if (now < nextStageActionTime)
             return;
 
         switch (restSequenceStage) {
             case 0: {
+                // Wait until we are farming again to execute the first stage
+                if (!isFarming) {
+                    return;
+                }
+
                 // Stop the farming script, release all keys, /setspawn
                 ClientUtils.sendCommand(client, ".ez-stopscript");
                 ClientUtils.forceReleaseKeys(client);

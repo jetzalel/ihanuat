@@ -57,12 +57,23 @@ public class MacroConfig {
     public static final String DEFAULT_DISCORD_WEBHOOK_URL = "";
     public static final int DEFAULT_DISCORD_STATUS_UPDATE_TIME = 5;
     public static final boolean DEFAULT_SEND_DISCORD_STATUS = false;
-    public static final boolean DEFAULT_PERSIST_SESSION_TIMER = false;
+    public static final boolean DEFAULT_PERSIST_SESSION_TIMER = true;
+    public static final boolean DEFAULT_COMPACT_PROFIT_CALCULATOR = false;
 
     public static final int DEFAULT_HUD_X = 10;
     public static final int DEFAULT_HUD_Y = 10;
     public static final float DEFAULT_HUD_SCALE = 1.0f;
     public static final boolean DEFAULT_SHOW_HUD = true;
+
+    public static final int DEFAULT_SESSION_PROFIT_HUD_X = 10;
+    public static final int DEFAULT_SESSION_PROFIT_HUD_Y = 150;
+    public static final float DEFAULT_SESSION_PROFIT_HUD_SCALE = 1.0f;
+    public static final boolean DEFAULT_SHOW_SESSION_PROFIT_HUD = true;
+
+    public static final int DEFAULT_LIFETIME_HUD_X = 10;
+    public static final int DEFAULT_LIFETIME_HUD_Y = 290;
+    public static final float DEFAULT_LIFETIME_HUD_SCALE = 1.0f;
+    public static final boolean DEFAULT_SHOW_LIFETIME_HUD = false;
 
     public static int pestThreshold = DEFAULT_PEST_THRESHOLD;
     public static int visitorThreshold = DEFAULT_VISITOR_THRESHOLD;
@@ -123,6 +134,7 @@ public class MacroConfig {
     public static int discordStatusUpdateTime = DEFAULT_DISCORD_STATUS_UPDATE_TIME;
     public static boolean sendDiscordStatus = DEFAULT_SEND_DISCORD_STATUS;
     public static boolean persistSessionTimer = DEFAULT_PERSIST_SESSION_TIMER;
+    public static boolean compactProfitCalculator = DEFAULT_COMPACT_PROFIT_CALCULATOR;
     public static long lifetimeAccumulated = 0;
 
     // HUD
@@ -130,6 +142,16 @@ public class MacroConfig {
     public static int hudY = DEFAULT_HUD_Y;
     public static float hudScale = DEFAULT_HUD_SCALE;
     public static boolean showHud = DEFAULT_SHOW_HUD;
+
+    public static int sessionProfitHudX = DEFAULT_SESSION_PROFIT_HUD_X;
+    public static int sessionProfitHudY = DEFAULT_SESSION_PROFIT_HUD_Y;
+    public static float sessionProfitHudScale = DEFAULT_SESSION_PROFIT_HUD_SCALE;
+    public static boolean showSessionProfitHud = DEFAULT_SHOW_SESSION_PROFIT_HUD;
+
+    public static int lifetimeHudX = DEFAULT_LIFETIME_HUD_X;
+    public static int lifetimeHudY = DEFAULT_LIFETIME_HUD_Y;
+    public static float lifetimeHudScale = DEFAULT_LIFETIME_HUD_SCALE;
+    public static boolean showLifetimeHud = DEFAULT_SHOW_LIFETIME_HUD;
 
     // Rewarp coordinates
     public static double rewarpEndX = 0;
@@ -194,10 +216,22 @@ public class MacroConfig {
         data.rewarpEndZ = rewarpEndZ;
         data.rewarpEndPosSet = rewarpEndPosSet;
         data.persistSessionTimer = persistSessionTimer;
+        data.compactProfitCalculator = compactProfitCalculator;
         data.hudX = hudX;
         data.hudY = hudY;
         data.hudScale = hudScale;
         data.showHud = showHud;
+
+        data.sessionProfitHudX = sessionProfitHudX;
+        data.sessionProfitHudY = sessionProfitHudY;
+        data.sessionProfitHudScale = sessionProfitHudScale;
+        data.showSessionProfitHud = showSessionProfitHud;
+
+        data.lifetimeHudX = lifetimeHudX;
+        data.lifetimeHudY = lifetimeHudY;
+        data.lifetimeHudScale = lifetimeHudScale;
+        data.showLifetimeHud = showLifetimeHud;
+
         data.lifetimeAccumulated = lifetimeAccumulated;
 
         try (FileWriter writer = new FileWriter(CONFIG_FILE)) {
@@ -268,10 +302,23 @@ public class MacroConfig {
                 rewarpEndZ = data.rewarpEndZ;
                 rewarpEndPosSet = data.rewarpEndPosSet;
                 persistSessionTimer = data.persistSessionTimer;
+                compactProfitCalculator = data.compactProfitCalculator;
                 hudX = data.hudX;
                 hudY = data.hudY;
                 hudScale = data.hudScale > 0 ? data.hudScale : DEFAULT_HUD_SCALE;
                 showHud = data.showHud;
+
+                sessionProfitHudX = data.sessionProfitHudX;
+                sessionProfitHudY = data.sessionProfitHudY;
+                sessionProfitHudScale = data.sessionProfitHudScale > 0 ? data.sessionProfitHudScale
+                        : DEFAULT_SESSION_PROFIT_HUD_SCALE;
+                showSessionProfitHud = data.showSessionProfitHud;
+
+                lifetimeHudX = data.lifetimeHudX;
+                lifetimeHudY = data.lifetimeHudY;
+                lifetimeHudScale = data.lifetimeHudScale > 0 ? data.lifetimeHudScale : DEFAULT_LIFETIME_HUD_SCALE;
+                showLifetimeHud = data.showLifetimeHud;
+
                 lifetimeAccumulated = data.lifetimeAccumulated;
             }
         } catch (IOException e) {
@@ -325,10 +372,22 @@ public class MacroConfig {
         double rewarpEndZ = 0;
         boolean rewarpEndPosSet = false;
         boolean persistSessionTimer = DEFAULT_PERSIST_SESSION_TIMER;
+        boolean compactProfitCalculator = DEFAULT_COMPACT_PROFIT_CALCULATOR;
         int hudX = DEFAULT_HUD_X;
         int hudY = DEFAULT_HUD_Y;
         float hudScale = DEFAULT_HUD_SCALE;
         boolean showHud = DEFAULT_SHOW_HUD;
+
+        int sessionProfitHudX = DEFAULT_SESSION_PROFIT_HUD_X;
+        int sessionProfitHudY = DEFAULT_SESSION_PROFIT_HUD_Y;
+        float sessionProfitHudScale = DEFAULT_SESSION_PROFIT_HUD_SCALE;
+        boolean showSessionProfitHud = DEFAULT_SHOW_SESSION_PROFIT_HUD;
+
+        int lifetimeHudX = DEFAULT_LIFETIME_HUD_X;
+        int lifetimeHudY = DEFAULT_LIFETIME_HUD_Y;
+        float lifetimeHudScale = DEFAULT_LIFETIME_HUD_SCALE;
+        boolean showLifetimeHud = DEFAULT_SHOW_LIFETIME_HUD;
+
         long lifetimeAccumulated = 0;
     }
 }
