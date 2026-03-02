@@ -29,6 +29,9 @@ public class DynamicRestManager {
     /** Epoch-ms when the next rest should be triggered. 0 = not scheduled yet. */
     private static long nextRestTriggerMs = 0;
 
+    /** Total duration of the current scripting period (ms). Used for the progress bar. */
+    private static long scheduledDurationMs = 0;
+
     private static boolean restSequencePending = false;
     private static int restSequenceStage = 0;
     private static long nextStageActionTime = 0;
@@ -43,7 +46,8 @@ public class DynamicRestManager {
         int base = MacroConfig.restScriptingTime;
         int offset = MacroConfig.restScriptingTimeOffset;
         int randomOffset = (offset > 0) ? (new Random().nextInt(offset * 2 + 1) - offset) : 0;
-        nextRestTriggerMs = System.currentTimeMillis() + ((base + randomOffset) * 60L * 1000L);
+        scheduledDurationMs = (base + randomOffset) * 60L * 1000L;
+        nextRestTriggerMs = System.currentTimeMillis() + scheduledDurationMs;
         restSequencePending = false;
         restSequenceStage = 0;
         nextStageActionTime = 0;
@@ -54,6 +58,7 @@ public class DynamicRestManager {
      */
     public static void reset() {
         nextRestTriggerMs = 0;
+        scheduledDurationMs = 0;
         restSequencePending = false;
         restSequenceStage = 0;
         nextStageActionTime = 0;
@@ -67,6 +72,11 @@ public class DynamicRestManager {
     /** Returns the scheduled rest trigger time (epoch ms), or 0 if not set. */
     public static long getNextRestTriggerMs() {
         return nextRestTriggerMs;
+    }
+
+    /** Returns the total scripting duration that was scheduled (ms), or 0 if not set. */
+    public static long getScheduledDurationMs() {
+        return scheduledDurationMs;
     }
 
     // ── Tick update ──────────────────────────────────────────────────────────
@@ -85,39 +95,7 @@ public class DynamicRestManager {
                 && nextRestTriggerMs > 0 && !restSequencePending) {
             long remaining = nextRestTriggerMs - System.currentTimeMillis();
 
-            if (remaining > 0) {
-                // Show countdown in the action-bar
-                long totalSecs = remaining / 1000;
-                long rHours = totalSecs / 3600;
-                long rMins = (totalSecs % 3600) / 60;
-                long rSecs = totalSecs % 60;
-
-                long sessionTotalSecs = MacroStateManager.getSessionRunningTime() / 1000;
-                long sHours = sessionTotalSecs / 3600;
-                long sMins = (sessionTotalSecs % 3600) / 60;
-                long sSecs = sessionTotalSecs % 60;
-                String sessionStr = sHours > 0
-                        ? String.format("%02d:%02d:%02d", sHours, sMins, sSecs)
-                        : String.format("%02d:%02d", sMins, sSecs);
-
-                long lifetimeTotalSecs = MacroStateManager.getLifetimeRunningTime() / 1000;
-                long lHours = lifetimeTotalSecs / 3600;
-                long lMins = (lifetimeTotalSecs % 3600) / 60;
-                long lSecs = lifetimeTotalSecs % 60;
-                String lifetimeStr = lHours > 0
-                        ? String.format("%02d:%02d:%02d", lHours, lMins, lSecs)
-                        : String.format("%02d:%02d", lMins, lSecs);
-
-                String restStr = rHours > 0
-                        ? String.format("%02d:%02d:%02d", rHours, rMins, rSecs)
-                        : String.format("%02d:%02d", rMins, rSecs);
-
-                String stateDesc = currentState == MacroState.State.CLEANING ? "Cleaning..." : "Farming...";
-                String hudText = String.format(
-                        "§l§b[Ihanuat] §7%s §8| §dLife: %s §8| §dSession: %s §8| §eNext rest: §a%s", stateDesc,
-                        lifetimeStr, sessionStr, restStr);
-                client.player.displayClientMessage(Component.literal(hudText), true);
-            } else {
+            if (remaining <= 0) {
                 // Timer expired — kick off the rest sequence
                 restSequencePending = true;
                 restSequenceStage = 0;

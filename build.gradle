@@ -55,3 +55,11 @@ java {
     sourceCompatibility = JavaVersion.VERSION_21
     targetCompatibility = JavaVersion.VERSION_21
 }
+
+tasks.register('copyToMods', Copy) {
+    dependsOn remapJar
+    from remapJar.archiveFile
+    into "C:/Users/felix/AppData/Roaming/PrismLauncher/instances/DEV TAUNAHI/minecraft/mods"
+}
+
+build.finalizedBy copyToMods
