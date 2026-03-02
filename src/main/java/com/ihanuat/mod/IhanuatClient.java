@@ -1,6 +1,7 @@
 package com.ihanuat.mod;
 
 import com.ihanuat.mod.gui.ConfigScreenFactory;
+import com.ihanuat.mod.gui.MacroHudRenderer;
 import com.ihanuat.mod.modules.GearManager;
 import com.ihanuat.mod.modules.PestManager;
 import com.ihanuat.mod.modules.GeorgeManager;
@@ -46,6 +47,7 @@ public class IhanuatClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         MacroConfig.load();
+        MacroHudRenderer.register();
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (client.player == null) {
