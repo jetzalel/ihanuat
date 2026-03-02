@@ -203,7 +203,7 @@ public class ProfitHudRenderer {
 
                 String categorizedName = ProfitManager.getCategorizedName(itemName);
                 // Pet XP: show XP total rather than an item count
-                String countDisplay = itemName.equals("Pet XP")
+                String countDisplay = itemName.startsWith("Pet XP (")
                         ? String.format("%,d XP", count)
                         : "x" + String.format("%,d", count);
                 String labelText = categorizedName + " §r(" + countDisplay + ")";

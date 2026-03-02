@@ -268,7 +268,11 @@ public class ProfitManager {
         }
 
         if (matchedName == null) {
-            matchedName = normalizeName(processedName);
+            if (processedName.toLowerCase().startsWith("pet xp (")) {
+                matchedName = processedName; // Preserve casing for Pet XP
+            } else {
+                matchedName = normalizeName(processedName);
+            }
         }
 
         // Only add to session counts if macro is running
@@ -293,14 +297,14 @@ public class ProfitManager {
         } else if (PETS_SET.contains(name)) {
             color = "§6";
             tag = "PET";
-        } else if (MISC_DROPS_SET.contains(name)) {
+        } else if (MISC_DROPS_SET.contains(name) || name.toLowerCase().startsWith("pet xp (")) {
             color = "§b";
             tag = "MISC";
         }
 
         String displayName = name.replace("Enchanted ", "Ench. ");
-        if (name.startsWith("Pet XP (")) {
-            displayName = name.substring(7); // Keep "(Name) XP"
+        if (name.toLowerCase().startsWith("pet xp (")) {
+            displayName = name.substring(8, name.length() - 1) + " XP";
         }
         return color + "§l[" + tag + "] §f" + displayName;
     }
@@ -462,7 +466,7 @@ public class ProfitManager {
     public static boolean isPredefinedTrackedItem(String itemName) {
         if (itemName == null)
             return false;
-        if (itemName.startsWith("Pet XP ("))
+        if (itemName.toLowerCase().startsWith("pet xp ("))
             return true;
         for (String tracked : TRACKED_ITEMS.keySet()) {
             if (tracked.equalsIgnoreCase(itemName)) {
@@ -606,35 +610,72 @@ public class ProfitManager {
         addDrop("Pet XP (" + petName + ")", xpAmount);
     }
 
+    private static int startupPetPriceRetryCount = 3;
+
+    public static void startStartupPriceFetch() {
+        startupPetPriceRetryCount = 0;
+        fetchBazaarPrices();
+    }
+
     private static synchronized void fetchBazaarPrices() {
         lastBazaarFetchTime = System.currentTimeMillis();
         new Thread(() -> {
             java.net.http.HttpClient client = java.net.http.HttpClient.newHttpClient();
-            for (Map.Entry<String, String> entry : BAZAAR_MAPPING.entrySet()) {
-                String itemName = entry.getKey();
-                String itemTag = entry.getValue();
+            performFetchInternal(client);
 
-                try {
-                    java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
-                            .uri(java.net.URI.create("https://sky.coflnet.com/api/item/price/" + itemTag))
-                            .GET()
-                            .build();
-
-                    java.net.http.HttpResponse<String> response = client.send(request,
-                            java.net.http.HttpResponse.BodyHandlers.ofString());
-                    if (response.statusCode() == 200) {
-                        BazaarApiResponse data = GSON.fromJson(response.body(), BazaarApiResponse.class);
-                        if (data != null && data.max > 0) {
-                            bazaarPrices.put(itemName, (double) data.max);
-                        }
+            // Startup retry logic: if any pet price is missing, retry up to 3 times every 5
+            // seconds
+            if (startupPetPriceRetryCount < 3) {
+                boolean missingAny = false;
+                for (String petConfig : MacroConfig.petTrackerList) {
+                    MacroConfig.PetInfo info = new MacroConfig.PetInfo(petConfig);
+                    if (!bazaarPrices.containsKey("Pet XP (" + info.name + ")")) {
+                        missingAny = true;
+                        break;
                     }
-                } catch (Exception e) {
-                    System.err.println("Failed to fetch bazaar price for " + itemName + ": " + e.getMessage());
+                }
+
+                if (missingAny) {
+                    startupPetPriceRetryCount++;
+                    System.out.println("[Ihanuat] Pet XP prices not fully fetched, retry " + startupPetPriceRetryCount
+                            + "/3 in 5s...");
+                    try {
+                        Thread.sleep(5000L);
+                    } catch (InterruptedException ignored) {
+                    }
+                    fetchBazaarPrices();
+                } else {
+                    startupPetPriceRetryCount = 3; // Success, don't retry again
                 }
             }
-            // Also fetch Pet XP price
-            fetchPetXpPrice(client);
         }).start();
+    }
+
+    private static void performFetchInternal(java.net.http.HttpClient client) {
+        for (Map.Entry<String, String> entry : BAZAAR_MAPPING.entrySet()) {
+            String itemName = entry.getKey();
+            String itemTag = entry.getValue();
+
+            try {
+                java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
+                        .uri(java.net.URI.create("https://sky.coflnet.com/api/item/price/" + itemTag))
+                        .GET()
+                        .build();
+
+                java.net.http.HttpResponse<String> response = client.send(request,
+                        java.net.http.HttpResponse.BodyHandlers.ofString());
+                if (response.statusCode() == 200) {
+                    BazaarApiResponse data = GSON.fromJson(response.body(), BazaarApiResponse.class);
+                    if (data != null && data.max > 0) {
+                        bazaarPrices.put(itemName, (double) data.max);
+                    }
+                }
+            } catch (Exception e) {
+                System.err.println("Failed to fetch bazaar price for " + itemName + ": " + e.getMessage());
+            }
+        }
+        // Also fetch Pet XP price
+        fetchPetXpPrice(client);
     }
 
     /**

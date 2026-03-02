@@ -156,7 +156,7 @@ public class MacroConfig {
             String[] parts = config.split(":");
             if (parts.length >= 4) {
                 this.tag = parts[0].trim();
-                this.name = parts[1].trim();
+                this.name = capitalizeWords(parts[1].trim());
                 try {
                     this.maxLevel = Integer.parseInt(parts[2].trim());
                 } catch (NumberFormatException e) {
@@ -173,6 +173,23 @@ public class MacroConfig {
                 this.maxLevel = 100;
                 this.rarity = PetRarity.LEGENDARY;
             }
+        }
+
+        private String capitalizeWords(String input) {
+            if (input == null || input.isEmpty())
+                return input;
+            String[] words = input.split("\\s+");
+            StringBuilder sb = new StringBuilder();
+            for (String word : words) {
+                if (word.length() > 0) {
+                    sb.append(Character.toUpperCase(word.charAt(0)));
+                    if (word.length() > 1) {
+                        sb.append(word.substring(1).toLowerCase());
+                    }
+                    sb.append(" ");
+                }
+            }
+            return sb.toString().trim();
         }
 
         @Override
