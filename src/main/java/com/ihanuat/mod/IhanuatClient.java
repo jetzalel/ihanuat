@@ -49,6 +49,7 @@ public class IhanuatClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         MacroConfig.load();
+        MacroStateManager.syncFromConfig();
         MacroHudRenderer.register();
 
         // ── HUD edit-mode: render panel and handle drag/resize in inventory screens ──
@@ -220,11 +221,17 @@ public class IhanuatClient implements ClientModInitializer {
                             }
 
                             ClientUtils.waitForGearAndGui(client);
+                            if (PestManager.isCleaningInProgress || PestManager.isPrepSwapping)
+                                return;
 
                             GearManager.swapToFarmingToolSync(client);
+                            if (PestManager.isCleaningInProgress || PestManager.isPrepSwapping)
+                                return;
 
                             ClientUtils.sendCommand(client, ".ez-stopscript");
                             Thread.sleep(250);
+                            if (PestManager.isCleaningInProgress || PestManager.isPrepSwapping)
+                                return;
 
                             ClientUtils.sendCommand(client, MacroConfig.restartScript);
                         } catch (Exception e) {
@@ -232,7 +239,9 @@ public class IhanuatClient implements ClientModInitializer {
                         }
                     }).start();
                 } else {
-                    DynamicRestManager.reset();
+                    if (!MacroConfig.persistSessionTimer) {
+                        DynamicRestManager.reset();
+                    }
                     MacroStateManager.stopMacro(client);
                 }
             }
@@ -268,6 +277,7 @@ public class IhanuatClient implements ClientModInitializer {
             PestManager.update(client);
             GearManager.cleanupTick(client);
             RotationManager.update(client);
+            MacroStateManager.periodicUpdate();
             com.ihanuat.mod.modules.DiscordStatusManager.update(client);
 
             if (PestManager.isSneakingForAotv) {

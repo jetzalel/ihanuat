@@ -123,6 +123,7 @@ public class MacroConfig {
     public static int discordStatusUpdateTime = DEFAULT_DISCORD_STATUS_UPDATE_TIME;
     public static boolean sendDiscordStatus = DEFAULT_SEND_DISCORD_STATUS;
     public static boolean persistSessionTimer = DEFAULT_PERSIST_SESSION_TIMER;
+    public static long lifetimeAccumulated = 0;
 
     // HUD
     public static int hudX = DEFAULT_HUD_X;
@@ -197,6 +198,7 @@ public class MacroConfig {
         data.hudY = hudY;
         data.hudScale = hudScale;
         data.showHud = showHud;
+        data.lifetimeAccumulated = lifetimeAccumulated;
 
         try (FileWriter writer = new FileWriter(CONFIG_FILE)) {
             GSON.toJson(data, writer);
@@ -270,6 +272,7 @@ public class MacroConfig {
                 hudY = data.hudY;
                 hudScale = data.hudScale > 0 ? data.hudScale : DEFAULT_HUD_SCALE;
                 showHud = data.showHud;
+                lifetimeAccumulated = data.lifetimeAccumulated;
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -326,5 +329,6 @@ public class MacroConfig {
         int hudY = DEFAULT_HUD_Y;
         float hudScale = DEFAULT_HUD_SCALE;
         boolean showHud = DEFAULT_SHOW_HUD;
+        long lifetimeAccumulated = 0;
     }
 }
