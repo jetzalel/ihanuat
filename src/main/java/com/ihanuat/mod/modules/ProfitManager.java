@@ -324,8 +324,8 @@ public class ProfitManager {
                 lifetimeCounts.clear();
                 lifetimeCounts.putAll(data);
             }
-        } catch (java.io.IOException e) {
-            e.printStackTrace();
+        } catch (Exception e) {
+            System.err.println("[Ihanuat] Failed to load lifetime profit data: " + e.getMessage());
         }
     }
 
