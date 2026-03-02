@@ -13,8 +13,10 @@ public class ProfitManager {
     private static final Map<String, Integer> sessionCounts = new LinkedHashMap<>();
     private static final Map<String, Integer> lifetimeCounts = new LinkedHashMap<>();
     private static final Map<String, Integer> prevInventoryCounts = new LinkedHashMap<>();
+    private static final Map<String, Long> bazaarPrices = new LinkedHashMap<>();
     private static long lastCultivatingValue = -1;
     private static String currentFarmedCrop = "Wheat";
+    private static long lastBazaarFetchTime = 0;
 
     private static final java.io.File LIFETIME_FILE = net.fabricmc.loader.api.FabricLoader.getInstance().getConfigDir()
             .resolve("pest_macro_profit_lifetime.json").toFile();
@@ -61,7 +63,7 @@ public class ProfitManager {
             Map.entry("Potato", 3L), Map.entry("Enchanted Potato", 480L), Map.entry("Enchanted Baked Potato", 76800L),
             Map.entry("Carrot", 3L), Map.entry("Enchanted Carrot", 480L), Map.entry("Enchanted Golden Carrot", 76800L),
             Map.entry("Melon Slice", 2L), Map.entry("Melon Block", 18L), Map.entry("Enchanted Melon Slice", 320L),
-            Map.entry("Enchanted Melon Block", 51200L),
+            Map.entry("Enchanted Melon", 51200L),
             Map.entry("Pumpkin", 10L), Map.entry("Enchanted Pumpkin", 1600L), Map.entry("Polished Pumpkin", 256000L),
             Map.entry("Sugar Cane", 4L), Map.entry("Enchanted Sugar", 640L), Map.entry("Enchanted Sugar Cane", 102400L),
             Map.entry("Cactus", 4L), Map.entry("Enchanted Cactus Green", 640L), Map.entry("Enchanted Cactus", 102400L),
@@ -95,6 +97,16 @@ public class ProfitManager {
 
             // Pets
             Map.entry("Epic Slug", 500000L), Map.entry("Legendary Slug", 5000000L), Map.entry("Rat", 5000L));
+
+    private static final Map<String, String> BAZAAR_MAPPING = Map.of(
+            "Sunder VI Book", "ENCHANTMENT_SUNDER_6",
+            "Pesterminator I Book", "ENCHANTMENT_PESTERMINATOR_1",
+            "Dung", "DUNG",
+            "Honey Jar", "HONEY_JAR",
+            "Plant Matter", "PLANT_MATTER",
+            "Tasty Cheese", "CHEESE_FUEL",
+            "Compost", "COMPOST",
+            "Jelly", "JELLY");
 
     private static final Pattern PEST_PATTERN = Pattern.compile("received\\s+(\\d+)x\\s+(.+?)\\s+for\\s+killing",
             Pattern.CASE_INSENSITIVE);
@@ -303,7 +315,11 @@ public class ProfitManager {
     }
 
     public static long getItemPrice(String itemName) {
-        return TRACKED_ITEMS.getOrDefault(itemName, 0L);
+        long price = TRACKED_ITEMS.getOrDefault(itemName, 0L);
+        if (price == 0L) {
+            price = bazaarPrices.getOrDefault(itemName, 0L);
+        }
+        return price;
     }
 
     public static boolean isPredefinedTrackedItem(String itemName) {
@@ -384,5 +400,44 @@ public class ProfitManager {
             }
         }
         lastCultivatingValue = -1;
+
+        // Refresh bazaar prices every hour
+        long now = System.currentTimeMillis();
+        if (now - lastBazaarFetchTime > 3600000L) {
+            fetchBazaarPrices();
+        }
+    }
+
+    private static synchronized void fetchBazaarPrices() {
+        lastBazaarFetchTime = System.currentTimeMillis();
+        new Thread(() -> {
+            java.net.http.HttpClient client = java.net.http.HttpClient.newHttpClient();
+            for (Map.Entry<String, String> entry : BAZAAR_MAPPING.entrySet()) {
+                String itemName = entry.getKey();
+                String itemTag = entry.getValue();
+
+                try {
+                    java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
+                            .uri(java.net.URI.create("https://sky.coflnet.com/api/item/price/" + itemTag))
+                            .GET()
+                            .build();
+
+                    java.net.http.HttpResponse<String> response = client.send(request,
+                            java.net.http.HttpResponse.BodyHandlers.ofString());
+                    if (response.statusCode() == 200) {
+                        BazaarApiResponse data = GSON.fromJson(response.body(), BazaarApiResponse.class);
+                        if (data != null && data.max > 0) {
+                            bazaarPrices.put(itemName, (long) data.max);
+                        }
+                    }
+                } catch (Exception e) {
+                    System.err.println("Failed to fetch bazaar price for " + itemName + ": " + e.getMessage());
+                }
+            }
+        }).start();
+    }
+
+    private static class BazaarApiResponse {
+        double max;
     }
 }
