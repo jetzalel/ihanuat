@@ -56,10 +56,6 @@ java {
     targetCompatibility = JavaVersion.VERSION_21
 }
 
-tasks.register('copyToMods', Copy) {
-    dependsOn remapJar
-    from remapJar.archiveFile
-    into "C:/Users/felix/AppData/Roaming/PrismLauncher/instances/DEV TAUNAHI/minecraft/mods"
+if (file('local.gradle').exists()) {
+    apply from: 'local.gradle'
 }
-
-build.finalizedBy copyToMods
