@@ -215,6 +215,18 @@ public class ProfitHudRenderer {
             rowY += 4;
             long total = ProfitManager.getTotalProfit(lifetime);
             drawRow(g, client, rowY, "Total Profit", formatProfit(total), 0xFFFFAA00);
+            rowY += ROW_HEIGHT;
+
+            // Session only: Coins per Hour
+            if (!lifetime) {
+                long sessionMs = com.ihanuat.mod.MacroStateManager.getSessionRunningTime();
+                long cph = 0;
+                if (sessionMs > 0) {
+                    double hours = sessionMs / 3600000.0;
+                    cph = (long) (total / hours);
+                }
+                drawRow(g, client, rowY, "Coins per Hour", formatProfit(cph), 0xFF55FFFF);
+            }
         }
 
         g.pose().popMatrix();
@@ -231,7 +243,8 @@ public class ProfitHudRenderer {
         }
 
         if (itemCount > 0) {
-            baseH += itemCount * ROW_HEIGHT + 4 + ROW_HEIGHT + PADDING_V;
+            int extraRows = lifetime ? 0 : 1; // Session HUD has CPH row
+            baseH += itemCount * ROW_HEIGHT + 4 + ROW_HEIGHT + (extraRows * ROW_HEIGHT) + PADDING_V;
         } else {
             baseH += ROW_HEIGHT + PADDING_V; // Show at least one empty row or just the title
         }

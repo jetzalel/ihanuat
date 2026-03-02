@@ -1,5 +1,8 @@
 package com.ihanuat.mod.modules;
 
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.world.item.component.ItemLore;
+
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
@@ -9,6 +12,9 @@ import java.util.regex.Pattern;
 public class ProfitManager {
     private static final Map<String, Integer> sessionCounts = new LinkedHashMap<>();
     private static final Map<String, Integer> lifetimeCounts = new LinkedHashMap<>();
+    private static final Map<String, Integer> prevInventoryCounts = new LinkedHashMap<>();
+    private static long lastCultivatingValue = -1;
+    private static String currentFarmedCrop = "Wheat";
 
     private static final java.io.File LIFETIME_FILE = net.fabricmc.loader.api.FabricLoader.getInstance().getConfigDir()
             .resolve("pest_macro_profit_lifetime.json").toFile();
@@ -41,6 +47,12 @@ public class ProfitManager {
             "Dung", "Honey Jar", "Plant Matter", "Tasty Cheese", "Compost", "Jelly");
 
     private static final Set<String> PETS_SET = Set.of("Epic Slug", "Legendary Slug", "Rat");
+
+    private static final Set<String> BASE_CROPS = Set.of(
+            "Wheat", "Potato", "Carrot", "Melon Slice", "Pumpkin",
+            "Sugar Cane", "Cactus", "Nether Wart", "Cocoa Beans",
+            "Red Mushroom", "Brown Mushroom",
+            "Sunflower", "Moonflower", "Wild Rose", "Seeds");
 
     private static final Map<String, Long> TRACKED_ITEMS = Map.ofEntries(
             // Crops
@@ -303,5 +315,74 @@ public class ProfitManager {
             }
         }
         return false;
+    }
+
+    public static void update(net.minecraft.client.Minecraft client) {
+        if (client.player == null)
+            return;
+
+        // 1. Detect which crop increased in inventory
+        String detectedCrop = null;
+        int maxIncrease = 0;
+
+        Map<String, Integer> currentCounts = new LinkedHashMap<>();
+        for (int i = 0; i < 36; i++) {
+            net.minecraft.world.item.ItemStack stack = client.player.getInventory().getItem(i);
+            if (stack == null || stack.isEmpty())
+                continue;
+            String name = stack.getHoverName().getString().replaceAll("\u00A7[0-9a-fk-or]", "").trim();
+            if (BASE_CROPS.contains(name)) {
+                currentCounts.put(name, currentCounts.getOrDefault(name, 0) + stack.getCount());
+            }
+        }
+
+        for (Map.Entry<String, Integer> entry : currentCounts.entrySet()) {
+            String name = entry.getKey();
+            int count = entry.getValue();
+            int prev = prevInventoryCounts.getOrDefault(name, 0);
+            if (count > prev) {
+                int diff = count - prev;
+                if (diff > maxIncrease) {
+                    maxIncrease = diff;
+                    detectedCrop = name;
+                }
+            }
+        }
+        prevInventoryCounts.clear();
+        prevInventoryCounts.putAll(currentCounts);
+
+        if (detectedCrop != null) {
+            currentFarmedCrop = detectedCrop;
+        }
+
+        // 2. Track Cultivating counter on held item
+        net.minecraft.world.item.ItemStack held = client.player.getMainHandItem();
+        if (held != null && !held.isEmpty()) {
+            ItemLore lore = held.get(DataComponents.LORE);
+            if (lore != null) {
+                for (net.minecraft.network.chat.Component line : lore.lines()) {
+                    String lineText = line.getString().replaceAll("\u00A7[0-9a-fk-or]", "").trim();
+                    // Match "Cultivating IX 42,512,969"
+                    java.util.regex.Matcher m = java.util.regex.Pattern
+                            .compile("Cultivating\\s+[IVXLCDM]+\\s+([\\d,]+)")
+                            .matcher(lineText);
+                    if (m.find()) {
+                        try {
+                            long newValue = Long.parseLong(m.group(1).replace(",", ""));
+                            if (lastCultivatingValue != -1 && newValue > lastCultivatingValue) {
+                                long delta = newValue - lastCultivatingValue;
+                                if (currentFarmedCrop != null) {
+                                    addDrop(currentFarmedCrop, (int) delta);
+                                }
+                            }
+                            lastCultivatingValue = newValue;
+                            return; // Found Cultivating, done for this tick
+                        } catch (Exception ignored) {
+                        }
+                    }
+                }
+            }
+        }
+        lastCultivatingValue = -1;
     }
 }

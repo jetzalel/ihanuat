@@ -299,6 +299,7 @@ public class IhanuatClient implements ClientModInitializer {
             GearManager.cleanupTick(client);
             RotationManager.update(client);
             MacroStateManager.periodicUpdate();
+            ProfitManager.update(client);
             com.ihanuat.mod.modules.DiscordStatusManager.update(client);
 
             if (PestManager.isSneakingForAotv) {
