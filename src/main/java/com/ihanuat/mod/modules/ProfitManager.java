@@ -85,12 +85,12 @@ public class ProfitManager {
             Map.entry("Beady Eyes", 25000L), Map.entry("Chirping Stereo", 100000L), Map.entry("Sunder VI Book", 0L),
             Map.entry("Clipped Wings", 25000L), Map.entry("Bookworm's Favorite Book", 10000L),
             Map.entry("Atmospheric Filter", 100000L),
-            Map.entry("Wriggling Larva", 2500000L), Map.entry("Pesterminator I Book", 0L),
+            Map.entry("Wriggling Larva", 250000L), Map.entry("Pesterminator I Book", 0L),
             Map.entry("Squeaky Toy", 10000L),
             Map.entry("Squeaky Mousemat", 1000000L), Map.entry("Fire in a Bottle", 100000L),
             Map.entry("Vermin Vaporizer Chip", 100000L),
             Map.entry("Mantid Claw", 75000L),
-            Map.entry("Overclocker 3000", 1000000L),
+            Map.entry("Overclocker 3000", 250000L),
             Map.entry("Vinyl", 50000L),
             Map.entry("Dung", 0L), Map.entry("Honey Jar", 0L), Map.entry("Plant Matter", 0L),
             Map.entry("Tasty Cheese", 0L), Map.entry("Compost", 0L), Map.entry("Jelly", 0L),
@@ -111,7 +111,8 @@ public class ProfitManager {
             "Tasty Cheese", "CHEESE_FUEL",
             "Compost", "COMPOST",
             "Jelly", "JELLY",
-            "Helianthus", "HELIANTHUS");
+            "Helianthus", "HELIANTHUS",
+            "Vermin Vaporizer Chip", "VERMIN_VAPORIZER_GARDEN_CHIP");
 
     private static final Pattern PEST_PATTERN = Pattern.compile("received\\s+(\\d+)x\\s+(.+?)\\s+for\\s+killing",
             Pattern.CASE_INSENSITIVE);
