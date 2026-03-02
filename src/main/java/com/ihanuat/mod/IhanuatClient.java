@@ -12,6 +12,7 @@ import com.ihanuat.mod.modules.BoosterCookieManager;
 import com.ihanuat.mod.modules.BookCombineManager;
 import com.ihanuat.mod.modules.RotationManager;
 import com.ihanuat.mod.modules.VisitorManager;
+import com.ihanuat.mod.modules.ProfitManager;
 import com.ihanuat.mod.util.ClientUtils;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -49,22 +50,35 @@ public class IhanuatClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         MacroConfig.load();
+        ProfitManager.loadLifetime();
         MacroStateManager.syncFromConfig();
+        RestStateManager.clearState();
         MacroHudRenderer.register();
+        com.ihanuat.mod.gui.ProfitHudRenderer.register();
 
         // ── HUD edit-mode: render panel and handle drag/resize in inventory screens ──
         ScreenEvents.AFTER_INIT.register((mcClient, screen, scaledWidth, scaledHeight) -> {
-            if (!(screen instanceof AbstractContainerScreen)) return;
+            if (!(screen instanceof AbstractContainerScreen))
+                return;
 
-            ScreenEvents.afterRender(screen).register((scr, graphics, mouseX, mouseY, tickDelta) ->
-                    MacroHudRenderer.renderInEditMode(graphics, Minecraft.getInstance()));
+            ScreenEvents.afterRender(screen).register((scr, graphics, mouseX, mouseY, tickDelta) -> {
+                MacroHudRenderer.renderInEditMode(graphics, Minecraft.getInstance());
+                com.ihanuat.mod.gui.ProfitHudRenderer.renderInEditMode(graphics, Minecraft.getInstance());
+            });
 
             // Fabric 0.141+: mouse event object carries x, y, button and modifiers
             ScreenMouseEvents.allowMouseClick(screen).register((scr, event) -> {
-                if (event.button() == 0 && MacroHudRenderer.isHovered(event.x(), event.y())) {
-                    boolean ctrl = (event.modifiers() & GLFW.GLFW_MOD_CONTROL) != 0;
-                    MacroHudRenderer.startDrag(event.x(), event.y(), ctrl);
-                    return false;
+                if (event.button() == 0) {
+                    if (MacroHudRenderer.isHovered(event.x(), event.y())) {
+                        boolean ctrl = (event.modifiers() & GLFW.GLFW_MOD_CONTROL) != 0;
+                        MacroHudRenderer.startDrag(event.x(), event.y(), ctrl);
+                        return false;
+                    }
+                    if (com.ihanuat.mod.gui.ProfitHudRenderer.isHovered(event.x(), event.y())) {
+                        boolean ctrl = (event.modifiers() & GLFW.GLFW_MOD_CONTROL) != 0;
+                        com.ihanuat.mod.gui.ProfitHudRenderer.startDrag(event.x(), event.y(), ctrl);
+                        return false;
+                    }
                 }
                 return true;
             });
@@ -74,11 +88,16 @@ public class IhanuatClient implements ClientModInitializer {
                     MacroHudRenderer.drag(event.x(), event.y());
                     return false;
                 }
+                if (com.ihanuat.mod.gui.ProfitHudRenderer.isInteracting()) {
+                    com.ihanuat.mod.gui.ProfitHudRenderer.drag(event.x(), event.y());
+                    return false;
+                }
                 return true;
             });
 
             ScreenMouseEvents.allowMouseRelease(screen).register((scr, event) -> {
                 MacroHudRenderer.endDrag();
+                com.ihanuat.mod.gui.ProfitHudRenderer.endDrag();
                 return true;
             });
         });
@@ -186,6 +205,8 @@ public class IhanuatClient implements ClientModInitializer {
                 if (lowerText.contains("your stash isn't holding any items or materials!")) {
                     isPickingUpStash = false;
                 }
+
+                ProfitManager.handleChatMessage(text);
             } finally {
                 isHandlingMessage = false;
             }
@@ -278,6 +299,7 @@ public class IhanuatClient implements ClientModInitializer {
             GearManager.cleanupTick(client);
             RotationManager.update(client);
             MacroStateManager.periodicUpdate();
+            ProfitManager.update(client);
             com.ihanuat.mod.modules.DiscordStatusManager.update(client);
 
             if (PestManager.isSneakingForAotv) {

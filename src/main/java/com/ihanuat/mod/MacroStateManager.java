@@ -74,6 +74,7 @@ public class MacroStateManager {
             lastSessionStartTime = System.currentTimeMillis();
             if (!com.ihanuat.mod.MacroConfig.persistSessionTimer) {
                 sessionAccumulated = 0;
+                com.ihanuat.mod.modules.ProfitManager.reset();
             }
             lastPeriodicSaveTime = System.currentTimeMillis();
         } else if (currentState != MacroState.State.OFF && currentState != MacroState.State.RECOVERING
@@ -103,6 +104,7 @@ public class MacroStateManager {
         com.ihanuat.mod.modules.RecoveryManager.reset();
         if (!MacroConfig.persistSessionTimer) {
             com.ihanuat.mod.modules.DynamicRestManager.reset();
+            com.ihanuat.mod.modules.ProfitManager.reset();
         }
     }
 }
