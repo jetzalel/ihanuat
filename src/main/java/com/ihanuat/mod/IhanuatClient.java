@@ -186,8 +186,7 @@ public class IhanuatClient implements ClientModInitializer {
 
                             ClientUtils.waitForGearAndGui(client);
 
-                            client.execute(() -> GearManager.swapToFarmingTool(client));
-                            Thread.sleep(250);
+                            GearManager.swapToFarmingToolSync(client);
 
                             ClientUtils.sendCommand(client, ".ez-stopscript");
                             Thread.sleep(250);
