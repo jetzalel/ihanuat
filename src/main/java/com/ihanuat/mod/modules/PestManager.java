@@ -175,9 +175,7 @@ public class PestManager {
                     ClientUtils.sendCommand(client, "/warp garden");
                     Thread.sleep(MacroConfig.gardenWarpDelay);
 
-                    client.execute(() -> {
-                        GearManager.swapToFarmingTool(client);
-                    });
+                    GearManager.swapToFarmingToolSync(client);
 
                     if (MacroConfig.armorSwapVisitor && MacroConfig.wardrobeSlotVisitor > 0
                             && GearManager.trackedWardrobeSlot != MacroConfig.wardrobeSlotVisitor) {
@@ -274,9 +272,7 @@ public class PestManager {
                 return;
             }
 
-            client.execute(() -> {
-                GearManager.swapToFarmingTool(client);
-            });
+            GearManager.swapToFarmingToolSync(client);
 
             if (MacroConfig.armorSwapVisitor && MacroConfig.wardrobeSlotFarming > 0
                     && GearManager.trackedWardrobeSlot != MacroConfig.wardrobeSlotFarming) {
@@ -345,10 +341,12 @@ public class PestManager {
 
     private static void resumeAfterPrepSwap(Minecraft client) {
         ClientUtils.waitForGearAndGui(client);
+        GearManager.swapToFarmingToolSync(client);
+
+        if (isCleaningInProgress)
+            return;
+
         client.execute(() -> {
-            GearManager.swapToFarmingTool(client);
-            if (isCleaningInProgress)
-                return;
             com.ihanuat.mod.MacroStateManager.setCurrentState(com.ihanuat.mod.MacroState.State.FARMING);
             ClientUtils.sendCommand(client, MacroConfig.restartScript);
         });
@@ -517,7 +515,7 @@ public class PestManager {
                     // Trigger pest cleaning sequence immediately
                     ClientUtils.sendCommand(client, ".ez-stopscript");
                     Thread.sleep(50); // Minimal delay
-                    client.execute(() -> GearManager.swapToFarmingTool(client));
+                    GearManager.swapToFarmingToolSync(client);
                     Thread.sleep(50); // Minimal delay
                     ClientUtils.sendCommand(client, ".ez-startscript misc:pestCleaner");
                 } catch (InterruptedException ignored) {
@@ -537,7 +535,7 @@ public class PestManager {
         new Thread(() -> {
             try {
                 ClientUtils.waitForGearAndGui(client);
-                client.execute(() -> GearManager.swapToFarmingTool(client));
+                GearManager.swapToFarmingToolSync(client);
                 Thread.sleep(250);
                 ClientUtils.sendCommand(client, ".ez-stopscript");
                 Thread.sleep(250);

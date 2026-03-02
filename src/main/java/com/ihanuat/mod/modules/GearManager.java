@@ -294,20 +294,51 @@ public class GearManager {
         }
     }
 
-    public static void swapToFarmingTool(Minecraft client) {
+    public static int findFarmingToolSlot(Minecraft client) {
         if (client.player == null)
-            return;
+            return -1;
         String[] keywords = { "hoe", "dicer", "knife", "chopper", "cutter" };
         for (int i = 0; i < 9; i++) {
             ItemStack stack = client.player.getInventory().getItem(i);
             String name = stack.getHoverName().getString().toLowerCase();
             for (String kw : keywords) {
                 if (name.contains(kw)) {
-                    ((AccessorInventory) client.player.getInventory()).setSelected(i);
-                    client.player.displayClientMessage(Component.literal("\u00A7aEquipped Farming Tool: " + name),
-                            true);
-                    return;
+                    return i;
                 }
+            }
+        }
+        return -1;
+    }
+
+    public static void swapToFarmingTool(Minecraft client) {
+        int slot = findFarmingToolSlot(client);
+        if (slot != -1) {
+            ItemStack stack = client.player.getInventory().getItem(slot);
+            String name = stack.getHoverName().getString();
+            ((AccessorInventory) client.player.getInventory()).setSelected(slot);
+            client.player.displayClientMessage(Component.literal("\u00A7aEquipped Farming Tool: " + name), true);
+        }
+    }
+
+    public static void swapToFarmingToolSync(Minecraft client) {
+        int slot = findFarmingToolSlot(client);
+        if (slot != -1) {
+            client.execute(() -> {
+                ((AccessorInventory) client.player.getInventory()).setSelected(slot);
+                ItemStack stack = client.player.getInventory().getItem(slot);
+                client.player.displayClientMessage(
+                        Component.literal("\u00A7aEquipped Farming Tool: " + stack.getHoverName().getString()), true);
+            });
+            // Wait for confirmation
+            try {
+                long start = System.currentTimeMillis();
+                while (System.currentTimeMillis() - start < 1500) {
+                    if (((AccessorInventory) client.player.getInventory()).getSelected() == slot)
+                        break;
+                    Thread.sleep(20);
+                }
+                Thread.sleep(100);
+            } catch (InterruptedException ignored) {
             }
         }
     }
