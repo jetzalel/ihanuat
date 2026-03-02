@@ -404,7 +404,18 @@ public class ProfitManager {
                             if (lastCultivatingValue != -1 && newValue > lastCultivatingValue) {
                                 long delta = newValue - lastCultivatingValue;
                                 if (currentFarmedCrop != null) {
-                                    addDrop(currentFarmedCrop, (int) delta);
+                                    if (currentFarmedCrop.equalsIgnoreCase("Wheat")
+                                            || currentFarmedCrop.equalsIgnoreCase("Seeds")) {
+                                        // Ratio 1 Wheat : 1.5 Seeds (Total 2.5)
+                                        int wheatDelta = (int) Math.round(delta / 2.5);
+                                        int seedsDelta = (int) delta - wheatDelta;
+                                        if (wheatDelta > 0)
+                                            addDrop("Wheat", wheatDelta);
+                                        if (seedsDelta > 0)
+                                            addDrop("Seeds", seedsDelta);
+                                    } else {
+                                        addDrop(currentFarmedCrop, (int) delta);
+                                    }
                                 }
                             }
                             lastCultivatingValue = newValue;
