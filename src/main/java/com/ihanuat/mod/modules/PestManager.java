@@ -294,6 +294,7 @@ public class PestManager {
             }
 
             ClientUtils.waitForGearAndGui(client);
+
             com.ihanuat.mod.MacroStateManager.setCurrentState(com.ihanuat.mod.MacroState.State.FARMING);
             prepSwappedForCurrentPestCycle = false; // Ensure flag is reset when returning
             com.ihanuat.mod.util.CommandUtils.stopScript(client, 250);

@@ -105,8 +105,6 @@ public class VisitorManager {
 
         ClientUtils.waitForGearAndGui(client);
 
-        ClientUtils.waitForEquipmentGui(client);
-
         ClientUtils.waitForGearAndGui(client);
         client.player.displayClientMessage(Component.literal("\u00A7aRestarting farming script..."),
                 true);

@@ -182,13 +182,13 @@ public class GearManager {
 
             client.player.displayClientMessage(Component.literal("§aWardrobe swap finished. Restarting farming..."),
                     true);
+            client.execute(() -> GearManager.swapToFarmingTool(client));
             new Thread(() -> {
                 try {
                     ClientUtils.waitForGearAndGui(client);
                     if (PestManager.isCleaningInProgress)
                         return;
-                    client.execute(() -> GearManager.swapToFarmingTool(client));
-                    Thread.sleep(250);
+
                     com.ihanuat.mod.util.CommandUtils.stopScript(client, 250);
                     com.ihanuat.mod.util.CommandUtils.startScript(client, MacroConfig.getFullRestartCommand(), 0);
                 } catch (Exception e) {
@@ -199,6 +199,28 @@ public class GearManager {
     }
 
     public static void ensureEquipment(Minecraft client, boolean toFarming) {
+        if (!MacroConfig.autoEquipment)
+            return;
+
+        // If called from a non-render thread, we can block/wait.
+        // If from render thread, we should defer.
+        if (!Minecraft.getInstance().isSameThread()) {
+            try {
+                int timeout = 0;
+                while (isSwappingWardrobe && timeout < 100) { // Max 5 second wait
+                    Thread.sleep(50);
+                    timeout++;
+                }
+                if (isSwappingWardrobe) {
+                    ClientUtils.sendDebugMessage(client,
+                            "§c[GearManager] Auto-Equipment aborted: Wardrobe swap timed out.");
+                    return;
+                }
+                ClientUtils.sendDebugMessage(client, "§cWardrobe swap done! Triggering equipment swap");
+            } catch (InterruptedException ignored) {
+            }
+        }
+
         swappingToFarmingGear = toFarming;
         isSwappingEquipment = true;
         equipmentGuiDetected = false;
