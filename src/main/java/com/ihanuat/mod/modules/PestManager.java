@@ -32,6 +32,8 @@ public class PestManager {
     public static int flightStopStage = 0;
     public static int flightStopTicks = 0;
     public static volatile boolean isPrepSwapping = false;
+    public static volatile boolean isBonusInactive = false;
+    public static volatile boolean isReactivatingBonus = false;
 
     public static void reset() {
         isCleaningInProgress = false;
@@ -44,6 +46,7 @@ public class PestManager {
         flightStopStage = 0;
         flightStopTicks = 0;
         isPrepSwapping = false;
+        isReactivatingBonus = false;
         currentPestSessionId++;
     }
 
@@ -63,6 +66,7 @@ public class PestManager {
         }
 
         int aliveCount = -1;
+        boolean bonusFound = false;
         Set<String> infestedPlots = new HashSet<>();
         Collection<PlayerInfo> players = client.getConnection().getListedOnlinePlayers();
 
@@ -148,7 +152,13 @@ public class PestManager {
                     infestedPlots.add(m.group(1).trim());
                 }
             }
+
+            if (normalized.toUpperCase().contains("BONUS: INACTIVE")) {
+                bonusFound = true;
+            }
         }
+
+        isBonusInactive = bonusFound;
 
         if (aliveCount >= MacroConfig.pestThreshold || aliveCount >= 8) {
             if (aliveCount >= 8 && aliveCount < 99) {
@@ -413,6 +423,14 @@ public class PestManager {
                 ClientUtils.sendCommand(client, "/setspawn");
                 Thread.sleep(400); // Wait on thread, not main thread
 
+                if (isBonusInactive) {
+                    client.player.displayClientMessage(
+                            Component.literal("§dBonus is INACTIVE! Triggering Phillip reactivation..."), true);
+                    isReactivatingBonus = true;
+                    ClientUtils.sendCommand(client, ".ez-startscript misc:pestCleaner");
+                    return;
+                }
+
                 try {
                     if (MacroConfig.aotvToRoof) {
                         // AOTV to Roof sequence
@@ -552,5 +570,29 @@ public class PestManager {
             } catch (Exception ignored) {
             }
         }).start();
+    }
+
+    public static void handlePhillipMessage(Minecraft client, String text) {
+        if (!isReactivatingBonus || client.player == null)
+            return;
+
+        String plain = text.replaceAll("(?i)§[0-9a-fk-or]", "").trim();
+        if (plain.toLowerCase().contains("pesthunter phillip") && plain.toLowerCase().contains("thanks for the")) {
+            client.player.displayClientMessage(Component.literal(
+                    "§aPhillip message detected! Returning to plot §e" + currentInfestedPlot + "..."), true);
+            new Thread(() -> {
+                try {
+                    ClientUtils.sendCommand(client, ".ez-stopscript");
+                    Thread.sleep(MacroConfig.getRandomizedDelay(250));
+                    ClientUtils.sendCommand(client, "/tptoplot " + currentInfestedPlot);
+                    Thread.sleep(MacroConfig.getRandomizedDelay(1000));
+                    ClientUtils.sendCommand(client, ".ez-startscript misc:pestCleaner");
+                } catch (Exception e) {
+                    e.printStackTrace();
+                } finally {
+                    isReactivatingBonus = false;
+                }
+            }).start();
+        }
     }
 }
