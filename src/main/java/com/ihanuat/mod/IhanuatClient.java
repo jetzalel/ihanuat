@@ -207,6 +207,7 @@ public class IhanuatClient implements ClientModInitializer {
                 }
 
                 ProfitManager.handleChatMessage(message);
+                PestManager.handlePhillipMessage(Minecraft.getInstance(), text);
             } finally {
                 isHandlingMessage = false;
             }

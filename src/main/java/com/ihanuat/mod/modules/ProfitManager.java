@@ -54,7 +54,7 @@ public class ProfitManager {
     private static final Set<String> PETS_SET = Set.of("Epic Slug", "Legendary Slug", "Rat");
 
     private static final Set<String> MISC_DROPS_SET = Set.of("Cropie", "Squash", "Fermento", "Helianthus",
-            "Tool Exp Capsule", "Pet XP");
+            "Tool EXP Capsule", "Pet XP");
 
     private static final Set<String> BASE_CROPS = Set.of(
             "Wheat", "Potato", "Carrot", "Melon Slice", "Pumpkin",
@@ -97,7 +97,7 @@ public class ProfitManager {
             Map.entry("Wriggling Larva", 250000.0), Map.entry("Pesterminator I Book", 0.0),
             Map.entry("Squeaky Toy", 10000.0),
             Map.entry("Squeaky Mousemat", 1000000.0), Map.entry("Fire in a Bottle", 100000.0),
-            Map.entry("Vermin Vaporizer Chip", 100000.0),
+            Map.entry("Vermin Vaporizer Chip", 0.0),
             Map.entry("Mantid Claw", 75000.0),
             Map.entry("Overclocker 3000", 250000.0),
             Map.entry("Vinyl", 50000.0),
@@ -107,21 +107,21 @@ public class ProfitManager {
             Map.entry("Epic Slug", 500000.0), Map.entry("Legendary Slug", 5000000.0), Map.entry("Rat", 5000.0),
             // Misc Drops
             Map.entry("Cropie", 25000.0), Map.entry("Squash", 75000.0), Map.entry("Fermento", 250000.0),
-            Map.entry("Helianthus", 0.0), Map.entry("Tool Exp Capsule", 100000.0),
+            Map.entry("Helianthus", 0.0), Map.entry("Tool EXP Capsule", 100000.0),
             // Pet XP (price per XP point, will be fetched)
             Map.entry("Pet XP", 0.0));
 
-    private static final Map<String, String> BAZAAR_MAPPING = Map.of(
-            "Sunder VI Book", "ENCHANTMENT_SUNDER_6",
-            "Pesterminator I Book", "ENCHANTMENT_PESTERMINATOR_1",
-            "Dung", "DUNG",
-            "Honey Jar", "HONEY_JAR",
-            "Plant Matter", "PLANT_MATTER",
-            "Tasty Cheese", "CHEESE_FUEL",
-            "Compost", "COMPOST",
-            "Jelly", "JELLY",
-            "Helianthus", "HELIANTHUS",
-            "Vermin Vaporizer Chip", "VERMIN_VAPORIZER_GARDEN_CHIP");
+    private static final Map<String, String> BAZAAR_MAPPING = Map.ofEntries(
+            Map.entry("Sunder VI Book", "ENCHANTMENT_SUNDER_6"),
+            Map.entry("Pesterminator I Book", "ENCHANTMENT_PESTERMINATOR_1"),
+            Map.entry("Dung", "DUNG"),
+            Map.entry("Honey Jar", "HONEY_JAR"),
+            Map.entry("Plant Matter", "PLANT_MATTER"),
+            Map.entry("Tasty Cheese", "CHEESE_FUEL"),
+            Map.entry("Compost", "COMPOST"),
+            Map.entry("Jelly", "JELLY"),
+            Map.entry("Helianthus", "HELIANTHUS"),
+            Map.entry("Vermin Vaporizer Chip", "VERMIN_VAPORIZER_GARDEN_CHIP"));
 
     private static final Pattern PEST_PATTERN = Pattern.compile("received\\s+(\\d+)x\\s+(.+?)\\s+for\\s+killing",
             Pattern.CASE_INSENSITIVE);
@@ -134,7 +134,7 @@ public class ProfitManager {
     private static final Pattern RARE_CROP_PATTERN = Pattern.compile(
             "RARE CROP!\\s+(.+?)(?=\\s*(?:§[0-9a-fk-or])*\\s*[\\(!]|$)", Pattern.CASE_INSENSITIVE);
     private static final Pattern OVERFLOW_DROP_PATTERN = Pattern.compile(
-            "OVERFLOW!\\s+.*?\\s+has\\s+just\\s+dropped\\s+a\\s+(.+?)(?=\\s*(?:§[0-9a-fk-or])*\\s*[\\(!]|!|$)",
+            "OVERFLOW!\\s+.*?\\s+has\\s+just\\s+dropped\\s+(?:an?\\s+)?(?:(\\d+)x\\s+)?(.+?)(?=\\s*\\(!|!|$)",
             Pattern.CASE_INSENSITIVE);
 
     private static final Pattern STRIP_COLOR_PATTERN = Pattern.compile("(?i)§[0-9A-FK-OR]");
@@ -167,13 +167,20 @@ public class ProfitManager {
             return;
         }
 
-        Matcher overflowMatcher = OVERFLOW_DROP_PATTERN.matcher(text);
-        if (overflowMatcher.find()) {
-            addDrop(overflowMatcher.group(1).trim(), 1);
-            return;
-        }
-
+        // Plain text processing for standard drops
         String plainText = STRIP_COLOR_PATTERN.matcher(text).replaceAll("").trim();
+
+        Matcher overflowMatcher = OVERFLOW_DROP_PATTERN.matcher(plainText);
+        if (overflowMatcher.find()) {
+            try {
+                String countStr = overflowMatcher.group(1);
+                int count = (countStr != null) ? Integer.parseInt(countStr) : 1;
+                String itemName = overflowMatcher.group(2).trim();
+                addDrop(itemName, count);
+                return;
+            } catch (Exception ignored) {
+            }
+        }
 
         Matcher pestMatcher = PEST_PATTERN.matcher(plainText);
         if (pestMatcher.find()) {
