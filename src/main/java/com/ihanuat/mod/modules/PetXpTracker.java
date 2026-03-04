@@ -111,11 +111,11 @@ public class PetXpTracker {
             Pattern.CASE_INSENSITIVE);
     private static final Pattern STRIP_COLOR = Pattern.compile("(?i)§[0-9A-FK-OR]");
 
-    private static long lastAbsoluteXp = -1;
+    private static java.util.Map<String, Long> lastPetXp = new java.util.HashMap<>();
     private static long[] currentXpTable = null;
 
     public static void reset() {
-        lastAbsoluteXp = -1;
+        lastPetXp.clear();
     }
 
     public static long[] getXpTable(MacroConfig.PetRarity rarity, int maxLevel) {
@@ -209,7 +209,7 @@ public class PetXpTracker {
         int windowEnd = Math.min(petLineIndex + 9, tabLines.size());
         for (int i = petLineIndex + 1; i < windowEnd; i++) {
             if (MAX_LEVEL_PATTERN.matcher(tabLines.get(i)).find()) {
-                lastAbsoluteXp = -1;
+                // Ignore max level pets
                 return;
             }
         }
@@ -230,13 +230,14 @@ public class PetXpTracker {
             return;
 
         long absoluteXp = currentXpTable[detectedLevel] + (long) currentXpInLevel;
+        long previousXp = lastPetXp.getOrDefault(activePet.name, -1L);
 
-        if (lastAbsoluteXp >= 0 && absoluteXp > lastAbsoluteXp) {
-            long delta = absoluteXp - lastAbsoluteXp;
+        if (previousXp >= 0 && absoluteXp > previousXp) {
+            long delta = absoluteXp - previousXp;
             if (delta < 10_000_000L) {
                 ProfitManager.addPetXp(activePet.name, delta);
             }
         }
-        lastAbsoluteXp = absoluteXp;
+        lastPetXp.put(activePet.name, absoluteXp);
     }
 }
