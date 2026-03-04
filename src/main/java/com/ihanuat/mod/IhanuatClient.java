@@ -295,15 +295,23 @@ public class IhanuatClient implements ClientModInitializer {
                     }
                 }
 
+                // Debug: log all visitor-related messages when in VISITING/CLEANING state
+                if (MacroConfig.showDebug && plainText.toLowerCase().contains("visitor")) {
+                    ClientUtils.sendDebugMessage(Minecraft.getInstance(),
+                            "[visitorCheck] state=" + MacroStateManager.getCurrentState()
+                                    + " hasScript=" + plainText.toLowerCase().contains("script")
+                                    + " hasStopped=" + plainText.toLowerCase().contains("stopped")
+                                    + " hasFinished=" + plainText.toLowerCase().contains("finished")
+                                    + " msg=[" + plainText + "]");
+                }
+
                 if ((MacroStateManager.getCurrentState() == MacroState.State.VISITING
                         || MacroStateManager.getCurrentState() == MacroState.State.CLEANING)
-                        && lowerText.contains("visitor") && lowerText.contains("script")
-                        && (lowerText.contains("finished") || lowerText.contains("stopped"))
-                        && !text.contains("sequence complete")
-                        && (System.currentTimeMillis() - VisitorManager.visitingStartedAt > 5000)) {
+                        && plainText.toLowerCase().contains("visitor") && plainText.toLowerCase().contains("script")
+                        && (plainText.toLowerCase().contains("finished") || plainText.toLowerCase().contains("stopped"))
+                        && !plainText.contains("sequence complete")) {
                     ClientUtils.sendDebugMessage(Minecraft.getInstance(),
-                            "Visitor macro completion detected. Time since start: "
-                                    + (System.currentTimeMillis() - VisitorManager.visitingStartedAt) + "ms");
+                            "Visitor macro completion detected.");
                     VisitorManager.handleVisitorScriptFinished(Minecraft.getInstance());
                 }
 

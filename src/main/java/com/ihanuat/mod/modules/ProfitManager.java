@@ -779,8 +779,9 @@ public class ProfitManager {
         if (currentPurse != -1) {
             if (lastPurseBalance != -1) {
                 if (currentPurse > lastPurseBalance) {
-                    long delta = currentPurse - lastPurseBalance;
-                    if (com.ihanuat.mod.MacroStateManager.getCurrentState() != MacroState.State.AUTOSELLING) {
+                    if (com.ihanuat.mod.MacroStateManager.getCurrentState() != MacroState.State.OFF &&
+                            com.ihanuat.mod.MacroStateManager.getCurrentState() != MacroState.State.AUTOSELLING) {
+                        long delta = currentPurse - lastPurseBalance;
                         addDrop("Purse", delta);
                     }
                 }
