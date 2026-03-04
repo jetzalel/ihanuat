@@ -9,6 +9,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import net.minecraft.client.Minecraft;
+import com.ihanuat.mod.util.ClientUtils;
 
 public class ProfitManager {
     private static final Map<String, Long> sessionCounts = new LinkedHashMap<>();
@@ -163,6 +165,14 @@ public class ProfitManager {
 
     private static final Pattern STRIP_COLOR_PATTERN = Pattern.compile("(?i)§[0-9A-FK-OR]");
 
+    private static final Pattern BAZAAR_BUY_PATTERN = Pattern.compile(
+            "\\[Bazaar\\] Bought (\\d+)x (.+?) for [\\d,]+ coins!",
+            Pattern.CASE_INSENSITIVE);
+    private static final Pattern SPRAY_PATTERN = Pattern.compile(
+            "SPRAYONATOR! You sprayed Plot - \\d+ with (.+?)(?:!|$)",
+            Pattern.CASE_INSENSITIVE);
+    private static long lastBazaarSprayBuyTime = 0;
+
     public static void handleChatMessage(Component component) {
         String text = toLegacyText(component);
         // PET DROP needs raw text to detect color-coded rarity
@@ -235,6 +245,32 @@ public class ProfitManager {
                 int count = (countStr != null) ? Integer.parseInt(countStr) : 1;
                 addDrop("Pest Shard", count);
             } catch (Exception ignored) {
+            }
+        }
+
+        Matcher bazaarMatcher = BAZAAR_BUY_PATTERN.matcher(plainText);
+        if (bazaarMatcher.find()) {
+            try {
+                int count = Integer.parseInt(bazaarMatcher.group(1));
+                String itemName = bazaarMatcher.group(2).trim();
+                ClientUtils.sendDebugMessage(Minecraft.getInstance(),
+                        "Bazaar buy detected: " + count + "x " + itemName);
+                addDrop(itemName, -count);
+                lastBazaarSprayBuyTime = System.currentTimeMillis();
+            } catch (Exception ignored) {
+            }
+        }
+
+        Matcher sprayMatcher = SPRAY_PATTERN.matcher(plainText);
+        if (sprayMatcher.find()) {
+            String baitName = sprayMatcher.group(1).trim();
+            long now = System.currentTimeMillis();
+            if (now - lastBazaarSprayBuyTime < 15000) {
+                ClientUtils.sendDebugMessage(Minecraft.getInstance(),
+                        "Sprayonator use ignored due to recent Bazaar buy.");
+            } else {
+                ClientUtils.sendDebugMessage(Minecraft.getInstance(), "Sprayonator use detected (" + baitName + ").");
+                addDrop(baitName, -1);
             }
         }
     }
@@ -504,6 +540,7 @@ public class ProfitManager {
     public static void reset() {
         sessionCounts.clear();
         PetXpTracker.reset();
+        lastBazaarSprayBuyTime = 0;
     }
 
     public static void resetLifetime() {
