@@ -26,12 +26,6 @@ public class VisitorManager {
     public static class VisitorOffer {
         public String visitorName;
         public long totalCost = 0;
-        public List<Reward> rewards = new ArrayList<>();
-
-        public static class Reward {
-            public String name;
-            public long count;
-        }
     }
 
     // ── Existing Methods (unchanged) ──
@@ -71,7 +65,6 @@ public class VisitorManager {
             try {
                 ClientUtils.sendDebugMessage(client, "Warping to garden...");
                 com.ihanuat.mod.util.CommandUtils.warpGarden(client);
-                Thread.sleep(2000); // Increased delay for warp to register
                 PestManager.isReturningFromPestVisitor = true;
                 ClientUtils.sendDebugMessage(client, "Finalizing return to farm...");
                 finalizeReturnToFarm(client);
@@ -183,7 +176,6 @@ public class VisitorManager {
         }
         List<Component> lore = loreCmp.lines();
         boolean parsingRequirements = false;
-        boolean parsingRewards = false;
 
         for (Component line : lore) {
             String text = line.getString().replaceAll("\u00A7[0-9a-fk-or]", "").trim();
@@ -192,23 +184,19 @@ public class VisitorManager {
 
             if (text.contains("Items Required:")) {
                 parsingRequirements = true;
-                parsingRewards = false;
                 continue;
             }
             if (text.contains("Rewards:")) {
                 parsingRequirements = false;
-                parsingRewards = true;
                 continue;
             }
 
             if (parsingRequirements && !text.contains("Farming XP") && !text.contains("Garden Experience")) {
                 parseRequirement(client, text, offer, stack, costBreakdown);
-            } else if (parsingRewards && !text.contains("Farming XP") && !text.contains("Garden Experience")) {
-                parseReward(text, offer);
             }
         }
 
-        if (offer.totalCost > 0 || !offer.rewards.isEmpty()) {
+        if (offer.totalCost > 0) {
             pendingOffer = offer;
         }
     }
@@ -251,49 +239,6 @@ public class VisitorManager {
         }
     }
 
-    private static void parseReward(String text, VisitorOffer offer) {
-        String clean = text.replaceAll("\u00A7[0-9a-fk-or]", "").replace("+", "").trim();
-        if (clean.isEmpty() || clean.contains("Farming XP") || clean.contains("Garden Experience"))
-            return;
-
-        // Copper: "324 Copper"
-        if (clean.toLowerCase().contains("copper")) {
-            Matcher m = Pattern.compile("([\\d,]+)\\s+Copper").matcher(clean);
-            if (m.find()) {
-                VisitorOffer.Reward r = new VisitorOffer.Reward();
-                r.name = "Copper";
-                r.count = Long.parseLong(m.group(1).replace(",", ""));
-                offer.rewards.add(r);
-            }
-            return;
-        }
-
-        // Other items: "1x Biofuel" or "1 Biofuel" or "28.2k Mithril Powder"
-        Matcher mStart = Pattern.compile("^([\\d,.]+)[xX]?\\s+(.+)").matcher(clean);
-        if (mStart.find()) {
-            VisitorOffer.Reward r = new VisitorOffer.Reward();
-            String countStr = mStart.group(1).replace(",", "");
-            long count = 1;
-            try {
-                if (countStr.toLowerCase().endsWith("k")) {
-                    count = (long) (Double.parseDouble(countStr.substring(0, countStr.length() - 1)) * 1000);
-                } else {
-                    count = Long.parseLong(countStr);
-                }
-            } catch (Exception ignored) {
-            }
-            r.count = count;
-            r.name = mStart.group(2).trim();
-            offer.rewards.add(r);
-            return;
-        }
-
-        // No quantity prefix — skip. In the GUI, all real reward lines have an
-        // explicit count (e.g. "+43 Copper", "+1x Biofuel"). Lines like
-        // "Click to give! (x1)" or "Missing items to accept!" have no count
-        // and are UI hints, not rewards.
-    }
-
     /**
      * Resolves a Skyblock Item ID from NBT custom data, or falls back to the
      * Cofl API search cache in ProfitManager.fetchIdByName.
@@ -334,9 +279,6 @@ public class VisitorManager {
             // Lenient matching: "Moby" should match "Moby (RARE)"
             if (cleanAccepted.startsWith(cleanPending) || cleanPending.startsWith(cleanAccepted)) {
                 ProfitManager.addVisitorCost(pendingOffer.totalCost);
-                for (VisitorOffer.Reward r : pendingOffer.rewards) {
-                    ProfitManager.addVisitorGain("[Visitor] " + r.name, r.count);
-                }
                 pendingOffer = null;
             }
         }
