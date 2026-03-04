@@ -41,6 +41,7 @@ public class MacroConfig {
     public static final int DEFAULT_GEORGE_SELL_THRESHOLD = 3;
     public static final int DEFAULT_ROTATION_TIME = 500;
     public static final boolean DEFAULT_AOTV_TO_ROOF = false;
+    public static final boolean DEFAULT_AOTV_TO_ROOF_ONLY_SAME_PLOT = false;
     public static final int DEFAULT_WARDROBE_SLOT_FARMING = 1;
     public static final int DEFAULT_WARDROBE_SLOT_PEST = 2;
     public static final int DEFAULT_WARDROBE_SLOT_VISITOR = 3;
@@ -113,6 +114,7 @@ public class MacroConfig {
     public static int georgeSellThreshold = DEFAULT_GEORGE_SELL_THRESHOLD;
     public static int rotationTime = DEFAULT_ROTATION_TIME;
     public static boolean aotvToRoof = DEFAULT_AOTV_TO_ROOF;
+    public static boolean aotvToRoofOnlySamePlot = DEFAULT_AOTV_TO_ROOF_ONLY_SAME_PLOT;
 
     // Wardrobe Slots
     public static int wardrobeSlotFarming = DEFAULT_WARDROBE_SLOT_FARMING;
@@ -306,6 +308,7 @@ public class MacroConfig {
         data.georgeSellThreshold = georgeSellThreshold;
         data.rotationTime = rotationTime;
         data.aotvToRoof = aotvToRoof;
+        data.aotvToRoofOnlySamePlot = aotvToRoofOnlySamePlot;
 
         data.wardrobeSlotFarming = wardrobeSlotFarming;
         data.wardrobeSlotPest = wardrobeSlotPest;
@@ -400,6 +403,7 @@ public class MacroConfig {
                 georgeSellThreshold = data.georgeSellThreshold;
                 rotationTime = data.rotationTime;
                 aotvToRoof = data.aotvToRoof;
+                aotvToRoofOnlySamePlot = data.aotvToRoofOnlySamePlot;
 
                 wardrobeSlotFarming = data.wardrobeSlotFarming;
                 wardrobeSlotPest = data.wardrobeSlotPest;
@@ -490,6 +494,7 @@ public class MacroConfig {
         int georgeSellThreshold = DEFAULT_GEORGE_SELL_THRESHOLD;
         int rotationTime = DEFAULT_ROTATION_TIME;
         boolean aotvToRoof = DEFAULT_AOTV_TO_ROOF;
+        boolean aotvToRoofOnlySamePlot = DEFAULT_AOTV_TO_ROOF_ONLY_SAME_PLOT;
 
         int wardrobeSlotFarming = DEFAULT_WARDROBE_SLOT_FARMING;
         int wardrobeSlotPest = DEFAULT_WARDROBE_SLOT_PEST;

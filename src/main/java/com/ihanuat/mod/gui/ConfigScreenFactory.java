@@ -30,7 +30,7 @@ public class ConfigScreenFactory {
 
                 general.addEntry(builder.entryBuilder()
                                 .startTextDescription(Component.literal(
-                                                "§cDisable Auto Pest, Auto Visitor, and Auto Wardrobe in Taunahi settings"))
+                                                "§cDisable Auto Pest, Auto Visitor, and Auto Wardrobe in Taunahi settings\nDisable any mods that hide /warp garden feedback messages (Warping...) and PlotTP messages as we rely on this to work (usually Skyblocker)."))
                                 .build());
 
                 general.addEntry(builder.entryBuilder()
@@ -211,6 +211,15 @@ public class ConfigScreenFactory {
                                 .setTooltip(Component.literal(
                                                 "Uses Aspect of the Void to etherwarp to the roof after /setspawn during pest cleaning."))
                                 .setSaveConsumer(newValue -> MacroConfig.aotvToRoof = newValue)
+                                .build());
+
+                autoPest.addEntry(builder.entryBuilder()
+                                .startBooleanToggle(Component.literal("AOTV to roof only if same plot"),
+                                                MacroConfig.aotvToRoofOnlySamePlot)
+                                .setDefaultValue(MacroConfig.DEFAULT_AOTV_TO_ROOF_ONLY_SAME_PLOT)
+                                .setTooltip(Component.literal(
+                                                "Only attempts to etherwarp to the roof if you are already on the infested plot. Recommended to avoid warp lag issues."))
+                                .setSaveConsumer(newValue -> MacroConfig.aotvToRoofOnlySamePlot = newValue)
                                 .build());
 
                 // --- Auto Visitor Category ---

@@ -447,7 +447,7 @@ public class PestManager {
 
                 try {
                     boolean isSamePlot = currentInfestedPlot != null && currentInfestedPlot.equals(currentPlot);
-                    if (MacroConfig.aotvToRoof && isSamePlot) {
+                    if (MacroConfig.aotvToRoof && (!MacroConfig.aotvToRoofOnlySamePlot || isSamePlot)) {
                         // AOTV to Roof sequence
                         client.player.displayClientMessage(Component.literal("§6Using AOTV to Roof sequence..."), true);
 
