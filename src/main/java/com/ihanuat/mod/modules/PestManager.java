@@ -348,7 +348,10 @@ public class PestManager {
         ClientUtils.sendDebugMessage(client, "Pest cooldown detected. Triggering prep-swap...");
         new Thread(() -> {
             try {
-                com.ihanuat.mod.util.CommandUtils.stopScript(client, 375);
+                com.ihanuat.mod.util.CommandUtils.stopScript(client, 0);
+                // Wait for script to actually stop before attempting wardrobe swap
+                Thread.sleep(400);
+                
                 if (isCleaningInProgress) {
                     prepSwappedForCurrentPestCycle = false;
                     return;
@@ -511,8 +514,13 @@ public class PestManager {
                                     Component.literal("§cAspect of the Void not found in inventory!"), true);
                             isSneakingForAotv = false;
                             client.execute(() -> client.options.keyShift.setDown(false));
-                            // Fall back to normal plottp
+                            // Fall back to normal plottp - ensure wardrobe GUI is closed first
                             if (currentInfestedPlot != null && !currentInfestedPlot.equals("0")) {
+                                // Ensure GUI is fully closed before warping
+                                long guiCloseStart = System.currentTimeMillis();
+                                while (client.screen != null && System.currentTimeMillis() - guiCloseStart < 2000) {
+                                    Thread.sleep(50);
+                                }
                                 com.ihanuat.mod.util.CommandUtils.plotTp(client, currentInfestedPlot);
                                 Thread.sleep(250);
                             }
@@ -532,6 +540,11 @@ public class PestManager {
                                 isSneakingForAotv = false;
                                 client.execute(() -> client.options.keyShift.setDown(false));
                                 if (currentInfestedPlot != null && !currentInfestedPlot.equals("0")) {
+                                    // Ensure GUI is fully closed before warping
+                                    long guiCloseStart = System.currentTimeMillis();
+                                    while (client.screen != null && System.currentTimeMillis() - guiCloseStart < 2000) {
+                                        Thread.sleep(50);
+                                    }
                                     com.ihanuat.mod.util.CommandUtils.plotTp(client, currentInfestedPlot);
                                     Thread.sleep(250);
                                 }
