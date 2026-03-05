@@ -106,7 +106,7 @@ public class CommandUtils {
 
         if (com.ihanuat.mod.MacroConfig.delayMode == com.ihanuat.mod.MacroConfig.DelayMode.LEGACY) {
             try {
-                Thread.sleep(3000);
+                Thread.sleep(500);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
@@ -162,7 +162,7 @@ public class CommandUtils {
 
         if (com.ihanuat.mod.MacroConfig.delayMode == com.ihanuat.mod.MacroConfig.DelayMode.LEGACY) {
             try {
-                Thread.sleep(1000);
+                Thread.sleep(500);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
@@ -241,7 +241,7 @@ public class CommandUtils {
 
         if (com.ihanuat.mod.MacroConfig.delayMode == com.ihanuat.mod.MacroConfig.DelayMode.LEGACY) {
             try {
-                Thread.sleep(1200);
+                Thread.sleep(500);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
