@@ -341,7 +341,7 @@ public class PestManager {
 
             GearManager.swapToFarmingToolSync(client);
             if (MacroConfig.gearSwapMode == MacroConfig.GearSwapMode.ROD_2X) {
-                ClientUtils.sendDebugMessage(client, "ROD 2X: Executing second rod cast before returning to farming.");
+                ClientUtils.sendDebugMessage(client, "ROD 2X: Triggering second rod cast (PestManager)...");
                 GearManager.executeRodSequence(client);
             }
 

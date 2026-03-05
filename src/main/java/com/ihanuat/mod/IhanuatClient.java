@@ -403,6 +403,10 @@ public class IhanuatClient implements ClientModInitializer {
                                 return;
 
                             GearManager.swapToFarmingToolSync(client);
+                            if (MacroConfig.gearSwapMode == MacroConfig.GearSwapMode.ROD_2X) {
+                                ClientUtils.sendDebugMessage(client, "ROD 2X: Executing rod cast during startup.");
+                                GearManager.executeRodSequence(client);
+                            }
                             if (PestManager.isCleaningInProgress || PestManager.isPrepSwapping)
                                 return;
 

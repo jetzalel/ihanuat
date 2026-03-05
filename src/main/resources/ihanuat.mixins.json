@@ -2,6 +2,7 @@
     "required": true,
     "package": "com.ihanuat.mod.mixin",
     "compatibilityLevel": "JAVA_21",
+    "refmap": "ihanuat-refmap.json",
     "mixins": [
         "AccessorInventory"
     ],

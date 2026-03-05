@@ -111,7 +111,7 @@ public class VisitorManager {
                 }
             }
             ClientUtils.waitForGearAndGui(client);
-                        ClientUtils.sendDebugMessage(client, "Wardrobe swap done, now triggering visitor macro");
+            ClientUtils.sendDebugMessage(client, "Wardrobe swap done, now triggering visitor macro");
             com.ihanuat.mod.MacroStateManager.setCurrentState(com.ihanuat.mod.MacroState.State.VISITING);
             ClientUtils.sendDebugMessage(client, "Stopping script: Returning to visitor macro (threshold met)");
             com.ihanuat.mod.util.CommandUtils.stopScript(client, 250);
@@ -138,6 +138,12 @@ public class VisitorManager {
         }
 
         ClientUtils.waitForGearAndGui(client);
+
+        if (MacroConfig.gearSwapMode == MacroConfig.GearSwapMode.ROD_2X) {
+            ClientUtils.sendDebugMessage(client, "ROD 2X: Triggering second rod cast (VisitorManager)...");
+            GearManager.executeRodSequence(client);
+        }
+
         client.player.displayClientMessage(Component.literal("\u00A7aRestarting farming script..."),
                 true);
         ClientUtils.sendDebugMessage(client, "Setting state to FARMING and starting script.");
@@ -146,6 +152,7 @@ public class VisitorManager {
         com.ihanuat.mod.util.CommandUtils.stopScript(client, 250);
         ClientUtils.sendDebugMessage(client, "Starting farming script: " + MacroConfig.getFullRestartCommand());
         com.ihanuat.mod.util.CommandUtils.startScript(client, MacroConfig.getFullRestartCommand(), 0);
+        PestManager.prepSwappedForCurrentPestCycle = false;
         PestManager.isCleaningInProgress = false;
     }
 

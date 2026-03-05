@@ -582,6 +582,7 @@ public class GearManager {
     }
 
     public static void executeRodSequence(Minecraft client) {
+        ClientUtils.sendDebugMessage(client, "executeRodSequence called");
         // Wait for any ongoing equipment swap first
         if (isSwappingEquipment) {
             ClientUtils.sendDebugMessage(client, "Waiting for equipment swap before rod sequence...");
