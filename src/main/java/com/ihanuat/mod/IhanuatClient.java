@@ -359,7 +359,7 @@ public class IhanuatClient implements ClientModInitializer {
                 PestManager.handlePhillipMessage(Minecraft.getInstance(), text);
 
                 // Notify CommandUtils about the chat message for command synchronization
-                com.ihanuat.mod.util.CommandUtils.onChatMessage(text);
+                com.ihanuat.mod.util.CommandUtils.onChatMessage(plainText);
 
             } finally {
                 isHandlingMessage = false;
