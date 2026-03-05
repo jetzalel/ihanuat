@@ -11,6 +11,7 @@ Feature List:
 - AOTV to roof
 - Support for farms that start with /plottp
 - Custom NPC sell
+- Junk dropper
 
 Use O to open the config and K to start the macro (change in controls accordingly)  
 before starting, ensure the auto start pest, auto start visitor, and wardrobe swap is off in taunahi settings. Use taunahi's rewarper.
