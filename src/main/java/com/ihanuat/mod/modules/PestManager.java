@@ -157,8 +157,8 @@ public class PestManager {
 
         isBonusInactive = bonusFound;
 
-        // Failsafe: if cleaning and 0 pests for 10s, return to farming
-        if (currentState == MacroState.State.CLEANING) {
+        // Failsafe: if cleaning/spraying and 0 pests for 10s, return to farming
+        if (currentState == MacroState.State.CLEANING || currentState == MacroState.State.SPRAYING) {
             if (aliveCount <= 0) {
                 if (lastZeroPestTime == 0) {
                     lastZeroPestTime = System.currentTimeMillis();

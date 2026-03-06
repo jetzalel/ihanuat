@@ -249,6 +249,8 @@ public class IhanuatClient implements ClientModInitializer {
 
                 if (text.contains("Taunahi >>") && text.contains("Let's use sprayonator.")) {
                     MacroStateManager.setCurrentState(MacroState.State.SPRAYING);
+                    PestManager.isCleaningInProgress = true; // Prevent checkTabListForPests from re-triggering
+                                                             // startCleaningSequence
                     ProfitManager.startSprayPhase();
                     return;
                 }
@@ -318,8 +320,11 @@ public class IhanuatClient implements ClientModInitializer {
                     }
                 }
 
-                // Debug: log all visitor-related messages when in VISITING/CLEANING state
-                if (MacroConfig.showDebug && plainText.toLowerCase().contains("visitor")) {
+                // Debug: log all visitor-related messages when in VISITING/CLEANING/SPRAYING
+                // state
+                // Guard: skip our own debug messages to avoid a feedback loop
+                if (MacroConfig.showDebug && plainText.toLowerCase().contains("visitor")
+                        && !plainText.startsWith("[Debug]")) {
                     ClientUtils.sendDebugMessage(Minecraft.getInstance(),
                             "[visitorCheck] state=" + MacroStateManager.getCurrentState()
                                     + " hasScript=" + plainText.toLowerCase().contains("script")
@@ -329,7 +334,9 @@ public class IhanuatClient implements ClientModInitializer {
                 }
 
                 if ((MacroStateManager.getCurrentState() == MacroState.State.VISITING
-                        || MacroStateManager.getCurrentState() == MacroState.State.CLEANING)
+                        || MacroStateManager.getCurrentState() == MacroState.State.CLEANING
+                        || MacroStateManager.getCurrentState() == MacroState.State.SPRAYING)
+                        && !plainText.startsWith("[Debug]") // Never trigger on our own debug messages
                         && plainText.toLowerCase().contains("visitor") && plainText.toLowerCase().contains("script")
                         && (plainText.toLowerCase().contains("finished") || plainText.toLowerCase().contains("stopped"))
                         && !plainText.contains("sequence complete")) {
