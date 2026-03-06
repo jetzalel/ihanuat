@@ -194,11 +194,14 @@ public class PestManager {
         new Thread(() -> {
             try {
                 if (MacroConfig.unflyMode == MacroConfig.UnflyMode.DOUBLE_TAP_SPACE) {
+                    ClientUtils.sendDebugMessage(client, "Finisher: Performing unfly (Double Tap Space)...");
                     performUnfly(client);
                     Thread.sleep(150);
                 }
 
                 int visitors = VisitorManager.getVisitorCount(client);
+                ClientUtils.sendDebugMessage(client, "Finisher: Visitor count check: " + visitors + " (Threshold: "
+                        + MacroConfig.visitorThreshold + ")");
                 if (visitors >= MacroConfig.visitorThreshold) {
                     MacroState.Location loc = ClientUtils.getCurrentLocation(client);
                     if (loc != MacroState.Location.GARDEN) {
@@ -222,7 +225,10 @@ public class PestManager {
                                 true);
                         GearManager.ensureWardrobeSlot(client, MacroConfig.wardrobeSlotVisitor);
                         if (GearManager.isSwappingWardrobe) {
+                            ClientUtils.sendDebugMessage(client, "Finisher (Visitor): Waiting for wardrobe GUI...");
                             ClientUtils.waitForWardrobeGui(client);
+                            ClientUtils.sendDebugMessage(client,
+                                    "Finisher (Visitor): Wardrobe GUI cleared, waiting for swap completion...");
                             while (GearManager.isSwappingWardrobe)
                                 Thread.sleep(50);
                             while (GearManager.wardrobeCleanupTicks > 0)
@@ -231,7 +237,11 @@ public class PestManager {
                         }
                     }
 
+                    ClientUtils.sendDebugMessage(client,
+                            "Finisher (Visitor): Gear restoration done, waiting for stability...");
                     ClientUtils.waitForGearAndGui(client);
+                    ClientUtils.sendDebugMessage(client,
+                            "Finisher (Visitor): stability reached, transitioning to VISITING.");
                     ClientUtils.sendDebugMessage(client,
                             "Wardrobe swap done, now triggering visitor macro. Next state: VISITING");
                     MacroStateManager.setCurrentState(MacroState.State.VISITING);
@@ -246,14 +256,16 @@ public class PestManager {
                 }
 
                 Thread.sleep(150);
-                ClientUtils.sendDebugMessage(client, "Warping to garden (PestManager)...");
+                ClientUtils.sendDebugMessage(client, "Finisher: Warping to garden (Return to Farm)...");
                 com.ihanuat.mod.util.CommandUtils.warpGarden(client);
                 Thread.sleep(250);
                 isReturningFromPestVisitor = true;
-                ClientUtils.sendDebugMessage(client, "Finalizing return to farm (PestManager). Next state: FARMING");
+                ClientUtils.sendDebugMessage(client, "Finisher: Calling finalizeReturnToFarm...");
                 finalizeReturnToFarm(client);
             } catch (Exception e) {
                 e.printStackTrace();
+                ClientUtils.sendDebugMessage(client,
+                        "§cCRITICAL ERROR in handlePestCleaningFinished: " + e.getMessage());
             }
         }).start();
 
@@ -291,14 +303,17 @@ public class PestManager {
             return;
 
         try {
+            ClientUtils.sendDebugMessage(client, "Finalize: Starting return sequence.");
             // Already handled in handlePestCleaningFinished but just in case it's called
             // from elsewhere
             if (MacroConfig.unflyMode == MacroConfig.UnflyMode.SNEAK) {
+                ClientUtils.sendDebugMessage(client, "Finalize: Performing unfly (Sneak)...");
                 performUnfly(client);
                 Thread.sleep(150);
             }
 
             int visitors = VisitorManager.getVisitorCount(client);
+            ClientUtils.sendDebugMessage(client, "Finalize: Visitor count check: " + visitors);
             if (visitors >= MacroConfig.visitorThreshold) {
                 client.execute(() -> {
                     GearManager.swapToFarmingTool(client);
@@ -311,7 +326,10 @@ public class PestManager {
                             true);
                     GearManager.ensureWardrobeSlot(client, MacroConfig.wardrobeSlotVisitor);
                     if (GearManager.isSwappingWardrobe) {
+                        ClientUtils.sendDebugMessage(client, "Finalize (Visitor): Waiting for wardrobe GUI...");
                         ClientUtils.waitForWardrobeGui(client);
+                        ClientUtils.sendDebugMessage(client,
+                                "Finalize (Visitor): Wardrobe GUI cleared, waiting for swap completion...");
                         while (GearManager.isSwappingWardrobe)
                             Thread.sleep(50);
                         while (GearManager.wardrobeCleanupTicks > 0)
@@ -323,6 +341,7 @@ public class PestManager {
                 // Wait for any remaining GUIs and wardrobe swap (equipment swap not done for
                 // visitors)
                 try {
+                    ClientUtils.sendDebugMessage(client, "Finalize (Visitor): Waiting for final stability...");
                     while (GearManager.isSwappingWardrobe)
                         Thread.sleep(50);
                     long guiStart = System.currentTimeMillis();
@@ -342,16 +361,20 @@ public class PestManager {
                 return;
             }
 
+            ClientUtils.sendDebugMessage(client, "Finalize: Swapping to farming tool...");
             GearManager.swapToFarmingToolSync(client);
+            ClientUtils.sendDebugMessage(client, "Finalize: Tool swap done.");
             if (MacroConfig.autoRodReturnToFarm) {
-                ClientUtils.sendDebugMessage(client, "Auto Rod: Triggering second rod cast (PestManager)...");
+                ClientUtils.sendDebugMessage(client, "Finalize: Auto Rod - Triggering second rod cast.");
                 GearManager.executeRodSequence(client);
             }
 
             // Only wait for gear swap if equipment swap is enabled (since it's only done
             // during cleaning if enabled)
             if (MacroConfig.autoEquipment) {
+                ClientUtils.sendDebugMessage(client, "Finalize: Waiting for gear/gui checks...");
                 ClientUtils.waitForGearAndGui(client);
+                ClientUtils.sendDebugMessage(client, "Finalize: Gear/gui wait done.");
             }
 
             ClientUtils.sendDebugMessage(client, "Pest cleaning sequence completed. Next state: FARMING");
