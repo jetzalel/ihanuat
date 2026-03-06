@@ -48,7 +48,10 @@ public class GeorgeManager {
             // close it
             if (title.contains("george") || title.contains("sell pets") || title.contains("pet collector")
                     || title.contains("offer pets")) {
-                if (countPetsInInventory(client) == 0 && MacroStateManager.isMacroRunning()) {
+            int petCount = countPetsInInventory(client);
+            boolean georgeSequenceRunning = isSelling || isPreparingToSell;
+            if (petCount < MacroConfig.georgeSellThreshold && !georgeSequenceRunning
+                && MacroStateManager.isMacroRunning()) {
                     client.player.displayClientMessage(
                             Component.literal("§c[Ihanuat] Unexpected George GUI detected. Restarting script..."),
                             false);
