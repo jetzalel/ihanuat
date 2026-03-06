@@ -22,10 +22,14 @@ public class ClientUtils {
     private static final long COMMAND_COOLDOWN_MS = 250;
 
     public static void sendDebugMessage(Minecraft client, String message) {
-        if (client.player != null && MacroConfig.showDebug) {
-            client.player.displayClientMessage(
-                    Component.literal("§9[Debug] " + message),
-                    false);
+        if (MacroConfig.showDebug) {
+            client.execute(() -> {
+                if (client.player != null) {
+                    client.player.displayClientMessage(
+                            Component.literal("§9[Debug] " + message),
+                            false);
+                }
+            });
         }
     }
 
