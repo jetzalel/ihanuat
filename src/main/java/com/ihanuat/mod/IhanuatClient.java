@@ -260,15 +260,26 @@ public class IhanuatClient implements ClientModInitializer {
                     return;
                 }
 
-                if (text.contains("Pest Cleaner") && text.contains("Finished")) {
+                String plainText = text.replaceAll("(?i)[\u00A7&][0-9a-fk-or]", "");
+                String lowerPlainText = plainText.toLowerCase();
+
+                boolean isPestCleanerFinishSignal = lowerPlainText.contains("pest cleaner")
+                        && lowerPlainText.contains("finished")
+                        && !lowerPlainText.contains("sprayed plot")
+                        && !lowerPlainText.contains("plot -")
+                        && !lowerPlainText.matches(".*plot\\s*[#:\\-]\\s*\\d+.*");
+
+                if (isPestCleanerFinishSignal) {
                     if (MacroStateManager.getCurrentState() == MacroState.State.CLEANING
                             || MacroStateManager.getCurrentState() == MacroState.State.SPRAYING) {
+                        if (MacroConfig.showDebug) {
+                            ClientUtils.sendDebugMessage(Minecraft.getInstance(),
+                                    "Pest cleaner completion detected from chat: [" + plainText + "]");
+                        }
                         ProfitManager.stopSprayPhase();
                         PestManager.handlePestCleaningFinished(Minecraft.getInstance());
                     }
                 }
-
-                String plainText = text.replaceAll("(?i)[\u00A7&][0-9a-fk-or]", "");
 
                 // Track bazaar buys during pest cleaner spray phase
                 if (ProfitManager.isSprayPhaseActive && plainText.contains("[Bazaar]")

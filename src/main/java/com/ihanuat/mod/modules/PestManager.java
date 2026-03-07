@@ -51,8 +51,10 @@ public class PestManager {
             }
         }
 
-        // Failsafe: if cleaning/spraying and 0 pests for 10s, return to farming
-        if (currentState == MacroState.State.CLEANING || currentState == MacroState.State.SPRAYING) {
+        // Failsafe: if CLEANING and 0 pests for 10s, return to farming.
+        // Do not apply this during SPRAYING because spray routes can legitimately
+        // travel multiple plots with 0 alive pests between spray actions.
+        if (currentState == MacroState.State.CLEANING) {
             if (data.aliveCount <= 0) {
                 if (lastZeroPestTime == 0) {
                     lastZeroPestTime = System.currentTimeMillis();
