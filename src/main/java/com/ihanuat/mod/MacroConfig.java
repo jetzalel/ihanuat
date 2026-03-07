@@ -98,10 +98,15 @@ public class MacroConfig {
     public static final float DEFAULT_SESSION_PROFIT_HUD_SCALE = 1.0f;
     public static final boolean DEFAULT_SHOW_SESSION_PROFIT_HUD = true;
 
+    public static final int DEFAULT_DAILY_HUD_X = 10;
+    public static final int DEFAULT_DAILY_HUD_Y = 290;
+    public static final float DEFAULT_DAILY_HUD_SCALE = 1.0f;
+    public static final boolean DEFAULT_SHOW_DAILY_HUD = true;
+
     public static final int DEFAULT_LIFETIME_HUD_X = 10;
-    public static final int DEFAULT_LIFETIME_HUD_Y = 290;
+    public static final int DEFAULT_LIFETIME_HUD_Y = 430;
     public static final float DEFAULT_LIFETIME_HUD_SCALE = 1.0f;
-    public static final boolean DEFAULT_SHOW_LIFETIME_HUD = false;
+    public static final boolean DEFAULT_SHOW_LIFETIME_HUD = true;
 
     public static int pestThreshold = DEFAULT_PEST_THRESHOLD;
     public static boolean triggerPestOnChat = DEFAULT_TRIGGER_PEST_ON_CHAT;
@@ -282,6 +287,11 @@ public class MacroConfig {
     public static float sessionProfitHudScale = DEFAULT_SESSION_PROFIT_HUD_SCALE;
     public static boolean showSessionProfitHud = DEFAULT_SHOW_SESSION_PROFIT_HUD;
 
+    public static int dailyHudX = DEFAULT_DAILY_HUD_X;
+    public static int dailyHudY = DEFAULT_DAILY_HUD_Y;
+    public static float dailyHudScale = DEFAULT_DAILY_HUD_SCALE;
+    public static boolean showDailyHud = DEFAULT_SHOW_DAILY_HUD;
+
     public static int lifetimeHudX = DEFAULT_LIFETIME_HUD_X;
     public static int lifetimeHudY = DEFAULT_LIFETIME_HUD_Y;
     public static float lifetimeHudScale = DEFAULT_LIFETIME_HUD_SCALE;
@@ -379,6 +389,11 @@ public class MacroConfig {
         data.sessionProfitHudY = sessionProfitHudY;
         data.sessionProfitHudScale = sessionProfitHudScale;
         data.showSessionProfitHud = showSessionProfitHud;
+
+        data.dailyHudX = dailyHudX;
+        data.dailyHudY = dailyHudY;
+        data.dailyHudScale = dailyHudScale;
+        data.showDailyHud = showDailyHud;
 
         data.lifetimeHudX = lifetimeHudX;
         data.lifetimeHudY = lifetimeHudY;
@@ -494,6 +509,11 @@ public class MacroConfig {
                         : DEFAULT_SESSION_PROFIT_HUD_SCALE;
                 showSessionProfitHud = data.showSessionProfitHud;
 
+                dailyHudX = data.dailyHudX;
+                dailyHudY = data.dailyHudY;
+                dailyHudScale = data.dailyHudScale > 0 ? data.dailyHudScale : DEFAULT_DAILY_HUD_SCALE;
+                showDailyHud = data.showDailyHud;
+
                 lifetimeHudX = data.lifetimeHudX;
                 lifetimeHudY = data.lifetimeHudY;
                 lifetimeHudScale = data.lifetimeHudScale > 0 ? data.lifetimeHudScale : DEFAULT_LIFETIME_HUD_SCALE;
@@ -582,6 +602,11 @@ public class MacroConfig {
         int sessionProfitHudY = DEFAULT_SESSION_PROFIT_HUD_Y;
         float sessionProfitHudScale = DEFAULT_SESSION_PROFIT_HUD_SCALE;
         boolean showSessionProfitHud = DEFAULT_SHOW_SESSION_PROFIT_HUD;
+
+        int dailyHudX = DEFAULT_DAILY_HUD_X;
+        int dailyHudY = DEFAULT_DAILY_HUD_Y;
+        float dailyHudScale = DEFAULT_DAILY_HUD_SCALE;
+        boolean showDailyHud = DEFAULT_SHOW_DAILY_HUD;
 
         int lifetimeHudX = DEFAULT_LIFETIME_HUD_X;
         int lifetimeHudY = DEFAULT_LIFETIME_HUD_Y;

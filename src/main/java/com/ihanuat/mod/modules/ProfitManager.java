@@ -16,6 +16,7 @@ import com.ihanuat.mod.util.ClientUtils;
 
 public class ProfitManager {
     private static final Map<String, Long> sessionCounts = new LinkedHashMap<>();
+    private static final Map<String, Long> dailyCounts = new LinkedHashMap<>();
     private static final Map<String, Long> lifetimeCounts = new LinkedHashMap<>();
     private static final Map<String, Long> prevInventoryCounts = new LinkedHashMap<>();
     private static final Map<String, Double> bazaarPrices = new LinkedHashMap<>();
@@ -25,9 +26,11 @@ public class ProfitManager {
     private static String currentFarmedCrop = "Wheat";
     private static long lastBazaarFetchTime = 0;
     private static long lastPurseBalance = -1;
+    private static String lastDailyResetDate = getCurrentDateString();
 
     // Spray cost tracking: quantity is tracked separately from coins
     private static long spraySessionQuantity = 0;
+    private static long sprayDailyQuantity = 0;
     private static long sprayLifetimeQuantity = 0;
     public static volatile boolean isSprayPhaseActive = false;
 
@@ -45,6 +48,8 @@ public class ProfitManager {
 
     private static final java.io.File LIFETIME_FILE = net.fabricmc.loader.api.FabricLoader.getInstance().getConfigDir()
             .resolve("pest_macro_profit_lifetime.json").toFile();
+    private static final java.io.File DAILY_FILE = net.fabricmc.loader.api.FabricLoader.getInstance().getConfigDir()
+            .resolve("pest_macro_profit_daily.json").toFile();
     private static final com.google.gson.Gson GSON = new com.google.gson.GsonBuilder().setPrettyPrinting().create();
 
     private static final Set<String> CROPS_SET = Set.of(
@@ -499,13 +504,18 @@ public class ProfitManager {
             }
         }
 
+        // Check for daily reset
+        checkDailyReset();
+
         // Only add to session counts if macro is running
         if (com.ihanuat.mod.MacroStateManager.isMacroRunning()) {
             sessionCounts.put(matchedName, sessionCounts.getOrDefault(matchedName, 0L) + finalCount);
         }
 
+        dailyCounts.put(matchedName, dailyCounts.getOrDefault(matchedName, 0L) + finalCount);
         lifetimeCounts.put(matchedName, lifetimeCounts.getOrDefault(matchedName, 0L) + finalCount);
         saveLifetime();
+        saveDaily();
     }
 
     public static void addVisitorGain(String itemName, long count) {
@@ -523,33 +533,50 @@ public class ProfitManager {
         String key = cleanName.startsWith("[Visitor] ") ? cleanName : "[Visitor] " + cleanName;
         long totalCount = count * multiplier;
 
+        checkDailyReset();
+
         if (com.ihanuat.mod.MacroStateManager.isMacroRunning()) {
             sessionCounts.put(key, sessionCounts.getOrDefault(key, 0L) + totalCount);
         }
+        dailyCounts.put(key, dailyCounts.getOrDefault(key, 0L) + totalCount);
         lifetimeCounts.put(key, lifetimeCounts.getOrDefault(key, 0L) + totalCount);
         saveLifetime();
+        saveDaily();
     }
 
     public static void addVisitorCost(long coinsSpent) {
         String key = "[Visitor] Visitor Cost";
+        checkDailyReset();
         sessionCounts.put(key, sessionCounts.getOrDefault(key, 0L) - coinsSpent);
+        dailyCounts.put(key, dailyCounts.getOrDefault(key, 0L) - coinsSpent);
         lifetimeCounts.put(key, lifetimeCounts.getOrDefault(key, 0L) - coinsSpent);
         saveLifetime();
+        saveDaily();
     }
 
     public static void addSprayCost(int quantity, long coins) {
         String key = "[Spray] Sprayonator";
+        checkDailyReset();
         spraySessionQuantity += quantity;
+        sprayDailyQuantity += quantity;
         sprayLifetimeQuantity += quantity;
         if (com.ihanuat.mod.MacroStateManager.isMacroRunning()) {
             sessionCounts.put(key, sessionCounts.getOrDefault(key, 0L) - coins);
         }
+        dailyCounts.put(key, dailyCounts.getOrDefault(key, 0L) - coins);
         lifetimeCounts.put(key, lifetimeCounts.getOrDefault(key, 0L) - coins);
         saveLifetime();
+        saveDaily();
     }
 
     public static long getSprayQuantity(boolean lifetime) {
         return lifetime ? sprayLifetimeQuantity : spraySessionQuantity;
+    }
+
+    public static long getSprayQuantity(String mode) {
+        if ("daily".equals(mode)) return sprayDailyQuantity;
+        if ("lifetime".equals(mode)) return sprayLifetimeQuantity;
+        return spraySessionQuantity;
     }
 
     public static String getCategorizedName(String name) {
@@ -626,11 +653,22 @@ public class ProfitManager {
     }
 
     public static Map<String, Long> getActiveDrops() {
-        return getActiveDrops(false);
+        return getActiveDrops("session");
     }
 
     public static Map<String, Long> getActiveDrops(boolean lifetime) {
-        Map<String, Long> counts = lifetime ? lifetimeCounts : sessionCounts;
+        return getActiveDrops(lifetime ? "lifetime" : "session");
+    }
+
+    public static Map<String, Long> getActiveDrops(String mode) {
+        Map<String, Long> counts;
+        if ("daily".equals(mode)) {
+            counts = dailyCounts;
+        } else if ("lifetime".equals(mode)) {
+            counts = lifetimeCounts;
+        } else {
+            counts = sessionCounts;
+        }
 
         // Sort by total profit (count * price) descending
         return counts.entrySet().stream()
@@ -647,10 +685,14 @@ public class ProfitManager {
     }
 
     public static Map<String, Long> getCompactDrops() {
-        return getCompactDrops(false);
+        return getCompactDrops("session");
     }
 
     public static Map<String, Long> getCompactDrops(boolean lifetime) {
+        return getCompactDrops(lifetime ? "lifetime" : "session");
+    }
+
+    public static Map<String, Long> getCompactDrops(String mode) {
         Map<String, Long> compact = new LinkedHashMap<>();
         compact.put("Crops", 0L);
         compact.put("Pest Items", 0L);
@@ -660,7 +702,15 @@ public class ProfitManager {
         compact.put("Costs", 0L);
         compact.put("Others", 0L);
 
-        Map<String, Long> targetCounts = lifetime ? lifetimeCounts : sessionCounts;
+        Map<String, Long> targetCounts;
+        if ("daily".equals(mode)) {
+            targetCounts = dailyCounts;
+        } else if ("lifetime".equals(mode)) {
+            targetCounts = lifetimeCounts;
+        } else {
+            targetCounts = sessionCounts;
+        }
+
         for (Map.Entry<String, Long> entry : targetCounts.entrySet()) {
             String name = entry.getKey();
             long count = entry.getValue();
@@ -698,9 +748,17 @@ public class ProfitManager {
 
     public static void reset() {
         sessionCounts.clear();
+        spraySessionQuantity = 0;
         PetXpTracker.reset();
         lastBazaarSprayBuyTime = 0;
         lastPurseBalance = -1;
+    }
+
+    public static void resetDaily() {
+        dailyCounts.clear();
+        sprayDailyQuantity = 0;
+        lastDailyResetDate = getCurrentDateString();
+        saveDaily();
     }
 
     public static void resetLifetime() {
@@ -709,12 +767,24 @@ public class ProfitManager {
     }
 
     public static long getTotalProfit() {
-        return getTotalProfit(false);
+        return getTotalProfit("session");
     }
 
     public static long getTotalProfit(boolean lifetime) {
+        return getTotalProfit(lifetime ? "lifetime" : "session");
+    }
+
+    public static long getTotalProfit(String mode) {
         double total = 0;
-        Map<String, Long> targetCounts = lifetime ? lifetimeCounts : sessionCounts;
+        Map<String, Long> targetCounts;
+        if ("daily".equals(mode)) {
+            targetCounts = dailyCounts;
+        } else if ("lifetime".equals(mode)) {
+            targetCounts = lifetimeCounts;
+        } else {
+            targetCounts = sessionCounts;
+        }
+
         for (Map.Entry<String, Long> entry : targetCounts.entrySet()) {
             double price = getItemPrice(entry.getKey());
             total += price * entry.getValue();
@@ -744,6 +814,66 @@ public class ProfitManager {
         } catch (Exception e) {
             System.err.println("[Ihanuat] Failed to load lifetime profit data: " + e.getMessage());
         }
+    }
+
+    private static void saveDaily() {
+        try (java.io.FileWriter writer = new java.io.FileWriter(DAILY_FILE)) {
+            DailyData data = new DailyData();
+            data.counts = new LinkedHashMap<>(dailyCounts);
+            data.sprayQuantity = sprayDailyQuantity;
+            data.resetDate = lastDailyResetDate;
+            GSON.toJson(data, writer);
+        } catch (java.io.IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void loadDaily() {
+        if (!DAILY_FILE.exists())
+            return;
+        try (java.io.FileReader reader = new java.io.FileReader(DAILY_FILE)) {
+            DailyData data = GSON.fromJson(reader, DailyData.class);
+            if (data != null) {
+                lastDailyResetDate = data.resetDate != null ? data.resetDate : getCurrentDateString();
+                
+                // Check if we need to reset for a new day
+                if (!lastDailyResetDate.equals(getCurrentDateString())) {
+                    resetDaily();
+                } else {
+                    dailyCounts.clear();
+                    if (data.counts != null) {
+                        dailyCounts.putAll(data.counts);
+                    }
+                    sprayDailyQuantity = data.sprayQuantity;
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("[Ihanuat] Failed to load daily profit data: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Gets the current date in YYYY-MM-DD format using the system's local timezone.
+     */
+    private static String getCurrentDateString() {
+        java.time.LocalDate today = java.time.LocalDate.now();
+        return today.toString();
+    }
+
+    /**
+     * Checks if a new day has started and resets daily counts if needed.
+     */
+    private static void checkDailyReset() {
+        String currentDate = getCurrentDateString();
+        if (!currentDate.equals(lastDailyResetDate)) {
+            resetDaily();
+        }
+    }
+
+    private static class DailyData {
+        Map<String, Long> counts;
+        long sprayQuantity;
+        String resetDate;
     }
 
     public static double getItemPrice(String itemName) {

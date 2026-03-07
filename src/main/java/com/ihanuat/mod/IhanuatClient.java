@@ -60,6 +60,7 @@ public class IhanuatClient implements ClientModInitializer {
     public void onInitializeClient() {
         MacroConfig.load();
         ProfitManager.loadLifetime();
+        ProfitManager.loadDaily();
         MacroStateManager.syncFromConfig();
         RestStateManager.clearState();
         MacroHudRenderer.register();

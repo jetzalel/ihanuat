@@ -364,6 +364,14 @@ public class ConfigScreenFactory {
                                 .build());
 
                 profitTracker.addEntry(builder.entryBuilder()
+                                .startBooleanToggle(Component.literal("Show Daily Session Profit HUD"),
+                                                MacroConfig.showDailyHud)
+                                .setDefaultValue(MacroConfig.DEFAULT_SHOW_DAILY_HUD)
+                                .setTooltip(Component.literal("Display the profit tracker for today (resets daily at midnight using your local timezone)."))
+                                .setSaveConsumer(newValue -> MacroConfig.showDailyHud = newValue)
+                                .build());
+
+                profitTracker.addEntry(builder.entryBuilder()
                                 .startBooleanToggle(Component.literal("Show Lifetime Profit HUD"),
                                                 MacroConfig.showLifetimeHud)
                                 .setDefaultValue(MacroConfig.DEFAULT_SHOW_LIFETIME_HUD)
@@ -407,16 +415,25 @@ public class ConfigScreenFactory {
                                 .setSaveConsumer(newValue -> MacroConfig.petTrackerList = newValue)
                                 .build());
 
-                profitTracker.addEntry(new DualButtonEntry(
+                profitTracker.addEntry(new TripleButtonEntry(
                                 Component.literal("Reset Profit Data"),
                                 Component.literal("Clears your tracked earnings. Cannot be undone."),
                                 Component.literal("Reset Session"),
                                 button -> {
-                                        com.ihanuat.mod.modules.ProfitManager.reset();
+                                        com.ihanuat.mod.MacroStateManager.resetSession();
                                         Minecraft client = Minecraft.getInstance();
                                         if (client.player != null) {
                                                 client.player.displayClientMessage(
                                                                 Component.literal("§aSession profit reset!"), true);
+                                        }
+                                },
+                                Component.literal("Reset Daily"),
+                                button -> {
+                                        com.ihanuat.mod.modules.ProfitManager.resetDaily();
+                                        Minecraft client = Minecraft.getInstance();
+                                        if (client.player != null) {
+                                                client.player.displayClientMessage(
+                                                                Component.literal("§aDaily profit reset!"), true);
                                         }
                                 },
                                 Component.literal("Reset Lifetime"),
@@ -664,6 +681,71 @@ public class ConfigScreenFactory {
                 @Override
                 public @NotNull List<? extends NarratableEntry> narratables() {
                         return java.util.Arrays.asList(button1, button2);
+                }
+
+                @Override
+                public @NotNull Object getValue() {
+                        return "";
+                }
+
+                @Override
+                public @NotNull Optional<Object> getDefaultValue() {
+                        return Optional.empty();
+                }
+
+                @Override
+                public void save() {
+                }
+        }
+
+        private static class TripleButtonEntry extends TooltipListEntry<Object> {
+                private final Button button1;
+                private final Button button2;
+                private final Button button3;
+                private final Component fieldName;
+
+                public TripleButtonEntry(Component fieldName, Component tooltip,
+                                Component b1Label, Button.OnPress b1OnPress,
+                                Component b2Label, Button.OnPress b2OnPress,
+                                Component b3Label, Button.OnPress b3OnPress) {
+                        super(fieldName, () -> Optional.of(new Component[] { tooltip }));
+                        this.fieldName = fieldName;
+                        this.button1 = Button.builder(b1Label, b1OnPress).bounds(0, 0, 65, 20).build();
+                        this.button2 = Button.builder(b2Label, b2OnPress).bounds(0, 0, 65, 20).build();
+                        this.button3 = Button.builder(b3Label, b3OnPress).bounds(0, 0, 65, 20).build();
+                }
+
+                @Override
+                public void render(@NotNull GuiGraphics graphics, int index, int y, int x, int entryWidth,
+                                int entryHeight, int mouseX, int mouseY, boolean isHovered, float tickDelta) {
+                        super.render(graphics, index, y, x, entryWidth, entryHeight, mouseX, mouseY, isHovered,
+                                        tickDelta);
+                        this.button3.setX(x + entryWidth - 70);
+                        this.button3.setY(y);
+                        this.button3.setWidth(65);
+                        this.button3.render(graphics, mouseX, mouseY, tickDelta);
+
+                        this.button2.setX(x + entryWidth - 140);
+                        this.button2.setY(y);
+                        this.button2.setWidth(65);
+                        this.button2.render(graphics, mouseX, mouseY, tickDelta);
+
+                        this.button1.setX(x + entryWidth - 210);
+                        this.button1.setY(y);
+                        this.button1.setWidth(65);
+                        this.button1.render(graphics, mouseX, mouseY, tickDelta);
+
+                        graphics.drawString(Minecraft.getInstance().font, fieldName, x, y + 6, 0xFFFFFF);
+                }
+
+                @Override
+                public @NotNull List<? extends GuiEventListener> children() {
+                        return java.util.Arrays.asList(button1, button2, button3);
+                }
+
+                @Override
+                public @NotNull List<? extends NarratableEntry> narratables() {
+                        return java.util.Arrays.asList(button1, button2, button3);
                 }
 
                 @Override
