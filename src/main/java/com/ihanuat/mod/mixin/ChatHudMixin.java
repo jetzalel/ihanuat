@@ -1,7 +1,6 @@
 package com.ihanuat.mod.mixin;
 
 import com.ihanuat.mod.MacroConfig;
-import com.ihanuat.mod.MacroStateManager;
 import net.minecraft.client.gui.components.ChatComponent;
 import net.minecraft.network.chat.Component;
 import org.spongepowered.asm.mixin.Mixin;
@@ -14,7 +13,7 @@ public class ChatHudMixin {
 
     @Inject(method = "addMessage(Lnet/minecraft/network/chat/Component;)V", at = @At("HEAD"), cancellable = true)
     private void onAddMessage(Component message, CallbackInfo ci) {
-        if (!MacroConfig.hideFilteredChat || !MacroStateManager.isMacroRunning()) {
+        if (!MacroConfig.hideFilteredChat) {
             return;
         }
 
