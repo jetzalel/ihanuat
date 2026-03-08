@@ -2,6 +2,7 @@ package com.ihanuat.mod.modules;
 
 import com.ihanuat.mod.MacroStateManager;
 import com.ihanuat.mod.MacroState;
+import com.ihanuat.mod.MacroWorkerThread;
 import com.ihanuat.mod.util.ClientUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
@@ -27,6 +28,9 @@ public class RestartManager {
                         "§c[Ihanuat] Server restart/evacuation detected! Initiating abort sequence..."), false);
                 restartExecutionTime = System.currentTimeMillis();
             }
+            // Cancel all queued/in-flight worker tasks immediately so e.g. AOTV stops now.
+            MacroWorkerThread.getInstance().cancelCurrent();
+            ClientUtils.forceReleaseKeys(client);
             isRestartPending = true;
             restartSequenceStage = 0;
         }
@@ -40,6 +44,8 @@ public class RestartManager {
             client.player.displayClientMessage(
                     Component.literal("§c[Ihanuat] Executing delayed restart abort sequence..."), false);
             ClientUtils.sendDebugMessage(client, "Stopping script: Server restart/evacuation detected");
+            // Cancel worker tasks again in case any were queued during a contest delay.
+            MacroWorkerThread.getInstance().cancelCurrent();
             com.ihanuat.mod.util.CommandUtils.stopScript(client, 0);
             ClientUtils.forceReleaseKeys(client);
             com.ihanuat.mod.util.CommandUtils.initiateSetSpawn(client);
