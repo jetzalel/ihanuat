@@ -88,6 +88,10 @@ public class MacroStateManager {
                 com.ihanuat.mod.modules.ProfitManager.reset();
             }
             lastPeriodicSaveTime = System.currentTimeMillis();
+        } else if (currentState == MacroState.State.RECOVERING && state != MacroState.State.OFF
+                && state != MacroState.State.RECOVERING) {
+            // Resuming from recovery (e.g. after dynamic rest): restart the timer
+            lastSessionStartTime = System.currentTimeMillis();
         } else if (currentState != MacroState.State.OFF && currentState != MacroState.State.RECOVERING
                 && (state == MacroState.State.OFF || state == MacroState.State.RECOVERING)) {
             if (lastSessionStartTime != 0) {
