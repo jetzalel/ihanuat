@@ -111,6 +111,15 @@ public class PestReturnManager {
                 MacroWorkerThread.sleep(150);
                 if (MacroWorkerThread.shouldAbortTask(client))
                     return;
+
+                if (MacroConfig.autoRodReturnToFarm) {
+                    ClientUtils.sendDebugMessage(client,
+                            "Finisher: Auto Rod - Triggering rod cast before /warp garden.");
+                    RodManager.executeRodSequence(client);
+                    if (MacroWorkerThread.shouldAbortTask(client))
+                        return;
+                }
+
                 ClientUtils.sendDebugMessage(client, "Finisher: Warping to garden (Return to Farm)...");
                 com.ihanuat.mod.util.CommandUtils.warpGarden(client);
                 MacroWorkerThread.sleep(250);
@@ -239,10 +248,6 @@ public class PestReturnManager {
             ClientUtils.sendDebugMessage(client, "Finalize: Swapping to farming tool...");
             GearManager.swapToFarmingToolSync(client);
             ClientUtils.sendDebugMessage(client, "Finalize: Tool swap done.");
-            if (MacroConfig.autoRodReturnToFarm) {
-                ClientUtils.sendDebugMessage(client, "Finalize: Auto Rod - Triggering second rod cast.");
-                RodManager.executeRodSequence(client);
-            }
 
             // Only wait for gear swap if equipment swap is enabled (since it's only done
             // during cleaning if enabled)
