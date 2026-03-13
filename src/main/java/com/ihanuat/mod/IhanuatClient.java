@@ -577,9 +577,6 @@ public class IhanuatClient implements ClientModInitializer {
                 }
             }
 
-            if (RodManager.isHoldingRodUse) {
-                client.gameMode.useItem(client.player, net.minecraft.world.InteractionHand.MAIN_HAND);
-            }
 
             // Double-tap Space Flight Toggle
             if (PestReturnManager.isStoppingFlight) {
