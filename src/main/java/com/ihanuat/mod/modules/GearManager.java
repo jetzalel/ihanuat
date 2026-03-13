@@ -70,6 +70,7 @@ public class GearManager {
             if (PestManager.isCleaningInProgress)
                 return;
             com.ihanuat.mod.MacroStateManager.setCurrentState(com.ihanuat.mod.MacroState.State.FARMING);
+            swapToFarmingTool(client);
             ClientUtils.sendDebugMessage(client, "Finalizing gear swap. Restarting farming script...");
             com.ihanuat.mod.util.CommandUtils.startScript(client, MacroConfig.getFullRestartCommand(), 0);
         });
@@ -138,7 +139,7 @@ public class GearManager {
     public static int findFarmingToolSlot(Minecraft client) {
         if (client.player == null)
             return -1;
-        String[] keywords = { "hoe", "dicer", "knife", "chopper", "cutter", "axe" };
+        String[] keywords = { "hoe", "dicer", "knife", "chopper", "cutter", "axe", "harvester" };
         for (int i = 0; i < 9; i++) {
             ItemStack stack = client.player.getInventory().getItem(i);
             String name = stack.getHoverName().getString().toLowerCase();
@@ -158,6 +159,8 @@ public class GearManager {
             String name = stack.getHoverName().getString();
             ((AccessorInventory) client.player.getInventory()).setSelected(slot);
             client.player.displayClientMessage(Component.literal("\u00A7aEquipped Farming Tool: " + name), true);
+        } else {
+            ClientUtils.sendDebugMessage(client, "\u00A7c[GearManager] No farming tool found in hotbar!");
         }
     }
 
@@ -180,6 +183,8 @@ public class GearManager {
                 Thread.sleep(100);
             } catch (InterruptedException ignored) {
             }
+        } else {
+            ClientUtils.sendDebugMessage(client, "\u00A7c[GearManager] Sync swap failed: No farming tool found in hotbar!");
         }
     }
 

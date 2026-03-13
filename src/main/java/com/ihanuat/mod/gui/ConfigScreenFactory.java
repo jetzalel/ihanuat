@@ -41,6 +41,15 @@ public class ConfigScreenFactory {
                                 .build());
 
                 general.addEntry(builder.entryBuilder()
+                                .startBooleanToggle(Component.literal("GUI only in Garden"),
+                                                MacroConfig.guiOnlyInGarden)
+                                .setDefaultValue(MacroConfig.DEFAULT_GUI_ONLY_IN_GARDEN)
+                                .setTooltip(Component.literal(
+                                                "If enabled, the macro HUDs will only be visible while you are in the Garden."))
+                                .setSaveConsumer(newValue -> MacroConfig.guiOnlyInGarden = newValue)
+                                .build());
+
+                general.addEntry(builder.entryBuilder()
                                 .startEnumSelector(Component.literal("Unfly Mode (after /warp garden)"),
                                                 MacroConfig.UnflyMode.class,
                                                 MacroConfig.unflyMode)
@@ -273,11 +282,29 @@ public class ConfigScreenFactory {
                                 .build());
 
                 autoPest.addEntry(builder.entryBuilder()
+                                .startBooleanToggle(Component.literal("Delay Pest for Crop Fever"),
+                                                MacroConfig.delayPestForCropFever)
+                                .setDefaultValue(MacroConfig.DEFAULT_DELAY_PEST_FOR_CROP_FEVER)
+                                .setTooltip(Component.literal(
+                                                "Delays the pest cleaning sequence if you currently have the Crop Fever buff active."))
+                                .setSaveConsumer(newValue -> MacroConfig.delayPestForCropFever = newValue)
+                                .build());
+
+                autoPest.addEntry(builder.entryBuilder()
                                 .startBooleanToggle(Component.literal("AOTV to Roof"), MacroConfig.aotvToRoof)
                                 .setDefaultValue(MacroConfig.DEFAULT_AOTV_TO_ROOF)
                                 .setTooltip(Component.literal(
                                                 "Uses Aspect of the Void to etherwarp to the roof after /setspawn during pest cleaning."))
                                 .setSaveConsumer(newValue -> MacroConfig.aotvToRoof = newValue)
+                                .build());
+
+                autoPest.addEntry(builder.entryBuilder()
+                                .startBooleanToggle(Component.literal("Break Blocks Before AOTV"),
+                                                MacroConfig.breakBlocksBeforeAotv)
+                                .setDefaultValue(MacroConfig.DEFAULT_BREAK_BLOCKS_BEFORE_AOTV)
+                                .setTooltip(Component.literal(
+                                                "Holds down left click for 5 ticks before starting the AOTV roof sequence."))
+                                .setSaveConsumer(newValue -> MacroConfig.breakBlocksBeforeAotv = newValue)
                                 .build());
 
                 autoPest.addEntry(builder.entryBuilder()

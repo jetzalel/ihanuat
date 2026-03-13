@@ -5,6 +5,8 @@ import java.util.Map;
 import com.ihanuat.mod.MacroConfig;
 import com.ihanuat.mod.MacroStateManager;
 import com.ihanuat.mod.modules.ProfitManager;
+import com.ihanuat.mod.util.ClientUtils;
+import com.ihanuat.mod.MacroState;
 
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.minecraft.client.Minecraft;
@@ -59,6 +61,9 @@ public class ProfitHudRenderer {
     public static void register() {
         HudRenderCallback.EVENT.register((guiGraphics, delta) -> {
             Minecraft client = Minecraft.getInstance();
+            if (MacroConfig.guiOnlyInGarden && ClientUtils.getCurrentLocation(client) != MacroState.Location.GARDEN) {
+                return;
+            }
             boolean running = MacroStateManager.isMacroRunning();
             boolean showAny = running || MacroConfig.showProfitHudWhileInactive;
 

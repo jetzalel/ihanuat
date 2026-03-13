@@ -57,6 +57,12 @@ public class PestCleaningSequencer {
                     client.player.displayClientMessage(
                             Component.literal("§dBonus is INACTIVE! Triggering Phillip reactivation..."), true);
                     PestBonusManager.isReactivatingBonus = true;
+
+                    if (MacroConfig.autoRodPestSpawn) {
+                        ClientUtils.sendDebugMessage(client, "Auto Rod: Triggering rod cast on pest spawn (Bonus inactive).");
+                        RodManager.executeRodSequence(client);
+                    }
+
                     com.ihanuat.mod.util.CommandUtils.startScript(client, ".ez-startscript misc:pestCleaner", 0);
                     return;
                 }

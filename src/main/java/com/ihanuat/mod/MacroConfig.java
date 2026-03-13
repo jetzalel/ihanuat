@@ -84,6 +84,9 @@ public class MacroConfig {
     public static final int DEFAULT_JUNK_ITEM_DROP_DELAY = 300;
     public static final int DEFAULT_PEST_CHAT_TRIGGER_DELAY = 0;
     public static final boolean DEFAULT_SHOW_DEBUG = false;
+    public static final boolean DEFAULT_GUI_ONLY_IN_GARDEN = true;
+    public static final boolean DEFAULT_BREAK_BLOCKS_BEFORE_AOTV = false;
+    public static final boolean DEFAULT_DELAY_PEST_FOR_CROP_FEVER = false;
 
     // Pet Tracker Defaults
     public static final java.util.List<String> DEFAULT_PET_TRACKER_LIST = java.util.Arrays.asList(
@@ -221,6 +224,9 @@ public class MacroConfig {
     public static int junkThreshold = DEFAULT_JUNK_THRESHOLD;
     public static int junkItemDropDelay = DEFAULT_JUNK_ITEM_DROP_DELAY;
     public static boolean showDebug = DEFAULT_SHOW_DEBUG;
+    public static boolean guiOnlyInGarden = DEFAULT_GUI_ONLY_IN_GARDEN;
+    public static boolean breakBlocksBeforeAotv = DEFAULT_BREAK_BLOCKS_BEFORE_AOTV;
+    public static boolean delayPestForCropFever = DEFAULT_DELAY_PEST_FOR_CROP_FEVER;
 
     public static java.util.List<String> petTrackerList = new java.util.ArrayList<>(DEFAULT_PET_TRACKER_LIST);
 
@@ -380,6 +386,9 @@ public class MacroConfig {
         data.junkThreshold = junkThreshold;
         data.junkItemDropDelay = junkItemDropDelay;
         data.showDebug = showDebug;
+        data.guiOnlyInGarden = guiOnlyInGarden;
+        data.breakBlocksBeforeAotv = breakBlocksBeforeAotv;
+        data.delayPestForCropFever = delayPestForCropFever;
 
         data.petTrackerList = new java.util.ArrayList<>(petTrackerList);
 
@@ -497,6 +506,9 @@ public class MacroConfig {
                 junkThreshold = data.junkThreshold;
                 junkItemDropDelay = data.junkItemDropDelay;
                 showDebug = data.showDebug;
+                guiOnlyInGarden = data.guiOnlyInGarden;
+                breakBlocksBeforeAotv = data.breakBlocksBeforeAotv;
+                delayPestForCropFever = data.delayPestForCropFever;
 
                 if (data.petTrackerList != null) {
                     petTrackerList = new java.util.ArrayList<>(data.petTrackerList);
@@ -595,6 +607,9 @@ public class MacroConfig {
         int junkThreshold = DEFAULT_JUNK_THRESHOLD;
         int junkItemDropDelay = DEFAULT_JUNK_ITEM_DROP_DELAY;
         boolean showDebug = DEFAULT_SHOW_DEBUG;
+        boolean guiOnlyInGarden = DEFAULT_GUI_ONLY_IN_GARDEN;
+        boolean breakBlocksBeforeAotv = DEFAULT_BREAK_BLOCKS_BEFORE_AOTV;
+        boolean delayPestForCropFever = DEFAULT_DELAY_PEST_FOR_CROP_FEVER;
 
         java.util.List<String> petTrackerList = new java.util.ArrayList<>(DEFAULT_PET_TRACKER_LIST);
 

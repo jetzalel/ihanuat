@@ -86,8 +86,10 @@ public class PestManager {
                 if (lastZeroPestTime == 0) {
                     lastZeroPestTime = System.currentTimeMillis();
                 } else if (System.currentTimeMillis() - lastZeroPestTime > 10000) {
-                    client.player.displayClientMessage(
-                            Component.literal("§cFail-safe: No pests detected for 10s. Returning to farm."), true);
+                    if (client.player != null) {
+                        client.player.displayClientMessage(
+                                Component.literal("§cFail-safe: No pests detected for 10s. Returning to farm."), true);
+                    }
                     lastZeroPestTime = 0;
                     handlePestCleaningFinished(client);
                     return;
@@ -196,6 +198,13 @@ public class PestManager {
         if (isPestReentryCooldownActive()) {
             return;
         }
+
+        if (MacroConfig.delayPestForCropFever && CropFeverManager.isCropFeverActive) {
+            client.player.displayClientMessage(
+                    Component.literal("§dDelaying pest cleaning due to CROP FEVER buff!"), true);
+            return;
+        }
+
         currentInfestedPlot = plot;
         currentPestSessionId++;
         PestCleaningSequencer.startCleaningSequence(client, plot, currentInfestedPlot, currentPestSessionId);

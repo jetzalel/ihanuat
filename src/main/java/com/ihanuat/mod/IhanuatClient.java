@@ -426,6 +426,7 @@ public class IhanuatClient implements ClientModInitializer {
 
                 ProfitManager.handleChatMessage(message);
                 PestManager.handlePhillipMessage(Minecraft.getInstance(), text);
+                com.ihanuat.mod.modules.CropFeverManager.handleChatMessage(Minecraft.getInstance(), plainText);
 
                 // Notify CommandUtils about the chat message for command synchronization
                 com.ihanuat.mod.util.CommandUtils.onChatMessage(plainText);
@@ -570,6 +571,7 @@ public class IhanuatClient implements ClientModInitializer {
             MacroStateManager.periodicUpdate();
             ProfitManager.update(client);
             com.ihanuat.mod.modules.DiscordStatusManager.update(client);
+            com.ihanuat.mod.modules.CropFeverManager.update(client);
 
             if (PestAotvManager.isSneakingForAotv) {
                 if (client.options != null) {
@@ -577,9 +579,6 @@ public class IhanuatClient implements ClientModInitializer {
                 }
             }
 
-            if (RodManager.isHoldingRodUse) {
-                client.gameMode.useItem(client.player, net.minecraft.world.InteractionHand.MAIN_HAND);
-            }
 
             // Double-tap Space Flight Toggle
             if (PestReturnManager.isStoppingFlight) {
@@ -624,8 +623,10 @@ public class IhanuatClient implements ClientModInitializer {
 
             // Stash Pickup Logic
             if (MacroConfig.autoStashManager && isPickingUpStash && client.player != null) {
-                // Only perform stash pickup when NOT in a GUI
-                if (client.screen == null) {
+                MacroState.State state = MacroStateManager.getCurrentState();
+                // Only perform stash pickup when NOT in a GUI and NOT in a sensitive state
+                if (client.screen == null && state != MacroState.State.VISITING 
+                    && state != MacroState.State.CLEANING && state != MacroState.State.SPRAYING) {
                     long now = System.currentTimeMillis();
                     if (now - lastStashPickupTime >= STASH_PICKUP_DELAY_MS) {
                         lastStashPickupTime = now;

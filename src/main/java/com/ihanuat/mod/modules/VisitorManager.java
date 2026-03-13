@@ -173,14 +173,15 @@ public class VisitorManager {
             RodManager.executeRodSequence(client);
         }
 
-        client.player.displayClientMessage(Component.literal("\u00A7aRestarting farming script..."),
-                true);
-        ClientUtils.sendDebugMessage(client, "Setting state to FARMING and starting script.");
-        com.ihanuat.mod.MacroStateManager.setCurrentState(com.ihanuat.mod.MacroState.State.FARMING);
-        ClientUtils.sendDebugMessage(client, "Stopping script: Visitor sequence finished, returning to farming");
-        com.ihanuat.mod.util.CommandUtils.stopScript(client, 250);
-        ClientUtils.sendDebugMessage(client, "Starting farming script: " + MacroConfig.getFullRestartCommand());
-        com.ihanuat.mod.util.CommandUtils.startScript(client, MacroConfig.getFullRestartCommand(), 0);
+        client.execute(() -> {
+            GearManager.swapToFarmingTool(client);
+            ClientUtils.sendDebugMessage(client, "Setting state to FARMING and starting script.");
+            com.ihanuat.mod.MacroStateManager.setCurrentState(com.ihanuat.mod.MacroState.State.FARMING);
+            ClientUtils.sendDebugMessage(client, "Stopping script: Visitor sequence finished, returning to farming");
+            com.ihanuat.mod.util.CommandUtils.stopScript(client, 250);
+            ClientUtils.sendDebugMessage(client, "Starting farming script: " + MacroConfig.getFullRestartCommand());
+            com.ihanuat.mod.util.CommandUtils.startScript(client, MacroConfig.getFullRestartCommand(), 0);
+        });
         PestPrepSwapManager.prepSwappedForCurrentPestCycle = false;
         PestManager.isCleaningInProgress = false;
     }

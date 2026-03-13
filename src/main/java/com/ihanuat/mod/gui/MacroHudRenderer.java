@@ -7,6 +7,7 @@ import com.ihanuat.mod.modules.DynamicRestManager;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import com.ihanuat.mod.util.ClientUtils;
 
 /**
  * Renders the macro status panel HUD.
@@ -83,9 +84,16 @@ public class MacroHudRenderer {
 
     public static void register() {
         HudRenderCallback.EVENT.register((guiGraphics, delta) -> {
-            if (MacroConfig.showHud)
-                render(guiGraphics, Minecraft.getInstance(), false);
+            Minecraft client = Minecraft.getInstance();
+            if (MacroConfig.showHud && shouldShow(client))
+                render(guiGraphics, client, false);
         });
+    }
+
+    private static boolean shouldShow(Minecraft client) {
+        if (!MacroConfig.guiOnlyInGarden)
+            return true;
+        return ClientUtils.getCurrentLocation(client) == MacroState.Location.GARDEN;
     }
 
     // ── Public API for ScreenEvents ──────────────────────────────────────────

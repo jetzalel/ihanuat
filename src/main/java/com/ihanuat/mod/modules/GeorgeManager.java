@@ -239,13 +239,12 @@ public class GeorgeManager {
                 com.ihanuat.mod.util.ClientUtils.waitForGearAndGui(client);
                 if (MacroWorkerThread.shouldAbortTask(client, com.ihanuat.mod.MacroState.State.FARMING))
                     return;
-                client.execute(() -> GearManager.swapToFarmingTool(client));
-                MacroWorkerThread.sleep(150);
-                if (MacroWorkerThread.shouldAbortTask(client, com.ihanuat.mod.MacroState.State.FARMING))
-                    return;
-                ClientUtils.sendDebugMessage(client,
-                        "Starting farming script after George sell: " + MacroConfig.getFullRestartCommand());
-                com.ihanuat.mod.util.CommandUtils.startScript(client, MacroConfig.getFullRestartCommand(), 0);
+                client.execute(() -> {
+                    GearManager.swapToFarmingTool(client);
+                    ClientUtils.sendDebugMessage(client,
+                            "Starting farming script after George sell: " + MacroConfig.getFullRestartCommand());
+                    com.ihanuat.mod.util.CommandUtils.startScript(client, MacroConfig.getFullRestartCommand(), 0);
+                });
             });
         }
     }

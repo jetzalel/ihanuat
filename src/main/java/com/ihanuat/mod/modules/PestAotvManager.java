@@ -28,6 +28,16 @@ public class PestAotvManager {
     }
 
     public static void performAotvToRoof(Minecraft client) throws InterruptedException {
+        if (MacroConfig.breakBlocksBeforeAotv && client.options != null && client.gameMode != null) {
+            // Ensure we are on the farming tool first
+            GearManager.swapToFarmingToolSync(client);
+            
+            client.execute(() -> client.options.keyAttack.setDown(true));
+            Thread.sleep(250); // 5 ticks
+            client.execute(() -> client.options.keyAttack.setDown(false));
+            Thread.sleep(50);
+        }
+
         isSneakingForAotv = true;
         Vec3 eyePos = client.player.getEyePosition();
         float yawRad = (float) Math.toRadians(client.player.getYRot());

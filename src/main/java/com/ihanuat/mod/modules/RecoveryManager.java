@@ -70,7 +70,9 @@ public class RecoveryManager {
                 recoveryFailedAttempts = 0;
                 MacroStateManager.setCurrentState(MacroState.State.FARMING);
                 com.ihanuat.mod.modules.DynamicRestManager.scheduleNextRest();
-                GearManager.swapToFarmingTool(client);                ClientUtils.sendDebugMessage(client, "Starting farming script after successful recovery: " + MacroConfig.getFullRestartCommand());                com.ihanuat.mod.util.CommandUtils.startScript(client, MacroConfig.getFullRestartCommand(), 0);
+                GearManager.swapToFarmingTool(client);
+                ClientUtils.sendDebugMessage(client, "Starting farming script after successful recovery: " + MacroConfig.getFullRestartCommand());
+                com.ihanuat.mod.util.CommandUtils.startScript(client, MacroConfig.getFullRestartCommand(), 0);
                 break;
         }
     }

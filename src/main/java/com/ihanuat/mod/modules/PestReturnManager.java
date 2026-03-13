@@ -268,8 +268,11 @@ public class PestReturnManager {
             }
             com.ihanuat.mod.util.ClientUtils.sendDebugMessage(client,
                     "Pest cleaning sequence finished. Restarting farming...");
-            ClientUtils.sendDebugMessage(client, "Starting farming script: " + MacroConfig.getFullRestartCommand());
-            com.ihanuat.mod.util.CommandUtils.startScript(client, MacroConfig.getFullRestartCommand(), 0);
+            client.execute(() -> {
+                GearManager.swapToFarmingTool(client);
+                ClientUtils.sendDebugMessage(client, "Starting farming script: " + MacroConfig.getFullRestartCommand());
+                com.ihanuat.mod.util.CommandUtils.startScript(client, MacroConfig.getFullRestartCommand(), 0);
+            });
         } catch (InterruptedException ignored) {
         }
     }

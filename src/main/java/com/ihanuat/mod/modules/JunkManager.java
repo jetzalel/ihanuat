@@ -95,7 +95,7 @@ public class JunkManager {
     private static boolean isFarmingTool(ItemStack stack) {
         if (stack == null || stack.isEmpty())
             return false;
-        String[] keywords = { "hoe", "dicer", "knife", "chopper", "cutter", "axe" };
+        String[] keywords = { "hoe", "dicer", "knife", "chopper", "cutter", "axe", "harvester" };
         String name = stack.getHoverName().getString().toLowerCase();
         for (String kw : keywords) {
             if (name.contains(kw))
