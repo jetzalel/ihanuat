@@ -446,7 +446,6 @@ public class IhanuatClient implements ClientModInitializer {
                 }
 
                 ProfitManager.handleChatMessage(message);
-                PestManager.handlePhillipMessage(Minecraft.getInstance(), text);
                 com.ihanuat.mod.modules.CropFeverManager.handleChatMessage(Minecraft.getInstance(), plainText);
 
                 com.ihanuat.mod.util.CommandUtils.onChatMessage(plainText);
