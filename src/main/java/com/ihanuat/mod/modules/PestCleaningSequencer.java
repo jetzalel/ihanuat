@@ -170,6 +170,7 @@ public class PestCleaningSequencer {
                         // Swap to farming tool after rod usage.
                         GearManager.swapToFarmingTool(client);
                     }
+                    com.ihanuat.mod.util.CommandUtils.startScript(client, ".ez-startscript misc:pestCleaner", 0);
                     return;
                 }
 
