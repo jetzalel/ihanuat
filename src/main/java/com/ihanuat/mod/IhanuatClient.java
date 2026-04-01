@@ -484,8 +484,7 @@ public class IhanuatClient implements ClientModInitializer {
             if (command.equalsIgnoreCase("call george")) {
                 GeorgeManager.onCallGeorgeSent();
             }
-            // Add this:
-            if (command.equalsIgnoreCase("testcraft")) {
+            if (command.equalsIgnoreCase("supercraft")) {
                 SuperCrafter.startSuperCraft(Minecraft.getInstance());
             }
         });
