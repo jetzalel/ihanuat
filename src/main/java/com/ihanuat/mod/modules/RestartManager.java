@@ -1,12 +1,12 @@
 package com.ihanuat.mod.modules;
 
+import com.ihanuat.mod.MacroConfig;
 import com.ihanuat.mod.MacroState;
 import com.ihanuat.mod.MacroStateManager;
 import com.ihanuat.mod.MacroWorkerThread;
 import com.ihanuat.mod.util.ClientUtils;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.network.chat.Component;
 
 public class RestartManager {
@@ -20,7 +20,6 @@ public class RestartManager {
             return false;
         }
 
-        // Never interrupt active pest/visitor flows; wait until they finish naturally.
         if (PestManager.isCleaningInProgress
                 || PestPrepSwapManager.isPrepSwapping
                 || PestReturnManager.isFinishingInProgress
@@ -50,7 +49,6 @@ public class RestartManager {
                         "§c[Ihanuat] Server restart/evacuation detected! Initiating abort sequence..."), false);
                 restartExecutionTime = System.currentTimeMillis();
             }
-            // Defer interruption to stage 0 so active pest/visitor flows can finish safely.
             isRestartPending = true;
             restartSequenceStage = 0;
         }
@@ -60,47 +58,66 @@ public class RestartManager {
         if (!isRestartPending)
             return;
 
+        if (client.player == null)
+            return;
+
         MacroState.State state = MacroStateManager.getCurrentState();
 
+        // Stage 0: Wait until safe, then stop script and set spawn
         if (restartSequenceStage == 0 && System.currentTimeMillis() >= restartExecutionTime) {
             if (!isSafeToRunRestartAbort(state)) {
                 return;
             }
 
             client.player.displayClientMessage(
-                    Component.literal("§c[Ihanuat] Executing delayed restart abort sequence..."), false);
+                    Component.literal("§c[Ihanuat] Evacuation: stopping script and setting spawn..."), false);
             ClientUtils.sendDebugMessage(client, "Stopping script: Server restart/evacuation detected");
-            // Cancel worker tasks right before abort execution.
             MacroWorkerThread.getInstance().cancelCurrent();
             com.ihanuat.mod.util.CommandUtils.stopScript(client, 0);
             ClientUtils.forceReleaseKeys(client);
             com.ihanuat.mod.util.CommandUtils.initiateSetSpawn(client);
             restartSequenceStage = 1;
-            nextRestartActionTime = System.currentTimeMillis() + 5000; // Fallback timeout
-        } else if (restartSequenceStage == 1) {
+            nextRestartActionTime = System.currentTimeMillis() + 3000;
+        }
+
+        // Stage 1: Wait for spawn to be set, then warp to island
+        else if (restartSequenceStage == 1) {
             if (com.ihanuat.mod.util.CommandUtils.hasSpawnBeenSet()
                     || System.currentTimeMillis() >= nextRestartActionTime) {
-                // Go to main menu instead of /hub — /hub causes a disconnect back to the
-                // title screen mid-flight which triggers the unexpected-disconnect failsafe.
-                // Instead: mark intentional, switch to RECOVERING (which also pauses the
-                // dynamic-rest timer so "next rest" is preserved), schedule a 3-second
-                // reconnect, then disconnect cleanly.
                 client.player.displayClientMessage(
-                        Component.literal("§c[Ihanuat] Reboot: disconnecting to main menu, reconnecting in 3s..."), false);
-                MacroStateManager.setIntentionalDisconnect(true);
-                // RECOVERING triggers DynamicRestManager.pauseTimer() via setCurrentState,
-                // ensuring the "next rest" timer is NOT reset.
-                MacroStateManager.setCurrentState(MacroState.State.RECOVERING);
-                com.ihanuat.mod.ReconnectScheduler.scheduleReconnect(3, true);
-                client.execute(() -> client.disconnect(
-                        new net.minecraft.client.gui.screens.TitleScreen(), false));
-                restartSequenceStage = 0;
-                isRestartPending = false;
+                        Component.literal("§c[Ihanuat] Evacuation: warping to island..."), false);
+                client.execute(() -> ClientUtils.sendCommand(client, "is"));
+                restartSequenceStage = 2;
+                nextRestartActionTime = System.currentTimeMillis() + 3000;
+            }
+            else {
+                com.ihanuat.mod.util.CommandUtils.initiateSetSpawn(client);
+                nextRestartActionTime = System.currentTimeMillis() + 3000;
             }
         }
-    }
 
-    public static boolean isRestartPending() {
-        return isRestartPending;
+        // Stage 2: Wait to arrive on island, then warp back to garden
+        else if (restartSequenceStage == 2) {
+            if (client.player == null) return;
+            if (System.currentTimeMillis() >= nextRestartActionTime) {
+                client.player.displayClientMessage(
+                        Component.literal("§c[Ihanuat] Evacuation: returning to garden..."), false);
+                client.execute(() -> ClientUtils.sendCommand(client, "warp garden"));
+                restartSequenceStage = 3;
+                nextRestartActionTime = System.currentTimeMillis() + 3000;
+            }
+        }
+
+        // Stage 3: Wait to arrive in garden, then resume
+        else if (restartSequenceStage == 3) {
+            if (client.player == null) return;
+            if (System.currentTimeMillis() >= nextRestartActionTime) {
+                client.player.displayClientMessage(
+                        Component.literal("§a[Ihanuat] Evacuation complete! Back in garden, resuming..."), false);
+                isRestartPending = false;
+                restartSequenceStage = 0;
+                com.ihanuat.mod.util.CommandUtils.startScript(client, MacroConfig.getFullRestartCommand(), 0);
+            }
+        }
     }
 }

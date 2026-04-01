@@ -78,10 +78,8 @@ public class PestManager {
             }
         }
 
-        // Failsafe: if CLEANING and 0 pests for 10s, return to farming.
-        // Do not apply this during SPRAYING because spray routes can legitimately
-        // travel multiple plots with 0 alive pests between spray actions.
         if (currentState == MacroState.State.CLEANING) {
+
             if (effectiveAlive <= 0) {
                 if (lastZeroPestTime == 0) {
                     lastZeroPestTime = System.currentTimeMillis();
@@ -195,6 +193,7 @@ public class PestManager {
     }
 
     public static void startCleaningSequence(Minecraft client, String plot) {
+        if (isCleaningInProgress) return;
         if (isPestReentryCooldownActive()) {
             return;
         }
@@ -210,7 +209,4 @@ public class PestManager {
         PestCleaningSequencer.startCleaningSequence(client, plot, currentInfestedPlot, currentPestSessionId);
     }
 
-    public static void handlePhillipMessage(Minecraft client, String text) {
-        PestBonusManager.handlePhillipMessage(client, text, currentInfestedPlot);
-    }
 }

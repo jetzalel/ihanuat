@@ -21,6 +21,7 @@ public class PestCleaningSequencer {
 
     public static void startCleaningSequence(Minecraft client, String plot, String currentInfestedPlot,
             int currentPestSessionId) {
+
         if (PestManager.isCleaningInProgress)
             return;
 
@@ -150,10 +151,18 @@ public class PestCleaningSequencer {
                 if (MacroWorkerThread.shouldAbortTask(client))
                     return;
 
+                ClientUtils.sendDebugMessage(client, "Bonus inactive flag: " + PestBonusManager.isBonusInactive);
+
                 if (PestBonusManager.isBonusInactive) {
                     client.player.displayClientMessage(
                             Component.literal("§dBonus is INACTIVE! Triggering Phillip reactivation..."), true);
-                    PestBonusManager.isReactivatingBonus = true;
+                    PestBonusManager.runBonusReactivationSequence(client);
+                    if (MacroWorkerThread.shouldAbortTask(client))
+                        return;
+                    if (PestBonusManager.isBonusInactive) {
+                        ClientUtils.sendDebugMessage(client,
+                                "Bonus still INACTIVE after Phillip wait — continuing sequence anyway.");
+                    }
 
                     if (MacroConfig.autoRodPestSpawn) {
                         ClientUtils.sendDebugMessage(client, "Auto Rod: Triggering rod cast on pest spawn (Bonus inactive).");
@@ -161,8 +170,6 @@ public class PestCleaningSequencer {
                         // Swap to farming tool after rod usage.
                         GearManager.swapToFarmingTool(client);
                     }
-                    com.ihanuat.mod.util.CommandUtils.startScript(client, ".ez-startscript misc:pestCleaner", 0);
-                    return;
                 }
 
                 if (shouldDoAotv) {
