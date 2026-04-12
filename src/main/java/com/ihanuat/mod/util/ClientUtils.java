@@ -372,7 +372,7 @@ public class ClientUtils {
 
         Collection<PlayerScoreEntry> scores = scoreboard.listPlayerScores(sidebar);
         int bestCount = -1;
-        boolean sawRelevantPestLine = false;
+        boolean sawGardenLine = false;
 
         for (PlayerScoreEntry entry : scores) {
             String entryName = entry.owner();
@@ -386,10 +386,10 @@ public class ClientUtils {
             String lowerLine = line.toLowerCase();
             Matcher matcher = SIDEBAR_PEST_COUNT_PATTERN.matcher(line);
 
-            if (!lowerLine.contains("the garden") && !lowerLine.contains("plot")) {
+            if (!lowerLine.contains("the garden")) {
                 continue;
             }
-            sawRelevantPestLine = true;
+            sawGardenLine = true;
 
             if (matcher.find()) {
                 try {
@@ -403,7 +403,7 @@ public class ClientUtils {
             return bestCount;
         }
 
-        if (sawRelevantPestLine) {
+        if (sawGardenLine) {
             return 0;
         }
 

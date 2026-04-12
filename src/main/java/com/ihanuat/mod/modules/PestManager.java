@@ -75,7 +75,16 @@ public class PestManager {
             return;
 
         if (isCleaningInProgress && currentState == MacroState.State.FARMING) {
-            isCleaningInProgress = false;
+            if (MacroConfig.manualPestClean) {
+                if (MacroConfig.showDebug) {
+                    ClientUtils.sendDebugMessage(client,
+                            "Manual pest state drifted to FARMING during active cleaning; restoring CLEANING polling.");
+                }
+                MacroStateManager.setCurrentState(MacroState.State.CLEANING);
+                currentState = MacroState.State.CLEANING;
+            } else {
+                isCleaningInProgress = false;
+            }
         }
 
         PestTabListParser.TabListData data = PestTabListParser.parseTabList(client);

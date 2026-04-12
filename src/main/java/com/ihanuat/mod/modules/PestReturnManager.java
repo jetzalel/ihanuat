@@ -231,12 +231,9 @@ public class PestReturnManager {
             ClientUtils.sendDebugMessage(client, "Pest cleaning sequence completed. Next state: FARMING");
             com.ihanuat.mod.MacroStateManager.setCurrentState(com.ihanuat.mod.MacroState.State.FARMING);
             PestPrepSwapManager.prepSwappedForCurrentPestCycle = false;
-            ClientUtils.sendDebugMessage(client, "Stopping script: Pest cleaning finished, returning to farming");
-            com.ihanuat.mod.util.CommandUtils.stopScript(client, 250);
             PestManager.isCleaningInProgress = false;
             ClientUtils.sendDebugMessage(client, "Pest cleaning sequence finished. Restarting farming...");
             client.execute(() -> {
-                GearManager.swapToFarmingTool(client);
                 ClientUtils.sendDebugMessage(client, "Starting farming script: " + MacroConfig.getFullRestartCommand());
                 com.ihanuat.mod.util.CommandUtils.startScript(client, MacroConfig.getFullRestartCommand(), 0);
             });
