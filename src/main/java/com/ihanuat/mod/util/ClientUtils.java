@@ -372,6 +372,8 @@ public class ClientUtils {
 
         Collection<PlayerScoreEntry> scores = scoreboard.listPlayerScores(sidebar);
         String currentPlot = getCurrentPlot(client);
+        Integer gardenCount = null;
+        boolean sawMatchingPlotLine = false;
 
         for (PlayerScoreEntry entry : scores) {
             String entryName = entry.owner();
@@ -383,27 +385,48 @@ public class ClientUtils {
 
             String line = stripColor(fullText).trim();
             String lowerLine = line.toLowerCase();
-            boolean isPlotLine = lowerLine.contains("plot -")
-                    || lowerLine.contains("plot:")
-                    || lowerLine.contains("plot #");
-            if (!isPlotLine) {
-                continue;
-            }
-
-            if (!"Unknown".equalsIgnoreCase(currentPlot)
-                    && !lowerLine.matches(".*plot\\s*[:\\-#]\\s*" + java.util.regex.Pattern.quote(currentPlot.toLowerCase()) + ".*")) {
-                continue;
-            }
-
             Matcher matcher = SIDEBAR_PEST_COUNT_PATTERN.matcher(line);
+
+            if (lowerLine.contains("the garden")) {
+                if (matcher.find()) {
+                    try {
+                        gardenCount = Integer.parseInt(matcher.group(1));
+                    } catch (NumberFormatException ignored) {
+                    }
+                }
+                continue;
+            }
+
+            if (!lowerLine.contains("plot")) {
+                continue;
+            }
+
+            Matcher plotMatcher = Pattern.compile("plot\\s*[^a-z0-9]+\\s*([a-z0-9]+)", Pattern.CASE_INSENSITIVE).matcher(line);
+            if (!plotMatcher.find()) {
+                continue;
+            }
+
+            String plotValue = plotMatcher.group(1).trim();
+            if (!"Unknown".equalsIgnoreCase(currentPlot) && !plotValue.equalsIgnoreCase(currentPlot)) {
+                continue;
+            }
+
+            sawMatchingPlotLine = true;
+
             if (matcher.find()) {
                 try {
                     return Integer.parseInt(matcher.group(1));
                 } catch (NumberFormatException ignored) {
-                    return -1;
+                    return gardenCount != null ? gardenCount : -1;
                 }
             }
+        }
 
+        if (gardenCount != null) {
+            return gardenCount;
+        }
+
+        if (sawMatchingPlotLine) {
             return 0;
         }
 
