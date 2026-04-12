@@ -21,6 +21,10 @@ public class RodManager {
     }
 
     public static void executeRodSequence(Minecraft client) {
+        executeRodSequence(client, true);
+    }
+
+    public static void executeRodSequence(Minecraft client, boolean swapToFarmingToolAfter) {
         if (client.player == null) return;
         
         if (!isExecuting.compareAndSet(false, true)) {
@@ -92,8 +96,10 @@ public class RodManager {
             // 5. Small buffer after click
             Thread.sleep(100);
 
-            // 6. Swap to farming tool
-            GearManager.swapToFarmingTool(client);
+            // 6. Optionally swap back to farming tool for normal macro flow.
+            if (swapToFarmingToolAfter) {
+                GearManager.swapToFarmingTool(client);
+            }
 
         } catch (InterruptedException e) {
             e.printStackTrace();
