@@ -371,9 +371,8 @@ public class ClientUtils {
             return -1;
 
         Collection<PlayerScoreEntry> scores = scoreboard.listPlayerScores(sidebar);
-        String currentPlot = getCurrentPlot(client);
-        Integer gardenCount = null;
-        boolean sawMatchingPlotLine = false;
+        int bestCount = -1;
+        boolean sawRelevantPestLine = false;
 
         for (PlayerScoreEntry entry : scores) {
             String entryName = entry.owner();
@@ -387,46 +386,24 @@ public class ClientUtils {
             String lowerLine = line.toLowerCase();
             Matcher matcher = SIDEBAR_PEST_COUNT_PATTERN.matcher(line);
 
-            if (lowerLine.contains("the garden")) {
-                if (matcher.find()) {
-                    try {
-                        gardenCount = Integer.parseInt(matcher.group(1));
-                    } catch (NumberFormatException ignored) {
-                    }
-                }
+            if (!lowerLine.contains("the garden") && !lowerLine.contains("plot")) {
                 continue;
             }
-
-            if (!lowerLine.contains("plot")) {
-                continue;
-            }
-
-            Matcher plotMatcher = Pattern.compile("plot\\s*[^a-z0-9]+\\s*([a-z0-9]+)", Pattern.CASE_INSENSITIVE).matcher(line);
-            if (!plotMatcher.find()) {
-                continue;
-            }
-
-            String plotValue = plotMatcher.group(1).trim();
-            if (!"Unknown".equalsIgnoreCase(currentPlot) && !plotValue.equalsIgnoreCase(currentPlot)) {
-                continue;
-            }
-
-            sawMatchingPlotLine = true;
+            sawRelevantPestLine = true;
 
             if (matcher.find()) {
                 try {
-                    return Integer.parseInt(matcher.group(1));
+                    bestCount = Math.max(bestCount, Integer.parseInt(matcher.group(1)));
                 } catch (NumberFormatException ignored) {
-                    return gardenCount != null ? gardenCount : -1;
                 }
             }
         }
 
-        if (gardenCount != null) {
-            return gardenCount;
+        if (bestCount >= 0) {
+            return bestCount;
         }
 
-        if (sawMatchingPlotLine) {
+        if (sawRelevantPestLine) {
             return 0;
         }
 
