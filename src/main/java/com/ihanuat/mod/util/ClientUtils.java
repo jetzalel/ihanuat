@@ -186,6 +186,10 @@ public class ClientUtils {
             return cachedLocation;
         }
 
+        // flag for if we are in skyblock or not
+        String sidebarTitle = stripColor(sidebar.getDisplayName().getString()).trim();
+        boolean inSkyblock = sidebarTitle.toUpperCase().contains("SKYBLOCK");
+
         boolean hasLobbyItems = false;
         for (int i = 0; i < 9; i++) {
             net.minecraft.world.item.ItemStack stack = client.player.getInventory().getItem(i);
@@ -198,7 +202,7 @@ public class ClientUtils {
             }
         }
 
-        if (hasLobbyItems) {
+        if (hasLobbyItems || !inSkyblock) {
             cachedLocation = MacroState.Location.LOBBY;
             cachedLocationAtMs = now;
             return cachedLocation;
