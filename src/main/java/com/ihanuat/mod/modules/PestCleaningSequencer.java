@@ -147,6 +147,9 @@ public class PestCleaningSequencer {
                 boolean isSamePlot = currentInfestedPlot != null && currentInfestedPlot.equals(currentPlot);
                 boolean shouldDoAotv = PestAotvManager.shouldDoAotvOnCurrentPlot(client, currentInfestedPlot,
                         isSamePlot);
+                boolean shouldCastRodBeforeMovement = MacroConfig.manualPestClean
+                        && shouldDoAotv
+                        && MacroConfig.autoRodPestSpawn;
 
                 // restoreGearForCleaning restores farming wardrobe/equipment BEFORE movement.
                 if (!restoreGearForCleaning(client, shouldDoAotv))
@@ -178,9 +181,10 @@ public class PestCleaningSequencer {
 
                     if (MacroConfig.autoRodPestSpawn) {
                         ClientUtils.sendDebugMessage(client, "Auto Rod: Triggering rod cast on pest spawn (Bonus inactive).");
-                        RodManager.executeRodSequence(client);
-                        // Swap to farming tool after rod usage.
-                        GearManager.swapToFarmingTool(client);
+                        RodManager.executeRodSequence(client, !shouldCastRodBeforeMovement);
+                        if (!shouldCastRodBeforeMovement) {
+                            GearManager.swapToFarmingTool(client);
+                        }
                         rodHandledForSpawn = true;
                     }
                 }
@@ -193,6 +197,12 @@ public class PestCleaningSequencer {
                     return;
                 }
 
+                if (!rodHandledForSpawn && shouldCastRodBeforeMovement) {
+                    ClientUtils.sendDebugMessage(client, "Manual pest clean: triggering rod before AOTV movement.");
+                    triggerRodOnPestSpawn(client, false);
+                    rodHandledForSpawn = true;
+                }
+
                 if (shouldDoAotv) {
                     // AOTV to roof handles movement — skip /tptoplot
                     PestAotvManager.performAotvToRoof(client);
@@ -202,7 +212,7 @@ public class PestCleaningSequencer {
                 }
 
                 if (!rodHandledForSpawn) {
-                    triggerRodOnPestSpawn(client);
+                    triggerRodOnPestSpawn(client, true);
                 }
 
                 if (MacroConfig.manualPestClean && shouldDoAotv) {
@@ -332,10 +342,10 @@ public class PestCleaningSequencer {
         com.ihanuat.mod.util.CommandUtils.startScript(client, ".ez-startscript misc:pestCleaner", 0);
     }
 
-    private static void triggerRodOnPestSpawn(Minecraft client) {
+    private static void triggerRodOnPestSpawn(Minecraft client, boolean swapToFarmingToolAfter) {
         if (MacroConfig.autoRodPestSpawn) {
             ClientUtils.sendDebugMessage(client, "Auto Rod: Triggering rod cast on pest spawn.");
-            RodManager.executeRodSequence(client);
+            RodManager.executeRodSequence(client, swapToFarmingToolAfter);
         }
     }
 

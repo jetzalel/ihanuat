@@ -371,7 +371,8 @@ public class ClientUtils {
             return -1;
 
         Collection<PlayerScoreEntry> scores = scoreboard.listPlayerScores(sidebar);
-        String currentPlot = getCurrentPlot(client);
+        int bestCount = -1;
+        boolean sawGardenLine = false;
 
         for (PlayerScoreEntry entry : scores) {
             String entryName = entry.owner();
@@ -383,27 +384,26 @@ public class ClientUtils {
 
             String line = stripColor(fullText).trim();
             String lowerLine = line.toLowerCase();
-            boolean isPlotLine = lowerLine.contains("plot -")
-                    || lowerLine.contains("plot:")
-                    || lowerLine.contains("plot #");
-            if (!isPlotLine) {
-                continue;
-            }
-
-            if (!"Unknown".equalsIgnoreCase(currentPlot)
-                    && !lowerLine.matches(".*plot\\s*[:\\-#]\\s*" + java.util.regex.Pattern.quote(currentPlot.toLowerCase()) + ".*")) {
-                continue;
-            }
-
             Matcher matcher = SIDEBAR_PEST_COUNT_PATTERN.matcher(line);
+
+            if (!lowerLine.contains("the garden")) {
+                continue;
+            }
+            sawGardenLine = true;
+
             if (matcher.find()) {
                 try {
-                    return Integer.parseInt(matcher.group(1));
+                    bestCount = Math.max(bestCount, Integer.parseInt(matcher.group(1)));
                 } catch (NumberFormatException ignored) {
-                    return -1;
                 }
             }
+        }
 
+        if (bestCount >= 0) {
+            return bestCount;
+        }
+
+        if (sawGardenLine) {
             return 0;
         }
 
